@@ -123,9 +123,9 @@ const server = http.createServer((req, res) => {
     console.log("lang", lg, "|", await page.evaluate(() => [document.querySelector("h1").textContent, document.querySelector("#pick").textContent, document.querySelector("article.po .days").textContent, [...document.querySelectorAll("article.po .chip")].map(c=>c.textContent).join(" / "), document.querySelector('article.po [data-act="download"]').textContent, document.querySelector("#settingsBox .eyebrow").textContent].join(" | ")));
     if (lg === "pl") await page.screenshot({ path: path.join(outDir, "tool-pl.png"), fullPage: true });
   }
-  await page.click("#tabSettings");
+  await page.$eval("#settingsBox", (d) => { d.open = true; }); // the invoice settings are a fold-out on the Invoices tab
   await page.fill("#sFile", "Test {nummer} {po}/{datum}?"); console.log("hint:", await page.textContent("#sFileHint"));
-  await page.fill("#sFile", "VALKYRYS {nummer}"); await page.evaluate(() => document.querySelector("#settings").requestSubmit()); await page.waitForTimeout(300); await page.click("#tabInv");
+  await page.fill("#sFile", "VALKYRYS {nummer}"); await page.evaluate(() => document.querySelector("#settings").requestSubmit()); await page.waitForTimeout(300);
   const before = await page.evaluate(() => window.__saved.length);
   await page.click('article.po [data-act="download"]'); await page.waitForFunction((n) => window.__saved.length > n, before, { timeout: 15000 });
   console.log("file names:", await page.evaluate(() => window.__saved.map((x) => x.filename).join(" | ")));

@@ -21,7 +21,7 @@ const cfg = (home = HOME) => { try { return JSON.parse(fs.readFileSync(path.join
 const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
 (async () => {
   // ================= first start: the folders are asked for first
-  require("child_process").execSync("/tmp/rt/fresh.sh");
+  // the fixture folders are made fresh by tools/dev.sh before each test
   seed(HOME, { "pin.json": SKIP });
   let { app, page, errs, pick } = await launch(HOME);
   ok(await open(page), "first start: the welcome window is open");
@@ -100,12 +100,13 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   ok(await page.isVisible("#srcPath") && (await page.textContent("#srcPath")) === INV, "and still says where the figures come from: " + (await page.textContent("#srcPath")));
   await page.click('#statSource [data-src="pos"]'); await page.waitForTimeout(400); eq(await page.textContent("#srcPath"), PO, "PO source: the PO folder");
   await goTab(page, "inv"); ok(await page.isVisible("#viewInv"), "Invoices tab opens");
-  ok(!(await page.isVisible("#pinPanel")) && !(await page.isVisible("#settings")), "PIN and invoice settings are no longer there");
+  ok(!(await page.isVisible("#pinPanel")), "PIN is not on the Invoices tab");
+  ok(await page.isVisible("#settingsBox") && await page.$eval("#settingsBox", (d) => d.tagName === "DETAILS" && d.closest("#viewInv") !== null && d.open), "invoice details are a fold-out in the Invoices sidebar, open while no client is set");
   ok(await page.isVisible("#folderPanel") && !(await page.isVisible("#folderPick")) && !(await page.isVisible("#folderGoSet")), "folder list stays (what is in it), the choosing moved");
   await goTab(page, "settings"); await page.waitForTimeout(200);
   ok(await page.isVisible("#settingsView") && !(await page.isVisible("#viewInv")) && !(await page.isVisible("#statsView")), "Settings tab opens");
-  eq(await page.textContent("#tagline"), "Mappen, pincode, weergave en je factuurgegevens.", "its tagline");
-  for (const [sel, what] of [["#setFolders", "folders"], ["#pinPanel", "PIN"], ["#lookPanel", "appearance"], ["#settingsBox", "invoice details"], ["#themeBtn", "theme button"], ["#lang", "language list"], ["#folderPick", "invoice folder button"], ["#poFolderPick", "PO folder button"]]) ok(await page.isVisible(sel), "Settings has: " + what);
+  eq(await page.textContent("#tagline"), "Mappen, pincode en weergave.", "its tagline");
+  for (const [sel, what] of [["#setFolders", "folders"], ["#pinPanel", "PIN"], ["#lookPanel", "appearance"], ["#themeBtn", "theme button"], ["#lang", "language list"], ["#folderPick", "invoice folder button"], ["#poFolderPick", "PO folder button"]]) ok(await page.isVisible(sel), "Settings has: " + what);
   eq(await page.textContent("#folderPath"), INV, "invoice folder shown"); eq(await page.textContent("#poFolderPath"), PO, "PO folder shown");
   eq(await page.$$eval("#setFolders .fsub", (e) => e.map((x) => x.textContent)), ["Map met facturen", "Map met inkooporders"], "both folders have their own block");
   eq([await page.textContent("#folderPick"), await page.textContent("#poFolderPick")], ["Andere map…", "Andere map…"], "buttons say 'change' when a folder is set");
@@ -127,9 +128,10 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   eq(await page.textContent("#poFolderPick"), "Zmień folder…", "Polish button");
   await page.selectOption("#lang", "nl"); await page.waitForTimeout(300);
   await page.click("#themeBtn"); ok(await page.$eval("#themeDlg", (d) => d.open), "theme button opens the theme window"); await page.click("#themeClose");
-  // invoice details are saved from Settings
-  await page.fill("#sTerm", "21 dagen"); await page.fill("#cName", "Piguillet BV test"); await page.click('#settings button[type="submit"]'); await page.waitForTimeout(600);
-  const saved = JSON.parse(fs.readFileSync(D(HOME) + "/data.json", "utf8"))["settings/main"]; eq([saved.betaaltermijn, saved.client.name], ["21 dagen", "Piguillet BV test"], "invoice details are saved from Settings");
+  ok(!(await page.isVisible("#settings")), "invoice details are not on the Settings tab");
+  // invoice details are saved from the Invoices tab
+  await goTab(page, "inv"); await page.$eval("#settingsBox", (d) => { d.open = true; }); await page.fill("#sTerm", "21 dagen"); await page.fill("#cName", "Piguillet BV test"); await page.click('#settings button[type="submit"]'); await page.waitForTimeout(600);
+  const saved = JSON.parse(fs.readFileSync(D(HOME) + "/data.json", "utf8"))["settings/main"]; eq([saved.betaaltermijn, saved.client.name], ["21 dagen", "Piguillet BV test"], "invoice details are saved from the Invoices tab"); await goTab(page, "settings");
   // keyboard: arrows move through the three tabs
   await page.focus("#tabSettings"); await page.keyboard.press("ArrowRight"); await page.waitForTimeout(150);
   eq(await page.$eval("#tabs [aria-selected=true]", (t) => t.dataset.tab), "stats", "arrow right from the last tab wraps to the first");
