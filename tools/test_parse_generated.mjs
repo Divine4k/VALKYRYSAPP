@@ -30,4 +30,5 @@ for (const c of cases) {
 }
 // money formats
 for (const [s, v] of [["1.350,00", 1350], ["2,250.00", 2250], ["450.00", 450], ["450,00", 450], ["€ 12.345,67", 12345.67], ["1,234,567.89", 1234567.89]]) { const g = core.parseMoney(s); const ok = g === v; if (!ok) bad++; console.log(ok ? "PASS" : "FAIL", "parseMoney", s, g); }
+if (!bad) console.log("ALL PASSED");
 process.exit(bad ? 1 : 0);
