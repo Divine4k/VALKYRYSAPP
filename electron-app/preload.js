@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld("valkyrys", {
   openFile: (rel, kind) => call("folder:openfile", String(rel), kind),
   readFile: (rel, kind) => call("folder:read", String(rel), kind),
   revealFile: (rel, kind) => call("folder:reveal", String(rel), kind),
+  trashFile: (rel, kind) => call("folder:trash", String(rel), kind), // to the Recycle Bin
   getWelcomed: () => call("app:welcomed"),
   setWelcomed: () => call("app:welcomed-set"),
   // "Save as…": any folder / one .zip, chosen in a native dialog (main only writes where the user picked)

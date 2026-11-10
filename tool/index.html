@@ -66,6 +66,19 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .saveopt label.off { opacity: .55; cursor: default; }
 .saveopt small { color: var(--muted); }
 #saveDlg { width: min(520px, calc(100% - 24px)); }
+#delDlg { width: min(500px, calc(100% - 24px)); }
+#delDlg .dlg-body { background: var(--surface); }
+.delwhat { margin: 0; padding: 0 0 0 20px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.delwhat li.keep { color: var(--muted); text-decoration: line-through; }
+button.danger { background: var(--err); border-color: var(--err); color: var(--surface); }
+button.danger:hover { filter: brightness(.95); border-color: var(--err); }
+button.refresh { min-height: 32px; width: 32px; padding: 0; color: var(--muted); }
+button.refresh:hover { color: var(--ink); border-color: var(--line); }
+button.refresh.spin svg { animation: rspin .8s linear infinite; }
+@keyframes rspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { button.refresh.spin svg { animation-duration: 2.4s; } }
+.ehead { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: -6px 0 0; }
+.ehead .eyebrow { margin: 0; }
 
 .po { display: flex; flex-direction: column; gap: 14px; }
 .po-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
@@ -131,15 +144,29 @@ button.themebtn { padding: 4px 12px; display: inline-flex; align-items: center; 
 button.themebtn:hover { border-color: #8E9096; }
 .themebtn svg { flex: 0 0 auto; }
 #lockScreen { position: fixed; inset: 0; z-index: 2147483000; display: flex; flex-direction: column; background: var(--bg); overflow: auto; font-family: var(--font); font-size: 15px; line-height: 1.45; color: var(--text); }
-.lk-main { flex: 1; display: grid; place-items: center; padding: 24px 16px; }
-.lk-card { width: min(380px, 100%); display: flex; flex-direction: column; gap: 14px; }
-.lk-card h2 { font-size: 22px; }
-.lk-card input[type="password"] { text-align: center; font-size: 26px; letter-spacing: .5em; font-weight: 700; padding-left: .5em; }
-.lk-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.lk-pad button { min-height: 50px; font-size: 20px; justify-content: center; }
-.lk-err { margin: 0; min-height: 20px; color: var(--err); font-weight: 700; font-size: 14px; text-align: center; }
-.lk-actions { display: flex; flex-direction: column; gap: 8px; }
-.lk-actions button { width: 100%; justify-content: center; }
+.lk-main { flex: 1; display: grid; place-items: center; padding: 28px 16px; }
+.lk-card { position: relative; width: min(360px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, .22); }
+.lk-card .band { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px; }
+.lk-card .band span { padding-left: 12px; border-left: 1px solid rgba(255, 255, 255, .18); color: var(--band-muted); font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; line-height: 18px; }
+.lk-body { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 26px 24px 18px; }
+.lk-body h2 { font-size: 21px; }
+.lk-sub { margin: 6px 0 0; }
+.lk-in { position: absolute; top: 0; left: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+.lk-dots { display: flex; justify-content: center; align-items: center; gap: 14px; height: 18px; margin: 24px 0 6px; }
+.lk-dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--muted); transition: background .12s, border-color .12s, transform .12s; }
+.lk-dots i.opt { width: 9px; height: 9px; border-width: 1.5px; opacity: .5; }
+.lk-dots i.on { width: 14px; height: 14px; border-width: 2px; opacity: 1; background: var(--ink); border-color: var(--ink); transform: scale(1.08); }
+.lk-dots.bad i { border-color: var(--err); }
+.lk-err { margin: 6px 0 10px; min-height: 20px; color: var(--err); font-weight: 700; font-size: 14px; }
+.lk-pad { display: grid; grid-template-columns: repeat(3, 66px); gap: 14px 22px; justify-content: center; }
+.lk-pad button { width: 66px; height: 66px; min-height: 0; padding: 0; border-radius: 50%; background: var(--sunken); color: var(--ink); font-size: 26px; font-weight: 400; transition: background .1s, transform .08s, border-color .1s; }
+.lk-pad button:active:not(:disabled), .lk-pad button.hit { background: var(--line); transform: scale(.94); }
+.lk-pad button.lk-fn { background: transparent; border-color: transparent; color: var(--muted); font-size: 22px; }
+.lk-pad button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-size: 24px; font-weight: 700; }
+.lk-pad button.primary:disabled { background: transparent; border-color: var(--line); color: var(--muted); }
+.lk-pad .lk-hide { visibility: hidden; }
+.lk-actions { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 16px; min-height: 40px; }
+.lk-actions p { margin: 0 0 4px; text-align: left; }
 @media (prefers-reduced-motion: no-preference) { .lk-shake { animation: lkshake .35s; } }
 @keyframes lkshake { 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
 .themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; margin-top: 12px; }
@@ -371,7 +398,7 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .dprog .pb i { display: block; height: 100%; border-radius: 3px; background: var(--ok); transition: width .3s ease; }
 .dinfo { margin: 0; font-size: 13px; color: var(--muted); }
 .dtable { padding: 0; }
-.dhead, .drow { display: grid; grid-template-columns: minmax(80px, .8fr) minmax(120px, 1.6fr) 92px minmax(92px, 1fr) 104px 178px 122px 36px; gap: 12px; align-items: center; padding: 0 16px; }
+.dhead, .drow { display: grid; grid-template-columns: minmax(80px, .8fr) minmax(120px, 1.6fr) 92px minmax(92px, 1fr) 104px 178px 122px 68px; gap: 12px; align-items: center; padding: 0 16px; }
 .dhead { position: sticky; top: var(--bar-h, 60px); z-index: 2; min-height: 40px; background: var(--sunken); border-bottom: 1px solid var(--line); border-radius: var(--r) var(--r) 0 0; }
 .dhead button, .dhead span { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .dhead button { background: none; border: 0; padding: 0; min-height: 40px; justify-content: flex-start; gap: 4px; border-radius: 0; }
@@ -406,8 +433,15 @@ button.dchip:disabled::before { background: var(--line); }
 .sentbox input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .sentbox:has(input:checked) { color: var(--ok); background: var(--ok-bg); border-color: transparent; }
 .drow.sent .c-nr, .drow.sent .c-cl, .drow.sent .c-amt { color: var(--muted); }
+.drow.po-only { background: color-mix(in srgb, var(--warn-bg) 35%, transparent); }
+.drow.po-only:hover { background: var(--sunken); }
+.c-nr .chip.noinv { font-size: 11.5px; font-weight: 800; padding: 3px 8px; gap: 5px; border-radius: 6px; white-space: nowrap; align-self: flex-start; }
+.drow.po-only.skipped .c-cl, .drow.po-only.skipped .c-amt, .drow.po-only.skipped .c-dt { color: var(--muted); }
+button.mkinv { min-height: 30px; padding: 4px 12px; font-size: 12.5px; white-space: nowrap; justify-self: start; }
 .c-act button { min-height: 32px; width: 32px; padding: 0; border-color: transparent; background: transparent; color: var(--muted); }
 .c-act button:hover { color: var(--ink); border-color: var(--line); }
+.c-act { display: flex; gap: 4px; justify-content: flex-end; }
+.c-act button.del:hover { color: var(--err); }
 .dempty { padding: 34px 18px; text-align: center; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .dempty h2 { font-size: 17px; font-weight: 900; }
 .dempty p { margin: 0; max-width: 52ch; }
@@ -523,16 +557,16 @@ window.ValkTheme = (function () {
 /* PIN lock screen (desktop app only). Runs before the page is drawn: with a PIN set, nothing of the app is shown or loaded until it is entered. */
 (function () {
   var T = {
-    nl: { appTitle: "App", setupTitle: "Maak een pincode", setupText: "Kies een pincode van 4 tot 8 cijfers. Je hebt hem nodig om de app te openen.", pin1: "Pincode", pin2: "Herhaal de pincode", setupBtn: "Pincode instellen", later: "Nu niet",
-      loginTitle: "Voer je pincode in", loginText: "Valkyrys app is vergrendeld.", unlock: "Ontgrendelen", forgot: "Pincode vergeten?", forgotText: "Sluit de app, open de map %APPDATA%\\Valkyrys app en verwijder het bestand pin.json. Daarna start de app zonder pincode. Je facturen blijven bewaard.",
+    nl: { appTitle: "App", setupTitle: "Kies een pincode", setupText: "4 tot 8 cijfers. Je hebt hem nodig om de app te openen.", repTitle: "Herhaal je pincode", repText: "Typ dezelfde pincode nog een keer.", later: "Nu niet", pinLabel: "Pincode",
+      loginTitle: "Voer je pincode in", loginText: "Valkyrys app is vergrendeld.", forgot: "Pincode vergeten?", forgotText: "Sluit de app, open de map %APPDATA%\\Valkyrys app en verwijder het bestand pin.json. Daarna start de app zonder pincode. Je facturen blijven bewaard.",
       eFormat: "Gebruik 4 tot 8 cijfers.", eMismatch: "De twee pincodes zijn niet hetzelfde.", eWrong: "Onjuiste pincode.", eLeft: "Onjuiste pincode. Nog {0} pogingen voordat je even moet wachten.", eLeft1: "Onjuiste pincode. Nog 1 poging voordat je even moet wachten.",
       eWait: "Te veel pogingen. Probeer het over {0} seconden opnieuw.", eGeneric: "Dat is niet gelukt. Probeer het opnieuw.", del: "Laatste cijfer wissen", go: "Bevestigen" },
-    en: { appTitle: "App", setupTitle: "Create a PIN", setupText: "Choose a PIN of 4 to 8 digits. You need it to open the app.", pin1: "PIN", pin2: "Repeat the PIN", setupBtn: "Set PIN", later: "Not now",
-      loginTitle: "Enter your PIN", loginText: "Valkyrys app is locked.", unlock: "Unlock", forgot: "Forgot your PIN?", forgotText: "Close the app, open the folder %APPDATA%\\Valkyrys app and delete the file pin.json. The app then starts without a PIN. Your invoices are kept.",
+    en: { appTitle: "App", setupTitle: "Choose a PIN", setupText: "4 to 8 digits. You need it to open the app.", repTitle: "Repeat your PIN", repText: "Type the same PIN once more.", later: "Not now", pinLabel: "PIN",
+      loginTitle: "Enter your PIN", loginText: "Valkyrys app is locked.", forgot: "Forgot your PIN?", forgotText: "Close the app, open the folder %APPDATA%\\Valkyrys app and delete the file pin.json. The app then starts without a PIN. Your invoices are kept.",
       eFormat: "Use 4 to 8 digits.", eMismatch: "The two PINs are not the same.", eWrong: "Wrong PIN.", eLeft: "Wrong PIN. {0} tries left before you have to wait a moment.", eLeft1: "Wrong PIN. 1 try left before you have to wait a moment.",
       eWait: "Too many tries. Try again in {0} seconds.", eGeneric: "That did not work. Please try again.", del: "Delete last digit", go: "Confirm" },
-    pl: { appTitle: "App", setupTitle: "Utwórz kod PIN", setupText: "Wybierz kod PIN składający się z 4 do 8 cyfr. Będzie potrzebny do otwarcia aplikacji.", pin1: "Kod PIN", pin2: "Powtórz kod PIN", setupBtn: "Ustaw kod PIN", later: "Nie teraz",
-      loginTitle: "Wpisz kod PIN", loginText: "Valkyrys app jest zablokowana.", unlock: "Odblokuj", forgot: "Nie pamiętasz kodu PIN?", forgotText: "Zamknij aplikację, otwórz folder %APPDATA%\\Valkyrys app i usuń plik pin.json. Aplikacja uruchomi się wtedy bez kodu PIN. Twoje faktury zostaną zachowane.",
+    pl: { appTitle: "App", setupTitle: "Wybierz kod PIN", setupText: "Od 4 do 8 cyfr. Będzie potrzebny do otwarcia aplikacji.", repTitle: "Powtórz kod PIN", repText: "Wpisz ten sam kod PIN jeszcze raz.", later: "Nie teraz", pinLabel: "Kod PIN",
+      loginTitle: "Wpisz kod PIN", loginText: "Valkyrys app jest zablokowana.", forgot: "Nie pamiętasz kodu PIN?", forgotText: "Zamknij aplikację, otwórz folder %APPDATA%\\Valkyrys app i usuń plik pin.json. Aplikacja uruchomi się wtedy bez kodu PIN. Twoje faktury zostaną zachowane.",
       eFormat: "Użyj od 4 do 8 cyfr.", eMismatch: "Oba kody PIN nie są takie same.", eWrong: "Nieprawidłowy kod PIN.", eLeft: "Nieprawidłowy kod PIN. Pozostało prób: {0}, potem trzeba chwilę poczekać.", eLeft1: "Nieprawidłowy kod PIN. Pozostała 1 próba, potem trzeba chwilę poczekać.",
       eWait: "Zbyt wiele prób. Spróbuj ponownie za {0} s.", eGeneric: "Nie udało się. Spróbuj ponownie.", del: "Usuń ostatnią cyfrę", go: "Potwierdź" }
   };
@@ -545,52 +579,97 @@ window.ValkTheme = (function () {
   var finish; window.__valkUnlock = new Promise(function (r) { finish = r; });
 
   var root = document.createElement("div"); root.id = "lockScreen"; root.setAttribute("role", "dialog"); root.setAttribute("aria-modal", "true"); root.setAttribute("aria-labelledby", "lkTitle");
-  var setup = mode === "setup";
-  function field(id, label) { return '<label class="f" for="' + id + '"><span>' + label + '</span><input id="' + id + '" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" spellcheck="false"></label>'; }
+  // One hidden field (#lkIn) holds the digits; the dots show how many are typed. With a known PIN length (st.len) the PIN is
+  // checked as soon as the last digit is in, so no Enter is needed. Setup: "pick" (4-8 digits, then ✓/Enter) -> "rep" (checked when the length matches).
+  var setup = mode === "setup", step = setup ? "pick" : "login", first = "", busy = false, timer = null;
   var keys = ""; for (var d = 1; d <= 9; d++) keys += '<button type="button" tabindex="-1" data-d="' + d + '">' + d + "</button>";
-  keys += '<button type="button" tabindex="-1" data-act="del" aria-label="' + t("del") + '">⌫</button><button type="button" tabindex="-1" data-d="0">0</button><button type="button" tabindex="-1" data-act="go" class="primary" aria-label="' + t("go") + '">✓</button>';
-  root.innerHTML = '<header class="band"><div class="band-in"><img src="img/logo-white.png" alt="Valkyrys"><h1>' + t("appTitle") + '</h1></div></header>' +
-    '<div class="lk-main"><form class="panel lk-card" id="lkForm" autocomplete="off" novalidate><h2 id="lkTitle">' + t(setup ? "setupTitle" : "loginTitle") + '</h2><p class="small" style="margin:0">' + t(setup ? "setupText" : "loginText") + "</p>" +
-    field("lkPin1", t("pin1")) + (setup ? field("lkPin2", t("pin2")) : "") + '<div class="lk-pad">' + keys + '</div><p class="lk-err" id="lkErr" role="alert"></p>' +
-    '<div class="lk-actions"><button class="primary" type="submit" id="lkOk">' + t(setup ? "setupBtn" : "unlock") + "</button>" +
-    (setup ? '<button type="button" class="ghost" id="lkLater">' + t("later") + "</button>" : '<button type="button" class="ghost" id="lkForgotBtn" aria-expanded="false">' + t("forgot") + '</button><p class="small" id="lkForgot" hidden style="margin:0">' + t("forgotText") + "</p>") + "</div></form></div>";
+  keys += '<button type="button" tabindex="-1" data-act="del" class="lk-fn" aria-label="' + t("del") + '">⌫</button><button type="button" tabindex="-1" data-d="0">0</button><button type="button" tabindex="-1" data-act="go" class="primary" aria-label="' + t("go") + '">✓</button>';
+  root.innerHTML = '<div class="lk-main"><form class="lk-card" id="lkForm" autocomplete="off" novalidate>' +
+    '<header class="band"><img src="img/logo-white.png" alt="Valkyrys"><span>' + t("appTitle") + "</span></header>" +
+    '<div class="lk-body"><h2 id="lkTitle"></h2><p class="small lk-sub" id="lkSub"></p>' +
+    '<input id="lkIn" class="lk-in" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" spellcheck="false" aria-labelledby="lkTitle" aria-describedby="lkErr">' +
+    '<div class="lk-dots" id="lkDots" aria-hidden="true"></div><p class="lk-err" id="lkErr" role="alert"></p><div class="lk-pad">' + keys + "</div>" +
+    '<div class="lk-actions">' + (setup ? '<button type="button" class="ghost" id="lkLater">' + t("later") + "</button>" : '<button type="button" class="ghost" id="lkForgotBtn" aria-expanded="false">' + t("forgot") + '</button><p class="small" id="lkForgot" hidden>' + t("forgotText") + "</p>") + "</div></div></form></div>";
   document.documentElement.appendChild(root);
   document.body.inert = true;
-  var $ = function (id) { return document.getElementById(id); }, form = $("lkForm"), p1 = $("lkPin1"), p2 = $("lkPin2"), err = $("lkErr"), active = p1, timer = null, busy = false;
-  var inputs = [p1].concat(p2 ? [p2] : []);
+  var $ = function (id) { return document.getElementById(id); }, form = $("lkForm"), inp = $("lkIn"), dots = $("lkDots"), err = $("lkErr"), goBtn = root.querySelector('[data-act="go"]'), pad = root.querySelectorAll(".lk-pad button");
+  function need() { return step === "login" ? (st.len || 0) : step === "rep" ? first.length : 0; } // 0 = length not known: up to 8, confirm with ✓
+  function draw() {
+    var n = need(), v = inp.value.length, h = "";
+    for (var i = 0; i < (n || 8); i++) h += '<i class="' + (i < v ? "on" : "") + (!n && i >= 4 ? " opt" : "") + '"></i>';
+    dots.innerHTML = h; dots.classList.remove("bad");
+    goBtn.classList.toggle("lk-hide", !!n); goBtn.disabled = inp.disabled || v < 4;
+  }
+  function setStep(s) {
+    step = s; inp.value = "";
+    $("lkTitle").textContent = t(s === "login" ? "loginTitle" : s === "pick" ? "setupTitle" : "repTitle");
+    $("lkSub").textContent = t(s === "login" ? "loginText" : s === "pick" ? "setupText" : "repText");
+    draw();
+  }
   function unlock() { clearInterval(timer); root.remove(); document.body.inert = false; finish(); }
   function say(msg) { err.textContent = msg || ""; }
+  function focusIn() { if (!inp.disabled && document.activeElement !== inp) inp.focus(); }
+  function enable(on) { inp.disabled = !on; for (var i = 0; i < pad.length; i++) pad[i].disabled = !on; draw(); }
   function lockout(ms) { // too many wrong tries: count down, then allow typing again
     clearInterval(timer); var end = Date.now() + ms;
-    function tick() { var s = Math.ceil((end - Date.now()) / 1000); if (s <= 0) { clearInterval(timer); inputs.forEach(function (i) { i.disabled = false; }); $("lkOk").disabled = false; say(""); p1.focus(); return; } say(t("eWait", s)); }
-    inputs.forEach(function (i) { i.disabled = true; }); $("lkOk").disabled = true; tick(); timer = setInterval(tick, 500);
+    function tick() { var s = Math.ceil((end - Date.now()) / 1000); if (s <= 0) { clearInterval(timer); enable(true); say(""); inp.focus(); return; } say(t("eWait", s)); }
+    enable(false); tick(); timer = setInterval(tick, 500);
   }
-  function wrong(msg) { say(msg); p1.value = ""; if (p2) p2.value = ""; active = p1; p1.focus(); form.classList.remove("lk-shake"); void form.offsetWidth; form.classList.add("lk-shake"); }
-  inputs.forEach(function (i) { i.addEventListener("focus", function () { active = i; }); i.addEventListener("input", function () { i.value = i.value.replace(/\D/g, "").slice(0, 8); say(""); }); });
-  root.querySelector(".lk-pad").addEventListener("click", function (e) {
-    var b = e.target.closest("button"); if (!b || active.disabled) return;
-    if (b.dataset.d) { if (active.value.length < 8) active.value += b.dataset.d; say(""); }
-    else if (b.dataset.act === "del") active.value = active.value.slice(0, -1);
-    else if (b.dataset.act === "go") { if (setup && active === p1 && /^\d{4,8}$/.test(p1.value)) p2.focus(); else form.requestSubmit(); }
-    active.focus();
-  });
-  form.addEventListener("submit", function (e) {
-    e.preventDefault(); if (busy) return;
-    var pin = p1.value;
-    if (!/^\d{4,8}$/.test(pin)) return wrong(t("eFormat"));
-    if (setup && p2.value !== pin) { p2.value = ""; active = p2; p2.focus(); return say(t("eMismatch")); }
-    busy = true;
-    (setup ? L.setup(pin) : L.verify(pin)).then(function (r) {
-      busy = false;
+  function wrong(msg) {
+    say(msg); inp.value = ""; draw(); dots.classList.add("bad");
+    dots.classList.remove("lk-shake"); void dots.offsetWidth; dots.classList.add("lk-shake"); focusIn();
+  }
+  function done() { busy = false; inp.readOnly = false; }
+  function check() {
+    var pin = inp.value;
+    if (!/^\d{4,8}$/.test(pin)) { done(); return wrong(t("eFormat")); }
+    if (step === "pick") { done(); first = pin; say(""); setStep("rep"); return focusIn(); }
+    if (step === "rep" && pin !== first) { done(); first = ""; setStep("pick"); return wrong(t("eMismatch")); }
+    (setup ? L.setup(first) : L.verify(pin)).then(function (r) {
+      done();
       if (r && r.ok) return unlock();
+      if (setup) { first = ""; setStep("pick"); return wrong(t(r && r.error === "format" ? "eFormat" : "eGeneric")); }
       if (r && r.wait) { wrong(""); return lockout(r.wait); }
-      if (r && r.left != null) return wrong(r.left === 1 ? t("eLeft1") : t("eLeft", r.left));
-      wrong(setup ? t(r && r.error === "format" ? "eFormat" : "eGeneric") : t("eWrong"));
-    }, function () { busy = false; wrong(t("eGeneric")); });
+      if (r && r.left != null && r.left <= 2) return wrong(r.left === 1 ? t("eLeft1") : t("eLeft", r.left)); // warn only when the wait is near
+      wrong(t("eWrong"));
+    }, function () { done(); if (setup) { first = ""; setStep("pick"); } wrong(t("eGeneric")); });
+  }
+  function submit(delay) { // short delay so the last dot is seen filled
+    if (busy || inp.disabled) return;
+    busy = true; inp.readOnly = true; setTimeout(check, delay || 0);
+  }
+  function changed() {
+    var max = need() || 8; inp.value = inp.value.replace(/\D/g, "").slice(0, max);
+    if (inp.value) say(""); draw();
+    if (need() && inp.value.length === need()) submit(120);
+  }
+  function key(d) { if (busy || inp.disabled) return; if (inp.value.length < (need() || 8)) { inp.value += d; changed(); } }
+  function back() {
+    if (busy || inp.disabled) return;
+    if (!inp.value && step === "rep") { first = ""; setStep("pick"); return; } // ⌫ on an empty second step: choose again
+    inp.value = inp.value.slice(0, -1); draw();
+  }
+  function flash(sel) { var b = root.querySelector(".lk-pad " + sel); if (!b) return; b.classList.add("hit"); setTimeout(function () { b.classList.remove("hit"); }, 120); }
+  inp.addEventListener("input", function () { if (busy) return; changed(); });
+  root.addEventListener("keydown", function (e) { // physical keyboard and numpad, wherever the focus is on this screen
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    var dg = /^[0-9]$/.test(e.key) ? e.key : (/^Numpad([0-9])$/.exec(e.code || "") || [])[1]; // numpad digits also with Num Lock off
+    if (dg) { e.preventDefault(); flash('[data-d="' + dg + '"]'); key(dg); focusIn(); }
+    else if (e.key === "Backspace") { e.preventDefault(); flash('[data-act="del"]'); back(); focusIn(); }
+    else if (e.key === "Enter" && !(e.target.closest && e.target.closest(".lk-actions"))) { e.preventDefault(); if (!need() && inp.value) { flash('[data-act="go"]'); submit(); } } // known length: it is checked by itself
   });
+  root.querySelector(".lk-pad").addEventListener("mousedown", function (e) { e.preventDefault(); }); // keep the focus in the field
+  root.querySelector(".lk-pad").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b || b.disabled) return;
+    if (b.dataset.d) key(b.dataset.d); else if (b.dataset.act === "del") back(); else if (b.dataset.act === "go") submit();
+    focusIn();
+  });
+  root.addEventListener("click", function (e) { if (!e.target.closest("button, a, p")) focusIn(); });
+  form.addEventListener("submit", function (e) { e.preventDefault(); });
+  window.addEventListener("focus", function () { if (root.isConnected) focusIn(); });
   if (setup) $("lkLater").addEventListener("click", function () { L.skip().then(unlock, unlock); });
   else $("lkForgotBtn").addEventListener("click", function () { var f = $("lkForgot"); f.hidden = !f.hidden; this.setAttribute("aria-expanded", String(!f.hidden)); });
-  p1.focus();
+  setStep(step); inp.focus();
   if (!setup && st.wait > 0) lockout(st.wait);
 })();
 </script>
@@ -614,6 +693,7 @@ window.ValkTheme = (function () {
   <section class="col" aria-label="Inkooporders">
     <div id="libError" class="banner err" hidden></div>
     <div class="panel dupbar" id="detBar" role="status" hidden><span class="dtext" id="detBarText"></span><button type="button" id="detBarGo" data-i18n="detBarGo">Gegevens invullen</button></div>
+    <div class="panel dupbar stalebar" id="staleBar" role="status" hidden><span class="dtext" data-stale-text></span><button type="button" data-stale="del" data-i18n="staleDel">Uit de app verwijderen</button><button type="button" class="ghost" data-stale="keep" data-i18n="staleKeep">Behouden</button></div>
     <div class="drop" id="drop">
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 18v-6"/><path d="M9.5 14.5 12 12l2.5 2.5"/></svg>
       <h2 data-i18n="dropTitle">Sleep inkooporders (PDF) hierheen</h2>
@@ -622,7 +702,7 @@ window.ValkTheme = (function () {
       <input type="file" id="file" accept="application/pdf,.pdf" multiple data-i18n-aria="pick" aria-label="Kies PDF-bestanden"></span>
     </div>
     <div class="panel newpo" id="newPo" hidden>
-      <p class="eyebrow" data-i18n="npTitle">Nieuwe inkooporders</p>
+      <div class="ehead"><p class="eyebrow" data-i18n="npTitle">Nieuwe inkooporders</p><button type="button" class="ghost refresh" data-refresh data-i18n-aria="refresh" aria-label="Vernieuwen" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg></button></div>
       <p class="small np-note" id="npNote"></p>
       <ul class="hist np" id="npList"></ul>
       <div class="frow" id="npRow">
@@ -652,7 +732,7 @@ window.ValkTheme = (function () {
       <p class="small" id="storeNote"></p>
     </div>
     <div class="panel">
-      <p class="eyebrow" data-i18n="history">Gemaakte facturen</p>
+      <div class="ehead"><p class="eyebrow" data-i18n="history">Gemaakte facturen</p><button type="button" class="ghost refresh" data-refresh data-i18n-aria="refresh" aria-label="Vernieuwen" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg></button></div>
       <ul class="hist" id="hist"></ul>
       <p class="empty" id="histEmpty" data-i18n="histEmpty">Facturen die je hier downloadt, verschijnen in deze lijst. Zo zie je ook of een PO al gefactureerd is.</p>
     </div>
@@ -738,12 +818,14 @@ window.ValkTheme = (function () {
     <p data-i18n="folderIntroInv">Stel bij Instellingen de map in waar je facturen bewaard worden.</p>
     <button type="button" class="primary" id="docsGoSet" data-i18n="openSettings">Naar instellingen</button>
   </div>
+  <div class="panel dupbar stalebar" id="staleBarD" role="status" hidden><span class="dtext" data-stale-text></span><button type="button" data-stale="del" data-i18n="staleDel">Uit de app verwijderen</button><button type="button" class="ghost" data-stale="keep" data-i18n="staleKeep">Behouden</button></div>
   <div class="panel dbar" id="docsBar">
     <label class="dsearch" for="docsSearch"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="sr" data-i18n="docsSearch">Zoeken op nummer, klant of inkooporder</span><input id="docsSearch" type="search" autocomplete="off" spellcheck="false"></label>
     <div class="seg" role="group" id="docsFilter" data-i18n-aria="docsFilter" aria-label="Tonen">
       <button type="button" data-f="all" aria-pressed="true"><span data-i18n="docsAll">Alle</span><span class="n num" data-n="all"></span></button>
       <button type="button" data-f="open" aria-pressed="false"><span data-i18n="docsNotSent">Niet verzonden</span><span class="n num" data-n="open"></span></button>
       <button type="button" data-f="sent" aria-pressed="false"><span data-i18n="docsSent">Verzonden</span><span class="n num" data-n="sent"></span></button>
+      <button type="button" data-f="noinv" aria-pressed="false"><span data-i18n="docsNoInv">Zonder factuur</span><span class="n num" data-n="noinv"></span></button>
     </div>
     <div class="dsort">
       <select id="docsSort" data-i18n-aria="docsSortBy" aria-label="Sorteren op">
@@ -751,6 +833,7 @@ window.ValkTheme = (function () {
       </select>
       <button type="button" id="docsDir"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16"/><path d="m3 16 4 4 4-4"/><path d="M17 20V4"/><path d="m13 8 4-4 4 4"/></svg></button>
     </div>
+    <button type="button" class="ghost refresh" data-refresh data-i18n-aria="refresh" aria-label="Vernieuwen" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg></button>
     <div class="dprog" id="docsProg"><span class="pb" aria-hidden="true"><i></i></span><span id="docsCount"></span></div>
   </div>
   <p class="dinfo" id="docsInfo" role="status"></p>
@@ -787,6 +870,7 @@ window.ValkTheme = (function () {
   <div class="panel srcrow" id="srcRow" hidden>
     <p class="eyebrow lbl" data-i18n="srcFrom">Gelezen uit</p>
     <div class="fpath" id="srcPath"></div>
+    <button type="button" class="ghost refresh" data-refresh data-i18n-aria="refresh" aria-label="Vernieuwen" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg></button>
     <button type="button" class="ghost" id="srcSettings" data-i18n="srcChange">Wijzigen bij Instellingen</button>
   </div>
   <p class="empty" id="statsEmpty" hidden></p>
@@ -907,6 +991,20 @@ window.ValkTheme = (function () {
     <div class="frow wact" style="margin-top:4px"><button type="button" class="primary" id="saveGo" data-i18n="saveAsGo">Opslaan…</button></div>
   </div>
 </dialog>
+<dialog id="delDlg" aria-labelledby="delDlgTitle">
+  <div class="dlg-head"><strong id="delDlgTitle"></strong><button type="button" id="delDlgClose" data-i18n="close">Sluiten</button></div>
+  <div class="dlg-body stack" style="margin:0">
+    <p class="small" style="margin:0" data-i18n="delWhat">Dit wordt verwijderd:</p>
+    <ul class="delwhat" id="delList"></ul>
+    <fieldset class="saveopt" id="delOpts">
+      <legend data-i18n="delInFolder">In de map</legend>
+      <label id="delFilesWrap"><input type="checkbox" id="delFiles"><span data-i18n="delFiles">Ook de bestanden in de map verwijderen (PDF, Word)</span></label>
+      <label id="delPoWrap"><input type="checkbox" id="delPo"><span data-i18n="delPo">Ook de inkooporder (PO) verwijderen</span></label>
+      <small id="delBin" data-i18n="delBin">Bestanden gaan naar de Prullenbak, daar kun je ze terugzetten.</small>
+    </fieldset>
+    <div class="frow wact" style="margin-top:4px"><button type="button" class="danger" id="delGo" data-i18n="delGo">Verwijderen</button><button type="button" class="ghost" id="delCancel" data-i18n="delCancel">Annuleren</button></div>
+  </div>
+</dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
@@ -998,10 +1096,16 @@ window.ValkTheme = (function () {
       saveAll: "Alles opslaan in de map", doneSaved: "✓ Opgeslagen als {0}",
       savedIn: "{0} opgeslagen in de map.", savedMany: "{0} facturen opgeslagen in de map.",
       numInFolder: "Factuurnummer {0} staat al in de map ({1}).", delToastKept: "{0} is uit de lijst gehaald. Het bestand staat nog in de map, dus het nummer blijft bezet.",
+      refresh: "Vernieuwen", delSetTitle: "Factuur {0} verwijderen?", delWhat: "Dit wordt verwijderd:", delInFolder: "In de map", delFiles: "Ook de bestanden in de map verwijderen (PDF, Word)", delPo: "Ook de inkooporder (PO) verwijderen",
+      delBin: "Bestanden gaan naar de Prullenbak; daar kun je ze terugzetten.", delGo: "Verwijderen", delCancel: "Annuleren", delItemRec: "De factuur in de app (gegevens en nummer)", delItemPo: "Inkooporder: {0}", delSetAria: "Factuur {0} verwijderen",
+      delSomeFail: "Niet alles kon worden verwijderd. Kijk in de map.", delToastFiles: "De bestanden van {0} staan nu in de Prullenbak.", delToastAll: "{0} is verwijderd; de bestanden staan in de Prullenbak. Het nummer is weer vrij.",
+      staleOne: "{0} factuur staat nog in de app, maar de bestanden zijn uit de map verwijderd: {1}", staleMany: "{0} facturen staan nog in de app, maar hun bestanden zijn uit de map verwijderd: {1}",
+      staleDel: "Uit de app verwijderen", staleKeep: "Behouden", staleRemoved: "{0} uit de app verwijderd. Hun inkooporders zijn weer nieuw.",
       tabInvoices: "Facturen", tabStats: "Statistieken", tabsLabel: "Onderdelen",
       tabDocs: "Documenten", docsTagline: "Al je facturen met hun PDF, Word-bestand en inkooporder bij elkaar.", docsNoFolder: "Nog geen map met facturen", docsSearch: "Zoeken op nummer, klant of inkooporder", docsFilter: "Tonen",
       docsAll: "Alle", docsNotSent: "Niet verzonden", docsSent: "Verzonden", docsSortBy: "Sorteren op", docsByNr: "Nummer", docsByDate: "Datum", docsByClient: "Klant", docsByPo: "Inkooporder", docsByAmount: "Bedrag",
       docsAsc: "Oplopend", docsDesc: "Aflopend", docsColDocs: "Documenten", docsCount: "{0} van {1} verzonden", docsSentAria: "Factuur {0} is verzonden", docsOnlyApp: "alleen in de app",
+      docsNoInv: "Zonder factuur", docsNoInvBadge: "Geen factuur", docsMakeInv: "Factuur maken", docsMakeInvAria: "Factuur maken van inkooporder {0}", docsPoSkipped: "overgeslagen", docsPoViewAria: "Inkooporder {0} bekijken", docsPoOnlyTitle: "Voor deze inkooporder is nog geen factuur gemaakt",
       docsGen: "Niet als bestand opgeslagen: het voorbeeld wordt opnieuw gemaakt", docsMissing: "Geen {0}", docsViewAria: "{0} van factuur {1} bekijken", docsRevealAria: "Factuur {0} tonen in de map",
       docsEmptyT: "Nog geen facturen", docsEmptyP: "Facturen die je maakt of in je map zet, verschijnen hier met hun PDF, Word-bestand en inkooporder.", docsNoMatch: "Niets gevonden", docsNoMatchP: "Pas je zoekopdracht of filter aan.",
       docsWithPo: "met inkooporder: {0}", wordOpen: "Openen in Word", wordPrevTitle: "Factuur {0} (Word)",
@@ -1148,10 +1252,16 @@ window.ValkTheme = (function () {
       saveAll: "Save all to the folder", doneSaved: "✓ Saved as {0}",
       savedIn: "{0} saved to the folder.", savedMany: "{0} invoices saved to the folder.",
       numInFolder: "Invoice number {0} is already in the folder ({1}).", delToastKept: "{0} was removed from the list. The file is still in the folder, so the number stays taken.",
+      refresh: "Refresh", delSetTitle: "Delete invoice {0}?", delWhat: "This will be deleted:", delInFolder: "In the folder", delFiles: "Also delete the files in the folder (PDF, Word)", delPo: "Also delete the purchase order (PO)",
+      delBin: "Files go to the Recycle Bin, where you can restore them.", delGo: "Delete", delCancel: "Cancel", delItemRec: "The invoice in the app (details and number)", delItemPo: "Purchase order: {0}", delSetAria: "Delete invoice {0}",
+      delSomeFail: "Not everything could be deleted. Check the folder.", delToastFiles: "The files of {0} are now in the Recycle Bin.", delToastAll: "{0} was deleted; the files are in the Recycle Bin. The number is free again.",
+      staleOne: "{0} invoice is still in the app, but its files were deleted from the folder: {1}", staleMany: "{0} invoices are still in the app, but their files were deleted from the folder: {1}",
+      staleDel: "Remove from the app", staleKeep: "Keep", staleRemoved: "{0} removed from the app. Their purchase orders are new again.",
       tabInvoices: "Invoices", tabStats: "Statistics", tabsLabel: "Sections",
       tabDocs: "Documents", docsTagline: "All your invoices with their PDF, Word file and purchase order together.", docsNoFolder: "No invoice folder yet", docsSearch: "Search by number, client or purchase order", docsFilter: "Show",
       docsAll: "All", docsNotSent: "Not sent", docsSent: "Sent", docsSortBy: "Sort by", docsByNr: "Number", docsByDate: "Date", docsByClient: "Client", docsByPo: "Purchase order", docsByAmount: "Amount",
       docsAsc: "Ascending", docsDesc: "Descending", docsColDocs: "Documents", docsCount: "{0} of {1} sent", docsSentAria: "Invoice {0} has been sent", docsOnlyApp: "only in the app",
+      docsNoInv: "Without invoice", docsNoInvBadge: "No invoice", docsMakeInv: "Make invoice", docsMakeInvAria: "Make an invoice from purchase order {0}", docsPoSkipped: "skipped", docsPoViewAria: "View purchase order {0}", docsPoOnlyTitle: "No invoice has been made for this purchase order yet",
       docsGen: "Not saved as a file: the preview is drawn again", docsMissing: "No {0}", docsViewAria: "View the {0} of invoice {1}", docsRevealAria: "Show invoice {0} in the folder",
       docsEmptyT: "No invoices yet", docsEmptyP: "Invoices you make or put in your folder show up here with their PDF, Word file and purchase order.", docsNoMatch: "Nothing found", docsNoMatchP: "Change your search or filter.",
       docsWithPo: "with purchase order: {0}", wordOpen: "Open in Word", wordPrevTitle: "Invoice {0} (Word)",
@@ -1298,10 +1408,16 @@ window.ValkTheme = (function () {
       saveAll: "Zapisz wszystko w folderze", doneSaved: "✓ Zapisano jako {0}",
       savedIn: "Zapisano {0} w folderze.", savedMany: "Zapisano faktur w folderze: {0}.",
       numInFolder: "Numer faktury {0} jest już w folderze ({1}).", delToastKept: "Usunięto {0} z listy. Plik nadal jest w folderze, więc numer pozostaje zajęty.",
+      refresh: "Odśwież", delSetTitle: "Usunąć fakturę {0}?", delWhat: "Zostanie usunięte:", delInFolder: "W folderze", delFiles: "Usuń też pliki w folderze (PDF, Word)", delPo: "Usuń też zamówienie (PO)",
+      delBin: "Pliki trafią do Kosza, skąd można je przywrócić.", delGo: "Usuń", delCancel: "Anuluj", delItemRec: "Faktura w aplikacji (dane i numer)", delItemPo: "Zamówienie: {0}", delSetAria: "Usuń fakturę {0}",
+      delSomeFail: "Nie wszystko udało się usunąć. Sprawdź folder.", delToastFiles: "Pliki faktury {0} są teraz w Koszu.", delToastAll: "Usunięto {0}; pliki są w Koszu. Numer jest znów wolny.",
+      staleOne: "{0} faktura jest jeszcze w aplikacji, ale jej pliki usunięto z folderu: {1}", staleMany: "Faktury w aplikacji, których pliki usunięto z folderu ({0}): {1}",
+      staleDel: "Usuń z aplikacji", staleKeep: "Zachowaj", staleRemoved: "Usunięto z aplikacji: {0}. Ich zamówienia są znów nowe.",
       tabInvoices: "Faktury", tabStats: "Statystyki", tabsLabel: "Sekcje",
       tabDocs: "Dokumenty", docsTagline: "Wszystkie faktury razem z PDF, plikiem Word i zamówieniem.", docsNoFolder: "Brak folderu z fakturami", docsSearch: "Szukaj po numerze, kliencie lub zamówieniu", docsFilter: "Pokaż",
       docsAll: "Wszystkie", docsNotSent: "Niewysłane", docsSent: "Wysłane", docsSortBy: "Sortuj według", docsByNr: "Numer", docsByDate: "Data", docsByClient: "Klient", docsByPo: "Zamówienie", docsByAmount: "Kwota",
       docsAsc: "Rosnąco", docsDesc: "Malejąco", docsColDocs: "Dokumenty", docsCount: "Wysłane: {0} z {1}", docsSentAria: "Faktura {0} została wysłana", docsOnlyApp: "tylko w aplikacji",
+      docsNoInv: "Bez faktury", docsNoInvBadge: "Brak faktury", docsMakeInv: "Utwórz fakturę", docsMakeInvAria: "Utwórz fakturę z zamówienia zakupu {0}", docsPoSkipped: "pominięte", docsPoViewAria: "Podgląd zamówienia zakupu {0}", docsPoOnlyTitle: "Dla tego zamówienia zakupu nie utworzono jeszcze faktury",
       docsGen: "Nie zapisano jako plik: podgląd jest tworzony ponownie", docsMissing: "Brak: {0}", docsViewAria: "Podgląd: {0} faktury {1}", docsRevealAria: "Pokaż fakturę {0} w folderze",
       docsEmptyT: "Brak faktur", docsEmptyP: "Faktury, które tworzysz lub umieszczasz w folderze, pojawią się tutaj razem z PDF, plikiem Word i zamówieniem.", docsNoMatch: "Nic nie znaleziono", docsNoMatchP: "Zmień wyszukiwanie lub filtr.",
       docsWithPo: "z zamówieniem: {0}", wordOpen: "Otwórz w Wordzie", wordPrevTitle: "Faktura {0} (Word)",
@@ -1539,6 +1655,10 @@ window.ValkTheme = (function () {
     const doc = { factuurnr: data.factuurnr, nummer, jaar, po: c.po, datum: data.datum, betaaltermijn: data.betaaltermijn,
       client: data.client, lines: data.lines, btw: data.btw, totaal: t.total, dagen: c.dates || [], createdAt: new Date().toISOString(),
       template: data.template, sender: Object.fromEntries(TP.FIELDS.map((k) => [k, (data.sender && data.sender[k]) || ""])) };
+    // the files written into the invoice folder for this number (PDF and/or Word), so the app can tell later when they were deleted there
+    const prev = state.invoices.get(doc.factuurnr), files = new Set((prev && prev.savedFiles) || []);
+    if (folderSet() && state.savedTo) files.add(state.savedTo);
+    if (files.size) doc.savedFiles = [...files];
     state.invoices.set(doc.factuurnr, doc);
     if (state.db) { try { await state.db.doc("invoices/" + doc.factuurnr).set(doc); } catch (e) { toast(tr("notLogged")); } }
   }
@@ -1893,7 +2013,6 @@ window.ValkTheme = (function () {
     });
     $("#folderClear").addEventListener("click", async () => { try { await desk.clearFolder(); await refreshFolder(); toast(tr("folderCleared")); } catch (e) {} });
     $("#folderOpen").addEventListener("click", () => { desk.openFolder().catch(() => {}); });
-    window.addEventListener("focus", () => refreshFolder());
     refreshFolder();
   }
 
@@ -2146,6 +2265,7 @@ window.ValkTheme = (function () {
   const NP_ROWS = 6;
   function renderNewPos() {
     renderDocs(); // the Documents tab follows the same updates (folders read, invoices changed, purchase orders read)
+    renderStale();
     const panel = $("#newPo"); panel.hidden = !desk || !state.poChecked; if (panel.hidden) return;
     const note = $("#npNote"), list = $("#npList"), on = (id, v) => { $(id).hidden = !v; };
     ["#npAll", "#npMore", "#npSkipAll", "#npPick", "#npRestore"].forEach((i) => on(i, false));
@@ -2386,7 +2506,7 @@ window.ValkTheme = (function () {
   }
 
   // ------------------------------------------------------------ documents tab: one row per invoice number, with its PDF and Word file in the invoice folder and its purchase order
-  const DOC_SORTS = ["nr", "date", "client", "po", "amount"], DOC_FILTERS = ["all", "open", "sent"];
+  const DOC_SORTS = ["nr", "date", "client", "po", "amount"], DOC_FILTERS = ["all", "open", "sent", "noinv"];
   state.sent = new Set(); state.docs = { sort: "nr", dir: "desc", filter: "all", q: "" };
   const saveSent = () => { if (state.db) { try { state.db.doc("settings/sent").set({ list: [...state.sent] }); } catch (e) {} } };
   const saveDocsPrefs = () => { if (state.db) { try { state.db.doc("settings/docsprefs").set({ sort: state.docs.sort, dir: state.docs.dir, filter: state.docs.filter }); } catch (e) {} } };
@@ -2407,7 +2527,7 @@ window.ValkTheme = (function () {
     for (const f of later) { const s = byBase.get(f.rel.replace(/\.(pdf|docx)$/i, "")); if (s && !s[f.ext]) s[f.ext] = f; } // a Word file next to its PDF, same name without a number
     for (const fi of files.length ? state.folderInvoices : []) get(fi.factuurnr).fi = fi;
     for (const i of state.invoices.values()) if (/^\d+-\d{4}$/.test(i.factuurnr || "")) get(i.factuurnr).inv = i;
-    return [...sets.values()].map((s) => {
+    const out = [...sets.values()].map((s) => {
       const i = s.inv, fi = s.fi, poText = (i && i.po) || (fi && fi.po) || "", names = [s.pdf, s.docx].filter(Boolean).map((f) => f.name).join(" ");
       const poRec = (desk && (state.poRecs.find((x) => poMentioned(poText, x.r.po)) || (names && state.poRecs.find((x) => poMentioned(names, x.r.po))))) || null;
       let total = null;
@@ -2415,31 +2535,46 @@ window.ValkTheme = (function () {
       const datum = (i && i.datum) || (fi && fi.datum) || "", client = ((i && i.client && i.client.name) || (fi && fi.client && fi.client.name) || "").trim();
       return { ...s, po: poRec ? poRec.r.po : poText, poRec, total, datum, dkey: nlDateKey(datum), client, sent: state.sent.has(s.nr), gen: !s.pdf && !!(i && i.lines && i.lines.length) };
     });
+    return out.concat(poOnlySets(out));
+  }
+  /** purchase orders in the PO folder that no invoice names yet (same matching as the new-orders list): one row each, once everything is read, so nothing is guessed */
+  function poOnlySets(invSets) {
+    if (!desk || !state.poFolder || !state.poFolder.exists || state.poScanSig === "" || state.poScan || !state.invoicesLoaded || !state.folderScanned) return [];
+    const used = new Set(invSets.filter((s) => s.poRec).map((s) => s.poRec.r.po)), cl = ((state.settings && state.settings.client && state.settings.client.name) || "").trim();
+    return state.poRecs.filter((x) => !used.has(x.r.po) && !poInvoiced(x.r.po)).map((x) => {
+      const r = x.r, m = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(r.orderDate || ""), datum = m ? `${m[1].padStart(2, "0")}/${m[2].padStart(2, "0")}/${m[3]}` : "";
+      const sum = r.items.reduce((a, i) => a + (isFinite(i.total) ? i.total : 0), 0), total = r.poTotal != null && isFinite(r.poTotal) ? r.poTotal : r.items.length ? sum : null;
+      return { nr: "", n: 0, y: 0, poOnly: true, skipped: state.poSkip.has(r.po), pdf: null, docx: null, inv: null, fi: null, po: r.po, poRec: x, total, datum, dkey: poSortKey(r), client: cl || r.orderedBy || "", sent: false, gen: false };
+    });
   }
   function sortDocs(list) {
-    const { sort, dir } = state.docs, k = dir === "asc" ? 1 : -1, byNr = (a, b) => a.y - b.y || a.n - b.n;
+    const { sort, dir } = state.docs, k = dir === "asc" ? 1 : -1, byNr = (a, b) => a.y - b.y || a.n - b.n || a.dkey - b.dkey;
+    if (sort === "nr") { const top = list.filter((s) => s.poOnly).sort((a, b) => (a.skipped - b.skipped) || (b.dkey - a.dkey) || natPo(b.po, a.po)); // orders without an invoice first (newest first, skipped ones after), so they are noticed
+      return top.concat(list.filter((s) => !s.poOnly).sort((a, b) => k * byNr(a, b))); }
     const cmp = { nr: byNr, date: (a, b) => a.dkey - b.dkey, client: (a, b) => a.client.localeCompare(b.client, state.lang, { sensitivity: "base", numeric: true }), po: (a, b) => natPo(a.po, b.po), amount: (a, b) => a.total - b.total }[sort] || byNr;
     const empty = (x) => (sort === "client" ? !x.client : sort === "po" ? !x.po : sort === "date" ? !x.dkey : sort === "amount" ? x.total == null : false);
     return list.sort((a, b) => (empty(a) - empty(b)) || k * cmp(a, b) || byNr(b, a)); // empty values last, then newest number first
   }
   const ICON_FOLDER = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
-  const ICON_DIR = { asc: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></svg>',
+  const ICON_TRASH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
+  const ICON_DIR = { asc:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></svg>',
     desc: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m6 13 6 6 6-6"/></svg>' };
   function renderDocs() {
     if (state.tab !== "docs") return;
     const D = state.docs, all = docSets(), f = desk ? state.folder : null;
     const q = D.q.trim().toLowerCase(), match = (s) => !q || [s.nr, s.client, s.po].some((v) => String(v || "").toLowerCase().includes(q));
-    const found = all.filter(match), shown = sortDocs(found.filter((s) => D.filter === "all" || (D.filter === "sent") === s.sent)), nSent = all.filter((s) => s.sent).length;
+    const keepF = (s) => D.filter === "all" || (D.filter === "noinv" ? !!s.poOnly : !s.poOnly && (D.filter === "sent") === s.sent); // sent / not sent: invoices only
+    const found = all.filter(match), shown = sortDocs(found.filter(keepF)), invs = all.filter((s) => !s.poOnly), nSent = invs.filter((s) => s.sent).length;
     $("#docsNoFolder").hidden = !(desk && !f);
     $("#docsBar").hidden = !all.length;
-    const counts = { all: found.length, open: found.filter((s) => !s.sent).length, sent: found.filter((s) => s.sent).length };
+    const counts = { all: found.length, open: found.filter((s) => !s.poOnly && !s.sent).length, sent: found.filter((s) => !s.poOnly && s.sent).length, noinv: found.filter((s) => s.poOnly).length };
     $("#docsFilter").querySelectorAll("button[data-f]").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.f === D.filter)); b.querySelector(".n").textContent = ` ${counts[b.dataset.f]}`; });
     $("#docsSort").value = D.sort;
     const dirB = $("#docsDir"), dk = D.dir === "asc" ? "docsAsc" : "docsDesc"; dirB.innerHTML = ICON_DIR[D.dir]; dirB.setAttribute("aria-label", tr(dk)); dirB.title = tr(dk);
     const sIn = $("#docsSearch"); sIn.placeholder = tr("docsSearch"); if (sIn.value !== D.q) sIn.value = D.q;
-    $("#docsCount").textContent = tr("docsCount", nSent, all.length); $("#docsProg .pb i").style.width = (all.length ? Math.round(nSent / all.length * 100) : 0) + "%";
+    $("#docsCount").textContent = tr("docsCount", nSent, invs.length); $("#docsProg .pb i").style.width = (invs.length ? Math.round(nSent / invs.length * 100) : 0) + "%";
     // one line about the folder and what is still being read
-    const year = new Date().getFullYear(), nums = inFolder(year), withFile = all.filter((s) => s.pdf || s.docx).length, withPo = all.filter((s) => s.poRec).length;
+    const year = new Date().getFullYear(), nums = inFolder(year), withFile = all.filter((s) => s.pdf || s.docx).length, withPo = invs.filter((s) => s.poRec).length;
     const info = f && !f.exists ? [tr("folderMissing")] : [f && (withFile || state.scan ? tr("folderCount", withFile) : tr("folderEmpty")), f && nums.length && tr("folderHighest", `${Math.max(...nums)}-${year}`), withPo && tr("docsWithPo", withPo),
       state.scan && tr("scanning", state.scan.done, state.scan.total), state.poScan && tr("npReading", state.poScan.done, state.poScan.total)].filter(Boolean);
     $("#docsInfo").innerHTML = info.map((x) => `<span class="nw">${esc(x)}</span>`).join(" · "); $("#docsInfo").hidden = !info.length;
@@ -2448,9 +2583,24 @@ window.ValkTheme = (function () {
     $("#docsHead").innerHTML = cols.map(([k, key, cls]) => `<button type="button" data-sort="${k}"${cls ? ` class="${cls}"` : ""}${D.sort === k ? ` aria-sort="${D.dir === "asc" ? "ascending" : "descending"}"` : ""}>${esc(tr(key))}${D.sort === k ? `<i aria-hidden="true">${D.dir === "asc" ? "▲" : "▼"}</i>` : ""}</button>`).join("")
       + `<span>${esc(tr("docsColDocs"))}</span><span>${esc(tr("docsSent"))}</span><span></span>`;
     // keep the focus on the same control when the list is drawn again
-    const a = document.activeElement, keep = a && $("#docsList").contains(a) ? (a.dataset.sent ? `[data-sent="${a.dataset.sent}"]` : a.dataset.doc ? `[data-doc="${a.dataset.doc}"][data-nr="${a.dataset.nr}"]` : "") : "";
+    const a = document.activeElement, keep = a && $("#docsList").contains(a) ? (a.dataset.sent ? `[data-sent="${a.dataset.sent}"]` : a.dataset.mkinv ? `[data-mkinv="${a.dataset.mkinv}"]` : a.dataset.doc && a.dataset.po ? `[data-doc="po"][data-po="${a.dataset.po}"]` : a.dataset.doc ? `[data-doc="${a.dataset.doc}"][data-nr="${a.dataset.nr}"]` : "") : "";
     const showApp = !!(f && f.exists);
+    /** a purchase order without an invoice: no number, PDF and Word missing, its PO to look at, and a button that puts it on the Invoices tab */
+    const poRow = (s) => {
+      const off = (kind, label) => `<button type="button" class="dchip k-${kind}" disabled title="${esc(tr("docsMissing", label))}">${label}</button>`;
+      return `<li class="drow po-only${s.skipped ? " skipped" : ""}" data-nr="" data-po="${esc(s.po)}" title="${esc(tr("docsPoOnlyTitle"))}">
+        <span class="c-nr"><span class="chip warn noinv">${esc(tr("docsNoInvBadge"))}</span>${s.skipped ? `<small>${esc(tr("docsPoSkipped"))}</small>` : ""}</span>
+        <span class="c-cl${s.client ? "" : " none"}" title="${esc(s.client)}">${esc(s.client || tr("noClient"))}</span>
+        <span class="c-dt">${esc(s.datum || "–")}</span>
+        <span class="c-po">${esc(s.po)}</span>
+        <span class="c-amt">${s.total == null ? "–" : esc(core.eur(s.total))}</span>
+        <span class="c-docs">${off("pdf", "PDF")}${off("word", "Word")}<button type="button" class="dchip k-po" data-doc="po" data-po="${esc(s.po)}" aria-label="${esc(tr("docsPoViewAria", s.po))}" title="${esc(s.poRec.f.name)}">PO</button></span>
+        <span class="c-sent"><button type="button" class="primary mkinv" data-mkinv="${esc(s.po)}" aria-label="${esc(tr("docsMakeInvAria", s.po))}"${state.npBusy ? " disabled" : ""}>${esc(tr("docsMakeInv"))}</button></span>
+        <span class="c-act"></span>
+      </li>`;
+    };
     $("#docsList").innerHTML = shown.map((s) => {
+      if (s.poOnly) return poRow(s);
       const chip = (kind, label, on, extra) => on ? `<button type="button" class="dchip k-${kind}${extra || ""}" data-doc="${kind}" data-nr="${esc(s.nr)}" aria-label="${esc(tr("docsViewAria", label, s.nr))}" title="${esc(on)}">${label}</button>`
         : `<button type="button" class="dchip k-${kind}" disabled title="${esc(tr("docsMissing", label))}">${label}</button>`;
       const pdfOn = s.pdf ? s.pdf.name : s.gen ? tr("docsGen") : "", rel = (s.pdf || s.docx || {}).rel;
@@ -2462,7 +2612,7 @@ window.ValkTheme = (function () {
         <span class="c-amt">${s.total == null ? "–" : esc(core.eur(s.total))}</span>
         <span class="c-docs">${chip("pdf", "PDF", pdfOn, s.pdf ? "" : " gen")}${chip("word", "Word", s.docx ? s.docx.name : "")}${chip("po", "PO", s.poRec ? s.poRec.f.name : "")}</span>
         <span class="c-sent"><label class="sentbox"><input type="checkbox" data-sent="${esc(s.nr)}"${s.sent ? " checked" : ""} aria-label="${esc(tr("docsSentAria", s.nr))}"><span aria-hidden="true">${esc(tr("docsSent"))}</span></label></span>
-        <span class="c-act">${rel ? `<button type="button" data-reveal="${esc(rel)}" aria-label="${esc(tr("docsRevealAria", s.nr))}" title="${esc(tr("dupShow"))}">${ICON_FOLDER}</button>` : ""}</span>
+        <span class="c-act">${rel ? `<button type="button" data-reveal="${esc(rel)}" aria-label="${esc(tr("docsRevealAria", s.nr))}" title="${esc(tr("dupShow"))}">${ICON_FOLDER}</button>` : ""}<button type="button" class="del" data-deldoc="${esc(s.nr)}" aria-label="${esc(tr("delSetAria", s.nr))}" title="${esc(tr("delGo"))}">${ICON_TRASH}</button></span>
       </li>`;
     }).join("");
     if (keep) { const el = $("#docsList").querySelector(keep); if (el) el.focus(); }
@@ -2470,10 +2620,14 @@ window.ValkTheme = (function () {
     const em = $("#docsEmpty"); em.hidden = !!shown.length || (!all.length && desk && !f); // no folder: the folder card says it already
     $("#docsEmptyT").textContent = tr(all.length ? "docsNoMatch" : "docsEmptyT"); $("#docsEmptyP").textContent = tr(all.length ? "docsNoMatchP" : "docsEmptyP");
   }
-  const docOf = (nr) => docSets().find((s) => s.nr === nr);
+  const docOf = (nr) => (nr ? docSets().find((s) => s.nr === nr && !s.poOnly) : undefined);
   $("#docsList").addEventListener("click", async (e) => {
     const c = e.target.closest("button[data-doc]"), r = e.target.closest("button[data-reveal]");
     if (r && desk) { try { const x = await desk.revealFile(r.dataset.reveal); if (x && x.error) toast(tr("dupShowFail")); } catch (err) { toast(tr("dupShowFail")); } return; }
+    const dd = e.target.closest("button[data-deldoc]"); if (dd) { deleteSet(dd.dataset.deldoc, dd); return; }
+    const mk =e.target.closest("button[data-mkinv]");
+    if (mk && desk) { setTab("inv"); addPos([mk.dataset.mkinv]); return; } // a purchase order without an invoice: onto the Invoices tab, like "Toevoegen" under new purchase orders
+    if (c && c.dataset.po) { const x = desk && state.poRecs.find((y) => y.r.po === c.dataset.po); if (x) previewPo(x.f.rel, x.r.po); return; }
     const s = c && docOf(c.dataset.nr); if (!s) return;
     if (c.dataset.doc === "pdf") { if (s.pdf && desk) previewDoc({ title: tr("invPrevTitle", s.nr), load: () => desk.readFile(s.pdf.rel), open: { rel: s.pdf.rel } }); else previewInvoice({ key: s.nr, i: {} }); }
     else if (c.dataset.doc === "word" && s.docx && desk) previewDoc({ title: tr("wordPrevTitle", s.nr), load: () => desk.readFile(s.docx.rel), open: { rel: s.docx.rel }, word: true });
@@ -2492,6 +2646,105 @@ window.ValkTheme = (function () {
   $("#docsFilter").addEventListener("click", (e) => { const b = e.target.closest("button[data-f]"); if (b) { state.docs.filter = b.dataset.f; saveDocsPrefs(); renderDocs(); } });
   $("#docsSearch").addEventListener("input", (e) => { state.docs.q = e.target.value; renderDocs(); });
   $("#docsGoSet").addEventListener("click", () => setTab("settings"));
+
+  // ------------------------------------------------------------ deleting an invoice: the app's record and, if wanted, its files in the folder (to the Recycle Bin).
+  // One flow for the × in "Gemaakte facturen" and the bin on a Documents row. The files are the ones docSets() matched to the number.
+  const refreshAll = () => (desk ? Promise.all([refreshFolder(), refreshPoFolder()]) : Promise.resolve());
+  let delAsk = null; // resolves the open delete dialog
+  function askDelete(s, rec) {
+    const files = desk ? [s.pdf, s.docx].filter(Boolean) : [], po = desk && s.poRec ? s.poRec.f : null, fb = $("#delFiles"), pb = $("#delPo");
+    $("#delDlgTitle").textContent = tr("delSetTitle", s.nr);
+    fb.checked = files.length > 0; pb.checked = false; // the PO is the client's document: only on request
+    $("#delFilesWrap").hidden = !files.length; $("#delPoWrap").hidden = !po; $("#delOpts").hidden = !files.length && !po;
+    const draw = () => {
+      const items = [];
+      if (rec) items.push([tr("delItemRec"), false]);
+      files.forEach((f) => items.push([f.name, !fb.checked]));
+      if (po) items.push([tr("delItemPo", po.name), !pb.checked]);
+      $("#delList").innerHTML = items.map(([t, keep]) => `<li${keep ? ' class="keep"' : ""}>${esc(t)}</li>`).join("");
+    };
+    fb.onchange = pb.onchange = draw; draw();
+    const dlg = $("#delDlg"); if (!dlg.open) dlg.showModal(); $("#delCancel").focus();
+    return new Promise((res) => { delAsk = res; });
+  }
+  const delAnswer = (v) => { const r = delAsk; delAsk = null; if ($("#delDlg").open) $("#delDlg").close(); if (r) r(v); };
+  $("#delGo").addEventListener("click", () => delAnswer({ files: $("#delFiles").checked && !$("#delFilesWrap").hidden, po: $("#delPo").checked && !$("#delPoWrap").hidden }));
+  $("#delCancel").addEventListener("click", () => delAnswer(null));
+  $("#delDlgClose").addEventListener("click", () => delAnswer(null));
+  $("#delDlg").addEventListener("close", () => delAnswer(null));
+  async function deleteSet(nr, btn) {
+    if (state.delBusy || !nr) return;
+    state.delBusy = true;
+    try {
+      await refreshAll(); // what is in the folders right now
+      const rec = state.invoices.get(nr) || null, s = docOf(nr) || { nr, pdf: null, docx: null, poRec: null };
+      if (!rec && !s.pdf && !s.docx) { render(); return; }
+      const ans = await askDelete(s, rec); if (!ans) return;
+      let bad = 0, trashed = 0;
+      const trash = async (rel, kind) => { try { const r = await desk.trashFile(rel, kind); if (r && r.ok) trashed++; else bad++; } catch (e) { bad++; } };
+      if (desk && ans.files) for (const f of [s.pdf, s.docx].filter(Boolean)) await trash(f.rel, "invoices");
+      if (desk && ans.po && s.poRec) await trash(s.poRec.f.rel, "pos");
+      if (rec) { state.invoices.delete(nr); if (state.db) { try { await state.db.doc("invoices/" + nr).delete(); } catch (e) { bad++; } } }
+      if (state.sent.delete(nr)) saveSent();
+      await refreshAll();
+      renumber(); render();
+      const kept = rec && (state.fileNums.get(rec.jaar) || new Map()).has(rec.nummer); // a file with the number is still in the folder: the number stays taken
+      toast(bad ? tr("delSomeFail") : !rec ? tr("delToastFiles", nr) : trashed && !kept ? tr("delToastAll", nr) : tr(kept ? "delToastKept" : "delToast", nr));
+    } finally { state.delBusy = false; if (btn && btn.isConnected) btn.focus(); }
+  }
+
+  // ---- refresh: the small circular-arrow buttons, and coming back to the app (focus / visible again, debounced) re-read both folders
+  document.querySelectorAll("button[data-refresh]").forEach((b) => { b.hidden = !desk; });
+  document.addEventListener("click", async (e) => {
+    const b = e.target.closest("button[data-refresh]"); if (!b || !desk || b.classList.contains("spin")) return;
+    b.classList.add("spin"); b.setAttribute("aria-busy", "true");
+    try { await Promise.all([refreshAll(), new Promise((r) => setTimeout(r, 450))]); } catch (err) {}
+    b.classList.remove("spin"); b.removeAttribute("aria-busy");
+  });
+  if (desk) {
+    let backT = 0;
+    const onBack = () => { if (document.visibilityState === "hidden") return; clearTimeout(backT); backT = setTimeout(() => { refreshAll().catch(() => {}); }, 500); };
+    window.addEventListener("focus", onBack); document.addEventListener("visibilitychange", onBack);
+  }
+
+  // ---- invoices still in the app whose files were deleted from the folder outside it (banner on Invoices and Documents).
+  // A record is STALE when: the invoice folder is set, exists and has been read completely; no file in it carries the record's number
+  // (state.fileNums: from file names and file contents); and either the record says it was saved into the folder (savedFiles, since 1.1.1),
+  // or, for older records without savedFiles, its number is not below the lowest number of its year in the folder (it lies in the range
+  // the folder holds). Numbers the person chose to keep (settings/keptstale) are not shown again. Nothing is removed without a click.
+  function staleRecords() {
+    if (!desk || !state.folder || !state.folder.exists || !state.folderScanned || state.scan || !state.invoicesLoaded) return [];
+    const kept = state.keptStale || new Set();
+    return [...state.invoices.values()].filter((i) => {
+      const m = /^(\d+)-(\d{4})$/.exec(i.factuurnr || ""); if (!m || kept.has(i.factuurnr)) return false;
+      const nums = state.fileNums.get(+m[2]) || new Map(); if (nums.has(+m[1])) return false;
+      if (Array.isArray(i.savedFiles) && i.savedFiles.length) return true;
+      return nums.size > 0 && +m[1] >= Math.min(...nums.keys());
+    }).sort((a, b) => a.jaar - b.jaar || a.nummer - b.nummer);
+  }
+  function renderStale() {
+    const nrs = staleRecords().map((i) => i.factuurnr);
+    const text = nrs.length ? tr(nrs.length === 1 ? "staleOne" : "staleMany", nrs.length, nrs.slice(0, 12).join(", ") + (nrs.length > 12 ? ", …" : "")) : "";
+    document.querySelectorAll(".stalebar").forEach((b) => { b.hidden = !nrs.length; b.querySelector("[data-stale-text]").textContent = text; });
+    state.staleNrs = nrs;
+    document.querySelectorAll("button[data-refresh]").forEach((b) => { b.title = tr("refresh"); });
+  }
+  document.addEventListener("click", async (e) => {
+    const b = e.target.closest(".stalebar button[data-stale]"); if (!b || state.delBusy) return;
+    const nrs = (state.staleNrs || []).slice(); if (!nrs.length) return;
+    if (b.dataset.stale === "keep") {
+      state.keptStale = new Set([...(state.keptStale || []), ...nrs]);
+      if (state.db) { try { await state.db.doc("settings/keptstale").set({ list: [...state.keptStale] }); } catch (err) {} }
+      render(); return;
+    }
+    state.delBusy = true; let bad = 0;
+    try {
+      for (const n of nrs) { state.invoices.delete(n); state.sent.delete(n); if (state.db) { try { await state.db.doc("invoices/" + n).delete(); } catch (err) { bad++; } } }
+      saveSent();
+    } finally { state.delBusy = false; }
+    renumber(); render();
+    toast(bad ? tr("delSomeFail") : tr("staleRemoved", nrs.length));
+  });
   const FLAG_TEXT = { dup: "fDup", unit: "fUnit", hours: "fHours", nodate: "fNoDate" };
   /** the documents behind one row of the statistics table (a period, or all of it): one line per purchase order or invoice with what it adds to the period, and under it the work days it was counted for */
   function openPeriod(i) {
@@ -2805,7 +3058,6 @@ window.ValkTheme = (function () {
   $("#poDlgClose").addEventListener("click", () => $("#poDlg").close());
   $("#poDlg").addEventListener("close", () => { poPrevSeq++; $("#poPages").innerHTML = ""; }); // stops a page that is still being drawn
   if (desk) {
-    window.addEventListener("focus", () => refreshPoFolder());
     $("#npList").addEventListener("click", (e) => {
       const a = e.target.closest("[data-npadd]"), k = e.target.closest("[data-npskip]"), v = e.target.closest("[data-nppreview]");
       if (a) addPos([a.dataset.npadd]); else if (k) skipPos([k.dataset.npskip]);
@@ -3013,15 +3265,7 @@ window.ValkTheme = (function () {
   });
   $("#hist").addEventListener("click", async (e) => {
     const d = e.target.closest("button[data-del]");
-    if (d) {
-      if (d.dataset.sure !== "1") { d.dataset.sure = "1"; d.textContent = tr("sure"); setTimeout(() => { if (d.isConnected) { d.dataset.sure = ""; d.textContent = "×"; } }, 4000); return; }
-      const id = d.dataset.del;
-      const gone = state.invoices.get(id);
-      state.invoices.delete(id);
-      if (state.db) { try { await state.db.doc("invoices/" + id).delete(); } catch (err) { toast(tr("delFail")); } }
-      renumber(); render(); toast(tr(gone && (state.fileNums.get(gone.jaar) || new Map()).has(gone.nummer) ? "delToastKept" : "delToast", id));
-      return;
-    }
+    if (d) { deleteSet(d.dataset.del, d); return; }
     const b = e.target.closest("button[data-redo]"); if (!b) return;
     const i = state.invoices.get(b.dataset.redo); if (!i) return;
     busy(b, true);
@@ -3277,6 +3521,7 @@ window.ValkTheme = (function () {
       else if (!c.exists && themeState.id !== "auto") themeSaveDb(); } catch (e) {} }
     if (db) { try { const c = await db.doc("settings/poskip").get(); if (c.exists && Array.isArray(c.data().list)) state.poSkip = new Set(c.data().list); } catch (e) {} }
     if (db) { try { const c = await db.doc("settings/sent").get(); if (c.exists && Array.isArray(c.data().list)) state.sent = new Set(c.data().list.map(String)); } catch (e) {} }
+    if (db) { try { const c = await db.doc("settings/keptstale").get(); if (c.exists && Array.isArray(c.data().list)) state.keptStale = new Set(c.data().list.map(String)); } catch (e) {} }
     if (db) { try { const c = await db.doc("settings/docsprefs").get(); if (c.exists) applyDocsPrefs(c.data()); } catch (e) {} renderDocs(); }
     if (db) { try { const c = await db.doc("settings/news").get(); const s = c.exists && c.data().seen; // seen in either place counts
       if (s && newsSeen !== NEWS_LATEST) { newsSeen = s; try { localStorage.setItem("valkyrys-news-seen", s); } catch (e) {} }

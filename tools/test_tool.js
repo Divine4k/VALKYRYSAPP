@@ -115,7 +115,7 @@ const server = http.createServer((req, res) => {
   await page.waitForTimeout(300);
   ord.afterSettings = await page.evaluate(() => window.__t.state.cards.filter(x=>!x.done).map((x) => x.po + ":" + x.nummer).join(" "));
   console.log("order test:", JSON.stringify(ord));
-  await page.click('#hist button[data-del]'); await page.click('#hist button[data-del]'); await page.waitForTimeout(300);
+  await page.click('#hist button[data-del]'); await page.click('#delGo'); await page.waitForTimeout(300);
   console.log("history after delete:", await page.evaluate(() => [...document.querySelectorAll("#hist .t")].map((e) => e.textContent).join(", ")));
   // language switch
   for (const lg of ["en", "pl", "nl"]) {

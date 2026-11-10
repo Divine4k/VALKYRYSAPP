@@ -64,10 +64,10 @@ const pinRead = () => { try { return JSON.parse(fs.readFileSync(pinFile(), "utf8
 const pinWrite = (o) => { fs.mkdirSync(path.dirname(pinFile()), { recursive: true }); fs.writeFileSync(pinFile(), JSON.stringify(o)); };
 const PIN_RE = /^\d{4,8}$/;
 const pinHash = (pin, saltHex) => crypto.scryptSync(pin, Buffer.from(saltHex, "hex"), 32).toString("hex");
-const pinSet = (pin) => { const salt = crypto.randomBytes(16).toString("hex"); pinWrite({ v: 1, salt, hash: pinHash(pin, salt), fails: 0, until: 0 }); };
+const pinSet = (pin) => { const salt = crypto.randomBytes(16).toString("hex"); pinWrite({ v: 1, salt, hash: pinHash(pin, salt), len: pin.length, fails: 0, until: 0 }); }; // len: the lock screen logs in as soon as that many digits are typed
 let unlocked = !pinRead().hash; // locked from the start when a PIN exists
 const MAX_FREE_TRIES = 5; // after this many wrong PINs in a row the next try has to wait: 30 s, then doubling up to 15 min
-const pinState = () => { const p = pinRead(); return { has: !!p.hash, skipped: !!p.skipped, unlocked, wait: Math.max(0, (p.until || 0) - Date.now()) }; };
+const pinState = () => { const p = pinRead(); return { has: !!p.hash, skipped: !!p.skipped, unlocked, len: p.hash && p.len >= 4 && p.len <= 8 ? p.len : 0, wait: Math.max(0, (p.until || 0) - Date.now()) }; };
 /** checks a PIN and keeps count of wrong tries (stored, so closing the app does not reset it) */
 function pinCheck(pin) {
   const p = pinRead();
@@ -87,7 +87,11 @@ function registerPinIpc() {
   const guard = (fn) => async (e, ...a) => { if (!fromApp(e)) throw new Error("not allowed"); return fn(e, ...a); };
   ipcMain.on("pin:state-sync", (e) => { e.returnValue = fromApp(e) ? pinState() : { has: true, skipped: false, unlocked: false }; });
   ipcMain.handle("pin:state", guard(() => pinState()));
-  ipcMain.handle("pin:verify", guard((e, pin) => { const r = pinCheck(pin); if (r.ok) unlocked = true; return r; }));
+  ipcMain.handle("pin:verify", guard((e, pin) => {
+    const r = pinCheck(pin);
+    if (r.ok) { unlocked = true; const p = pinRead(); if (p.hash && !p.len) pinWrite(Object.assign(p, { len: String(pin).length })); } // pin.json from before len: learn it now
+    return r;
+  }));
   ipcMain.handle("pin:setup", guard((e, pin) => { // only when no PIN is set yet
     if (pinRead().hash) return { ok: false, error: "exists" };
     if (!PIN_RE.test(pin)) return { ok: false, error: "format" };
@@ -132,6 +136,12 @@ function registerFolderIpc(getWin) {
     const p = folderPath(kind); const full = p && inside(p, rel);
     if (!full || !SAVE_EXT.test(full) || !fs.existsSync(full)) return { error: "missing" };
     shell.showItemInFolder(full); return { ok: true };
+  }));
+  ipcMain.handle("folder:trash", guard(async (e, rel, kind) => { // moves one invoice/PO file to the Recycle Bin (never deleted for good)
+    const p = folderPath(kind); const full = p && isDir(p) && typeof rel === "string" && inside(p, rel);
+    if (!full || !SAVE_EXT.test(full)) return { error: "path" };
+    try { if (!fs.lstatSync(full).isFile()) return { error: "missing" }; } catch (err) { return { error: "missing" }; }
+    try { await shell.trashItem(full); return { ok: true }; } catch (err) { return { error: String((err && err.message) || "trash") }; }
   }));
   ipcMain.handle("app:welcomed", guard(() => readConfig().welcomed === true)); // the first-start question about the folders has been asked
   ipcMain.handle("app:welcomed-set", guard(() => { writeConfig(Object.assign(readConfig(), { welcomed: true })); return true; }));

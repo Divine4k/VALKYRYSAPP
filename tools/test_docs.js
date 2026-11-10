@@ -11,6 +11,7 @@ const PDFLib = require("/home/claude/.npm-global/lib/node_modules/pdf-lib"), doc
 const HOME = "/tmp/el-appdata-docs", INV = "/tmp/docs-inv", PO = "/tmp/docs-po";
 async function fixtures() {
   execFileSync("node", [path.join(__dirname, "make_po_folder.mjs"), TOOL, PO]); // PO-100001 … PO-100009 (some in a subfolder)
+  for (const p of ["archief/PO-100001.pdf", "archief/PO-100008.pdf", "archief/PO-100009.pdf"]) fs.rmSync(`${PO}/${p}`, { force: true }); // left without an invoice: PO-100006, and PO-100007 (skipped)
   fs.rmSync(INV, { recursive: true, force: true }); fs.mkdirSync(INV, { recursive: true });
   const rd = (f) => fs.readFileSync(`${TOOL}/img/${f}`), images = { logo: rd("logo-white.png"), sidebar: rd("sidebar.png") };
   const client = { name: "Piguillet BV", street: "Edisonstraat 8", city: "2652 XS Berkel en Rodenrijs", kvk: "52742938", btw: "NL850577950B01" };
@@ -34,11 +35,12 @@ async function launch() {
   await page.waitForSelector("#pick", { state: "attached" });
   return { app, page, errs };
 }
-const rows = (page) => page.$$eval("#docsList li", (li) => li.map((l) => l.dataset.nr));
-const rowInfo = (page) => page.$$eval("#docsList li", (li) => li.map((l) => ({ nr: l.dataset.nr, client: l.querySelector(".c-cl").textContent, date: l.querySelector(".c-dt").textContent, po: l.querySelector(".c-po").textContent, amt: l.querySelector(".c-amt").textContent,
+const rows = (page) => page.$$eval("#docsList li:not(.po-only)", (li) => li.map((l) => l.dataset.nr)); // invoice rows; purchase orders without an invoice: poRows
+const poRows = (page) => page.$$eval("#docsList li.po-only", (li) => li.map((l) => l.dataset.po));
+const rowInfo = (page) => page.$$eval("#docsList li:not(.po-only)", (li) => li.map((l) => ({ nr: l.dataset.nr, client: l.querySelector(".c-cl").textContent, date: l.querySelector(".c-dt").textContent, po: l.querySelector(".c-po").textContent, amt: l.querySelector(".c-amt").textContent,
   docs: [...l.querySelectorAll("button.dchip:not(:disabled)")].map((b) => b.dataset.doc), off: [...l.querySelectorAll("button.dchip:disabled")].map((b) => b.textContent), sent: l.querySelector("input[data-sent]").checked, app: !!l.querySelector(".c-nr small") })));
 const sortBy = async (page, v) => { await page.selectOption("#docsSort", v); await page.waitForTimeout(120); };
-const readyAll = (page) => page.waitForFunction(() => { const l = [...document.querySelectorAll("#docsList li")]; return l.length === 5 && l.filter((x) => x.querySelector('button[data-doc="po"]')).length === 4; }, null, { timeout: 30000 }).then(() => true, () => false);
+const readyAll = (page) => page.waitForFunction(() => { const l = [...document.querySelectorAll("#docsList li:not(.po-only)")]; return l.length === 5 && document.querySelectorAll("#docsList li.po-only").length === 2 && l.filter((x) => x.querySelector('button[data-doc="po"]')).length === 4; }, null, { timeout: 30000 }).then(() => true, () => false);
 
 (async () => {
   await fixtures();
@@ -47,6 +49,7 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
   db["settings/main"].client = { name: "Piguillet BV", street: "a", city: "b", kvk: "52742938", btw: "NL85" };
   db["invoices/4-2026"] = inv("4-2026", "15/01/2026", "PO-100005", "Aannemer Alfa BV", [{ desc: "PO-100005", tarief: 450, aantal: 3 }]); // made in the app, never saved as a file
   db["invoices/5-2026"] = inv("5-2026", "07/11/2026", "", "Zeta Bouw", [{ desc: "Advies", tarief: 500, aantal: 1 }]);                 // no purchase order
+  db["settings/poskip"] = { list: ["PO-100007"] };
   fs.writeFileSync(dataFile, JSON.stringify(db));
 
   let { app, page, errs } = await launch();
@@ -72,6 +75,22 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
   ok(by("1-2026").client.includes("Piguillet"), "client read from the invoice file: " + by("1-2026").client);
   { const t = await page.textContent("#docsInfo"); ok(t.includes("Facturen in de map: 3") && t.includes("Hoogste nummer dit jaar: 3-2026") && t.includes("met inkooporder: 4"), "info line: " + t); }
   ok(await page.$eval('#docsList li[data-nr="4-2026"] button[data-doc="pdf"]', (b) => b.classList.contains("gen")), "a drawn PDF looks different (dashed)");
+
+  // ---- purchase orders without an invoice
+  const P = await page.$$eval("#docsList li.po-only", (li) => li.map((l) => ({ po: l.dataset.po, nr: l.dataset.nr, badge: l.querySelector(".c-nr .chip").textContent, note: (l.querySelector(".c-nr small") || {}).textContent || "", client: l.querySelector(".c-cl").textContent,
+    date: l.querySelector(".c-dt").textContent, poc: l.querySelector(".c-po").textContent, amt: l.querySelector(".c-amt").textContent, docs: [...l.querySelectorAll("button.dchip:not(:disabled)")].map((b) => b.dataset.doc),
+    off: [...l.querySelectorAll("button.dchip:disabled")].map((b) => b.textContent), sent: !!l.querySelector("input[data-sent]"), mk: (l.querySelector("button[data-mkinv]") || {}).textContent })));
+  console.log(JSON.stringify(P));
+  eq(P.map((p) => p.po), ["PO-100006", "PO-100007"], "two POs without an invoice, the skipped one after");
+  eq(await page.$$eval("#docsList li", (li) => li.slice(0, 2).map((l) => l.classList.contains("po-only"))), [true, true], "they come first in the default view");
+  eq([P[0].nr, P[0].badge, P[0].note, P[0].client, P[0].date, P[0].poc, P[0].amt], ["", "Geen factuur", "", "Piguillet BV", "06/11/2026", "PO-100006", "€ 900,00"], "PO-only row: badge, client, order date, PO, PO total");
+  eq([P[0].docs, P[0].off, P[0].sent, P[0].mk], [["po"], ["PDF", "Word"], false, "Factuur maken"], "PO-only row: only the PO chip, no sent box, a make-invoice button");
+  eq([P[1].note, P[1].amt], ["overgeslagen", "€ 500,00"], "a skipped PO is still shown, marked skipped");
+  await page.fill("#docsSearch", "100006"); await page.waitForTimeout(120); eq([await rows(page), await poRows(page)], [[], ["PO-100006"]], "search finds a PO without an invoice");
+  await page.fill("#docsSearch", ""); await page.waitForTimeout(120);
+  await sortBy(page, "date"); eq((await page.$$eval("#docsList li", (li) => li.map((l) => l.dataset.nr || l.dataset.po))).slice(0, 4), ["5-2026", "PO-100006", "PO-100007", "3-2026"], "by date: PO rows sorted by order date among the invoices");
+  await sortBy(page, "nr");
+  await page.screenshot({ path: "/tmp/docs_poonly.png" });
 
   // ---- sorting
   await sortBy(page, "date"); eq(await rows(page), ["5-2026", "3-2026", "2-2026", "4-2026", "1-2026"], "by date, newest first");
@@ -102,7 +121,10 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
   ok(await page.$eval('#docsList li[data-nr="1-2026"]', (l) => l.classList.contains("sent")), "a sent row looks done");
   await page.click('#docsFilter [data-f="sent"]'); await page.waitForTimeout(150); eq(await rows(page), ["4-2026", "1-2026"], "filter: sent");
   await page.click('#docsFilter [data-f="open"]'); await page.waitForTimeout(150); eq(await rows(page), ["5-2026", "3-2026", "2-2026"], "filter: not sent");
-  eq(await page.$$eval("#docsFilter .n", (n) => n.map((x) => x.textContent.trim())), ["5", "3", "2"], "the filter buttons count");
+  eq(await page.$$eval("#docsFilter .n", (n) => n.map((x) => x.textContent.trim())), ["7", "3", "2", "2"], "the filter buttons count (sent / not sent: invoices only)");
+  await page.click('#docsFilter [data-f="noinv"]'); await page.waitForTimeout(150);
+  eq([await rows(page), await poRows(page)], [[], ["PO-100006", "PO-100007"]], "filter: without invoice");
+  await page.click('#docsFilter [data-f="open"]'); await page.waitForTimeout(150);
   await sortBy(page, "client"); await page.waitForTimeout(500);
   const saved = JSON.parse(fs.readFileSync(dataFile, "utf8"));
   eq(saved["settings/sent"] && saved["settings/sent"].list.slice().sort(), ["1-2026", "4-2026"], "sent invoices saved in settings/sent");
@@ -146,13 +168,23 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
   eq(await page.textContent("#poDlgTitle"), "Inkooporder PO-100003", "PO preview title"); ok((await page.$$("#poPages canvas")).length >= 1, "PO preview drawn"); await page.click("#poDlgClose");
   await page.click('#docsList li[data-nr="2-2026"] button[data-reveal]'); await page.waitForTimeout(300);
   eq(await app.evaluate(() => globalThis.__shown), [INV + "/VALKYRYS 2-2026 PO-100003.pdf"], "show in folder");
+  // a PO without an invoice: its preview, then "Make invoice" puts it on the Invoices tab
+  await page.click('#docsList li.po-only[data-po="PO-100006"] button[data-doc="po"]'); await page.waitForSelector("#poPages canvas", { timeout: 15000 }).catch(() => {});
+  eq(await page.textContent("#poDlgTitle"), "Inkooporder PO-100006", "PO-only row: PO preview title"); ok((await page.$$("#poPages canvas")).length >= 1, "PO-only row: PO preview drawn");
+  ok(await page.isVisible("#poDlgAdd"), "PO-only row: the preview offers to add it"); await page.click("#poDlgClose");
+  await page.click('#docsList li.po-only[data-po="PO-100006"] button[data-mkinv]');
+  const added = await page.waitForFunction(() => /PO-100006/.test((document.querySelector("#cards") || {}).textContent || ""), null, { timeout: 20000 }).then(() => true, () => false);
+  ok(await page.isVisible("#viewInv") && added, "Make invoice: Invoices tab open with PO-100006 in the list");
+  await goTab(page, "docs"); await page.waitForTimeout(300);
 
   // ---- languages
   await setLang(page, "en"); await page.waitForTimeout(250);
   eq([await page.textContent("#tabDocs"), await page.textContent("#pageTitle"), await page.textContent("#docsCount")], ["Documents", "Documents", "1 of 5 sent"], "English");
+  eq([await page.textContent('#docsFilter [data-f="noinv"] [data-i18n]'), await page.textContent("#docsList li.po-only .chip"), await page.textContent("#docsList li.po-only button[data-mkinv]")], ["Without invoice", "No invoice", "Make invoice"], "English: PO-only texts");
   eq(await page.$$eval("#docsHead > *", (h) => h.map((x) => x.textContent.replace(/[▲▼]/g, "").trim()).filter(Boolean)), ["Number", "Client", "Date", "Purchase order", "Amount", "Documents", "Sent"], "English column heads");
   await setLang(page, "pl"); await page.waitForTimeout(250);
   eq([await page.textContent("#tabDocs"), await page.textContent("#docsCount"), await page.textContent('#docsFilter [data-f="open"] [data-i18n]')], ["Dokumenty", "Wysłane: 1 z 5", "Niewysłane"], "Polish");
+  eq([await page.textContent('#docsFilter [data-f="noinv"] [data-i18n]'), await page.textContent("#docsList li.po-only .chip"), await page.textContent("#docsList li.po-only button[data-mkinv]")], ["Bez faktury", "Brak faktury", "Utwórz fakturę"], "Polish: PO-only texts");
   await setLang(page, "nl"); await page.waitForTimeout(250);
 
   // ---- looks: light, dark, phone width
