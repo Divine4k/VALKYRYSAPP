@@ -1431,7 +1431,8 @@ window.ValkTheme = (function () {
   const byDate = (a, b) => sortKey(a).localeCompare(sortKey(b)) || String(a.po).localeCompare(String(b.po), "nl", { numeric: true }) || a.id.localeCompare(b.id);
   /** (re)number all invoices that are not downloaded or hand-numbered yet: oldest PO gets the lowest number */
   function renumber() {
-    const auto = state.cards.filter((c) => !c.error && !c.done && !c.manual).sort(byDate);
+    // a card that is being saved keeps its number: saving a file re-reads the folder, which calls this mid-save
+    const auto = state.cards.filter((c) => !c.error && !c.done && !c.manual && !c.saving).sort(byDate);
     auto.forEach((c) => { c.nummer = 0; });
     for (const c of auto) c.nummer = nextNumber(c.jaar, c);
     state.cards.sort((a, b) => (a.error ? 1 : 0) - (b.error ? 1 : 0) || byDate(a, b));
@@ -1529,10 +1530,13 @@ window.ValkTheme = (function () {
     }
   }
 
+  /** number and year as written on the invoice ("62-2026"); the card's own fields as a fallback */
+  const nrOf = (factuurnr, c) => { const m = /^(\d+)-(\d{4})$/.exec(String(factuurnr || "")); return m ? [+m[1], +m[2]] : [c.nummer, c.jaar]; };
   async function logInvoice(c, data) {
-    c.done = true;
+    const [nummer, jaar] = nrOf(data.factuurnr, c);
+    c.nummer = nummer; c.jaar = jaar; c.done = true; c.saving = false;
     const t = core.totals(data.lines, data.btw);
-    const doc = { factuurnr: data.factuurnr, nummer: c.nummer, jaar: c.jaar, po: c.po, datum: data.datum, betaaltermijn: data.betaaltermijn,
+    const doc = { factuurnr: data.factuurnr, nummer, jaar, po: c.po, datum: data.datum, betaaltermijn: data.betaaltermijn,
       client: data.client, lines: data.lines, btw: data.btw, totaal: t.total, dagen: c.dates || [], createdAt: new Date().toISOString(),
       template: data.template, sender: Object.fromEntries(TP.FIELDS.map((k) => [k, (data.sender && data.sender[k]) || ""])) };
     state.invoices.set(doc.factuurnr, doc);
@@ -1542,11 +1546,12 @@ window.ValkTheme = (function () {
   async function downloadCard(c, btn, fmt = "pdf") {
     if (!detailsOk()) return needDetails();
     const data = invoiceData(c);
-    busy(btn, true);
+    busy(btn, true); c.saving = true;
     try {
       const bytes = await build(fmt, data);
       if (await save(fileName(data, c.po, fmt), new Blob([bytes], { type: MIME[fmt] }))) { await logInvoice(c, data); toast(doneToast(data.factuurnr)); }
     } catch (e) { toast(tr("buildFail")); }
+    c.saving = false; renumber();
     busy(btn, false); render();
   }
 
@@ -1558,12 +1563,15 @@ window.ValkTheme = (function () {
     if (folderSet()) { // straight into the folder: one PDF and one Word file per invoice, no zip
       try {
         let n = 0;
-        for (const c of ready) {
-          const data = invoiceData(c);
-          if (!(await saveToFolder(fileName(data, c.po), new Blob([await buildPdf(data)], { type: MIME.pdf })))) break;
-          try { await saveToFolder(fileName(data, c.po, "docx"), new Blob([await buildWord(data)], { type: MIME.docx })); } catch (e) {}
-          await logInvoice(c, data); n++;
-        }
+        ready.forEach((c) => { c.saving = true; }); // fix every number before the first file is written
+        try {
+          for (const c of ready) {
+            const data = invoiceData(c);
+            if (!(await saveToFolder(fileName(data, c.po), new Blob([await buildPdf(data)], { type: MIME.pdf })))) break;
+            try { await saveToFolder(fileName(data, c.po, "docx"), new Blob([await buildWord(data)], { type: MIME.docx })); } catch (e) {}
+            await logInvoice(c, data); n++;
+          }
+        } finally { ready.forEach((c) => { c.saving = false; }); renumber(); }
         if (n) toast(n === 1 ? tr("savedIn", nr(ready[0])) : tr("savedMany", n));
       } catch (e) { toast(tr("buildFailMany")); }
       busy(btn, false); render(); return;
@@ -3289,7 +3297,8 @@ window.ValkTheme = (function () {
       if (l && l in LANGS && l !== state.lang) { state.lang = l; try { localStorage.setItem("valkyrys-lang", l); } catch (e) {} applyLang(); }
     }, () => {});
     db.collection("invoices").onSnapshot((snap) => {
-      state.invoices = new Map(snap.docs.map((d) => [d.id, d.data()]));
+      // older saves could store a number that differs from the one on the invoice: the invoice number wins
+      state.invoices = new Map(snap.docs.map((d) => { const x = d.data(); const m = /^(\d+)-(\d{4})$/.exec(String(x.factuurnr || "")); if (m) { x.nummer = +m[1]; x.jaar = +m[2]; } return [d.id, x]; }));
       state.invoicesLoaded = true;
       render();
     }, () => { state.invoicesLoaded = true; render(); });

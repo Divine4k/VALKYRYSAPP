@@ -3,6 +3,15 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
+    version: "1.1.1", date: "2026-11-10",
+    items: [
+      { type: "fixed",
+        nl: "„Alles opslaan in de map” sloeg bij meerdere facturen elk tweede nummer over (62, 64, 66…). De nummers lopen nu weer gewoon door.",
+        en: "“Save all to the folder” skipped every other number with several invoices (62, 64, 66…). Numbers now follow on again.",
+        pl: "„Zapisz wszystko w folderze” przy kilku fakturach pomijało co drugi numer (62, 64, 66…). Numery znów są kolejne." },
+    ],
+  },
+  {
     version: "1.1.0", date: "2026-11-10",
     items: [
       { type: "new",

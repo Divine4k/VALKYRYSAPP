@@ -30,14 +30,15 @@ const items = (page) => page.$$eval("#newsList .nrel:first-child li", (l) => l.m
   if (shots) await page.screenshot({ path: "/tmp/news_appbar.png", clip: { x: 0, y: 0, width: 1280, height: 80 } });
 
   // ---- open
+  const TYPES = ["new", "improved", "fixed"].filter((t) => CL[0].items.some((i) => i.type === t)); // the groups the newest release has
   await page.click("#newsBtn"); await page.waitForTimeout(200);
   ok(await page.$eval("#newsDlg", (d) => d.open), "dialog opens");
   eq(await page.textContent("#newsTitle"), "Wat is er nieuw", "title");
   eq(await page.$$eval("#newsList .nrel", (s) => s.map((x) => x.dataset.version)), CL.map((r) => r.version), "releases newest first");
-  eq(await page.$$eval("#newsList .nrel:first-child .ngrp", (g) => g.map((x) => x.dataset.type)), ["new", "improved", "fixed"], "grouped New / Improved / Fixed");
-  eq(await page.$$eval("#newsList .nrel:first-child .ntag", (g) => g.map((x) => x.textContent)), ["Nieuw", "Verbeterd", "Opgelost"], "Dutch tags");
+  eq(await page.$$eval("#newsList .nrel:first-child .ngrp", (g) => g.map((x) => x.dataset.type)), TYPES, "grouped New / Improved / Fixed");
+  eq(await page.$$eval("#newsList .nrel:first-child .ntag", (g) => g.map((x) => x.textContent)), TYPES.map((t) => ({ new: "Nieuw", improved: "Verbeterd", fixed: "Opgelost" })[t]), "Dutch tags");
   const order = ["new", "improved", "fixed"].flatMap((t) => CL[0].items.filter((i) => i.type === t));
-  eq(await items(page), order.map((i) => i.nl), "1.1.0 items in Dutch");
+  eq(await items(page), order.map((i) => i.nl), "newest items in Dutch");
   ok((await page.textContent("#newsList .nrel:first-child h3")).includes("Versie " + latest) && (await page.textContent("#newsList .nrel:first-child h3")).includes("10 november 2026"), "version + Dutch date heading");
   eq(await page.textContent("#newsVer"), "Versie " + latest, "version in the footer");
   ok(!(await page.isVisible("#newsDot")), "dot gone after opening");
@@ -46,7 +47,7 @@ const items = (page) => page.$$eval("#newsList .nrel:first-child li", (l) => l.m
   // ---- language switch while open
   await setLang(page, "pl"); await page.waitForTimeout(200);
   eq([await page.textContent("#newsTitle"), (await items(page))[0]], ["Co nowego", order[0].pl], "Polish");
-  eq(await page.$$eval("#newsList .nrel:first-child .ntag", (g) => g.map((x) => x.textContent)), ["Nowość", "Ulepszenie", "Poprawka"], "Polish tags");
+  eq(await page.$$eval("#newsList .nrel:first-child .ntag", (g) => g.map((x) => x.textContent)), TYPES.map((t) => ({ new: "Nowość", improved: "Ulepszenie", fixed: "Poprawka" })[t]), "Polish tags");
   eq(await page.textContent("#newsBtn .nlabel"), "Co nowego", "Polish label");
   await setLang(page, "en"); await page.waitForTimeout(200);
   eq([await page.textContent("#newsTitle"), (await items(page)).slice(-1)[0], await page.textContent("#newsVer")], ["What's new", order.slice(-1)[0].en, "Version " + latest], "English");

@@ -67,6 +67,20 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   await goTab(page, "docs"); ok(await page.isVisible("#docsNoFolder"), "disconnect returns to the folder card on the Documents tab"); await goTab(page, "inv");
   ok((await page.textContent("#zipAll")) === "Alles downloaden (.zip)", "batch button back to zip");
   ok((await page.textContent('article.po [data-act="download"]')).startsWith("Opnieuw downloaden") || (await page.textContent('article.po [data-act="download"]')).startsWith("Download"), "button back to download");
+  // "Save all to the folder" with several POs: consecutive numbers (saving re-reads the folder; that must not shift the waiting cards)
+  await goTab(page, "settings"); await page.click("#folderPick"); await page.waitForTimeout(800); await goTab(page, "inv");
+  const pos = ["PO-100003", "PO-100004", "PO-100005", "PO-100006"].map((p) => "/tmp/po-folder/" + p + ".pdf");
+  await page.setInputFiles("#file", pos); await page.waitForFunction(() => document.querySelectorAll("article.po h3").length === 5, null, { timeout: 20000 });
+  const nrs = () => page.$$eval('article.po [data-k="nr"]', (i) => i.map((x) => x.value).filter((v) => v !== "65-2026")); const planned = await nrs(); console.log("planned:", planned);
+  const pn = planned.map((x) => +x.split("-")[0]).sort((a, b) => a - b);
+  ok(pn.every((n, i) => n === pn[0] + i), "the 4 cards have consecutive numbers: " + planned);
+  await page.click("#zipAll"); for (let i = 0; i < 300 && !fs.existsSync(`${F}/VALKYRYS ${pn[pn.length - 1]}-2026.docx`); i++) await page.waitForTimeout(200); await page.waitForTimeout(1500);
+  const saved = fs.readdirSync(F).filter((n) => /^VALKYRYS \d+-2026\.pdf$/.test(n)).map((n) => +n.match(/(\d+)-2026/)[1]).filter((n) => n >= pn[0]).sort((a, b) => a - b);
+  ok(JSON.stringify(saved) === JSON.stringify(pn), "save all writes exactly those numbers, no gaps: " + saved);
+  ok(pn.every((n) => fs.existsSync(`${F}/VALKYRYS ${n}-2026.docx`)), "and a Word file for each");
+  const after = await nrs();
+  ok(JSON.stringify([...after].sort()) === JSON.stringify([...planned].sort()), "the cards keep the numbers they were saved as: " + after);
+  ok((await page.textContent("#nextNr")) === `${pn[pn.length - 1] + 1}-2026`, "next number follows the last saved one: " + (await page.textContent("#nextNr")));
   // IPC from a foreign page is refused
   const blocked = await app.evaluate(async ({ BrowserWindow, app }) => { const w = new BrowserWindow({ show: false, webPreferences: { preload: app.getAppPath() + "/preload.js", sandbox: true } }); await w.loadURL("data:text/html,<p>x</p>"); const r = await w.webContents.executeJavaScript("window.valkyrys.getFolder().then(()=>'ALLOWED',()=>'REFUSED')"); w.destroy(); return r; });
   ok(blocked === "REFUSED", "other pages cannot use the folder bridge (" + blocked + ")");
