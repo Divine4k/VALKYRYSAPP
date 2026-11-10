@@ -48,7 +48,9 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   // ---- the very first start has the PIN question too: after it, the folders are asked for
   seed(HOME, {});
   ({ app, page } = await launch(HOME));
-  ok(await page.isVisible("#lockScreen"), "very first start: the PIN question comes first");
+  ok(await page.isVisible("#lockScreen"), "very first start: the lock screen comes first");
+  ok(await page.isVisible('#lockScreen [data-lang="nl"]'), "...with the language first"); await page.click('#lockScreen [data-lang="nl"]');
+  eq(await page.textContent("#lkTitle"), "Wil je de app beveiligen met een pincode?", "then the PIN question");
   await page.click("#lkAskNo"); await page.waitForSelector("#welcomeDlg[open]", { timeout: 15000 });
   ok(await open(page) && (await page.textContent("#welcomeTitle")) === "Welkom bij Valkyrys app", "...and then the folders are asked for");
   await app.close();

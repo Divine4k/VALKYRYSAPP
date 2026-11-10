@@ -172,7 +172,7 @@ dialog::backdrop { background: rgba(0, 0, 0, .55); }
 button.themebtn { padding: 4px 12px; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; font-weight: 700; }
 button.themebtn:hover { border-color: #8E9096; }
 .themebtn svg { flex: 0 0 auto; }
-#lockScreen { position: fixed; inset: 0; z-index: 2147483000; display: flex; flex-direction: column; background: var(--bg); overflow: auto; font-family: var(--font); font-size: 15px; line-height: 1.45; color: var(--text); }
+#lockScreen, #langScreen { position: fixed; inset: 0; z-index: 2147483000; display: flex; flex-direction: column; background: var(--bg); overflow: auto; font-family: var(--font); font-size: 15px; line-height: 1.45; color: var(--text); }
 .lk-main { flex: 1; display: grid; place-items: center; padding: 28px 16px; }
 .lk-card { position: relative; width: min(360px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, .22); }
 .lk-card .band { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px; }
@@ -190,6 +190,13 @@ button.themebtn:hover { border-color: #8E9096; }
 .lk-ask { display: flex; flex-direction: column; gap: 10px; width: 100%; margin: 24px 0 6px; }
 .lk-ask button { width: 100%; min-height: 46px; font-size: 15px; }
 #lockScreen:not(.lk-asking) .lk-ask, .lk-asking .lk-dots, .lk-asking .lk-err, .lk-asking .lk-pad, .lk-asking .lk-actions { display: none; }
+/* first start: the language, before anything else (lock screen step "lang", or #langScreen from firstRun) */
+.lk-ttl span { display: block; font-size: 18px; line-height: 1.4; }
+.lk-ttl i { display: none; }
+.lk-langs { display: flex; flex-direction: column; gap: 10px; width: 100%; margin: 22px 0 6px; }
+.lk-langs button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 54px; padding: 0 18px; font-size: 16px; }
+.lk-langs button small { font-size: 11px; font-weight: 700; letter-spacing: .14em; opacity: .65; }
+#lockScreen:not(.lk-langstep) .lk-langs, .lk-langstep .lk-sub, .lk-langstep .lk-ask, .lk-langstep .lk-dots, .lk-langstep .lk-err, .lk-langstep .lk-pad, .lk-langstep .lk-actions { display: none; }
 .lk-pad { display: grid; grid-template-columns: repeat(3, 66px); gap: 14px 22px; justify-content: center; }
 .lk-pad button { width: 66px; height: 66px; min-height: 0; padding: 0; border-radius: 50%; background: var(--sunken); color: var(--ink); font-size: 26px; font-weight: 400; transition: background .1s, transform .08s, border-color .1s; }
 .lk-pad button:active:not(:disabled), .lk-pad button.hit { background: var(--line); transform: scale(.94); }
@@ -433,6 +440,13 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .stbl td.z { color: var(--muted); }
 .stbl tfoot td { font-weight: 900; color: var(--ink); border-top: 2px solid var(--ink); }
 .stbl tr.now td:first-child { font-weight: 900; color: var(--ink); }
+.stbl th button.thb { border: 0; background: none; color: inherit; font: inherit; font-size: inherit; letter-spacing: inherit; text-transform: inherit; padding: 2px 0; min-height: 0; gap: 4px; border-radius: 4px; }
+.stbl th:first-child button.thb { flex-direction: row-reverse; } /* arrow after the text when left-aligned, before it when right-aligned: the text keeps its edge */
+.stbl th button.thb:hover, .stbl th[aria-sort] button.thb { color: var(--ink); border: 0; }
+.thb .sa { display: inline-flex; width: 8px; height: 10px; opacity: 0; transition: opacity .12s; }
+.thb .sa svg { width: 8px; height: 10px; }
+.thb:hover .sa, .thb:focus-visible .sa { opacity: .45; }
+.stbl th[aria-sort] .thb .sa { opacity: 1; }
 .hint { font-weight: 400; font-size: 12px; color: var(--muted); }
 /* documents tab: one row per invoice number with its PDF, Word file and purchase order */
 .dbar { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; padding: 12px 14px; }
@@ -628,6 +642,40 @@ window.ValkTheme = (function () {
   function lang() { var l = window.ValkLockLang; if (!l) { try { l = localStorage.getItem("valkyrys-lang"); } catch (e) {} } return T[l] ? l : "nl"; }
   function t(k) { var s = T[lang()][k]; for (var i = 1; i < arguments.length; i++) s = s.replace("{" + (i - 1) + "}", arguments[i]); return s; }
   window.ValkLockText = t;
+  // ---- first start: choose the language before anything else. Remembered in localStorage (valkyrys-lang + valkyrys-lang-chosen);
+  // the app picks up window.ValkLangPicked after unlocking and saves it in settings/prefs (lang, langChosen), where it wins over what is there.
+  var LANG_KEYS = ["nl", "en", "pl"], LANG_NAMES = { nl: "Nederlands", en: "English", pl: "Polski" };
+  var LANG_TITLE = '<span lang="nl">Kies je taal</span><i> · </i><span lang="en">Choose your language</span><i> · </i><span lang="pl">Wybierz język</span>';
+  function langChosen() { try { return !!(localStorage.getItem("valkyrys-lang-chosen") || T[localStorage.getItem("valkyrys-lang")]); } catch (e) { return false; } }
+  function langGuess() { var l = window.ValkLockLang; try { l = l || localStorage.getItem("valkyrys-lang"); } catch (e) {} if (T[l]) return l; var n = String(navigator.language || "").toLowerCase().slice(0, 2); return n === "pl" ? "pl" : n === "nl" ? "nl" : "en"; }
+  /** the three language buttons: arrow keys move, Enter/Space/click chooses; done(lang) is called once */
+  function langButtons(done) {
+    var box = document.createElement("div"), sel = langGuess(), over = false; box.className = "lk-langs"; box.setAttribute("role", "group"); box.setAttribute("aria-label", "Kies je taal · Choose your language · Wybierz język");
+    box.innerHTML = LANG_KEYS.map(function (k) { return '<button type="button" data-lang="' + k + '" lang="' + k + '"><b>' + LANG_NAMES[k] + "</b><small>" + k.toUpperCase() + "</small></button>"; }).join("");
+    var bs = box.querySelectorAll("button");
+    function mark(k) { sel = k; for (var i = 0; i < bs.length; i++) { var on = bs[i].dataset.lang === k; bs[i].classList.toggle("primary", on); bs[i].setAttribute("aria-pressed", String(on)); } }
+    function pick(k) { if (over) return; over = true; window.ValkLockLang = window.ValkLangPicked = k; document.documentElement.lang = k; try { localStorage.setItem("valkyrys-lang", k); localStorage.setItem("valkyrys-lang-chosen", "1"); } catch (e) {} done(k); }
+    box.addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) pick(b.dataset.lang); });
+    box.addEventListener("focusin", function (e) { if (e.target.dataset.lang) mark(e.target.dataset.lang); });
+    box.addEventListener("keydown", function (e) {
+      var i = LANG_KEYS.indexOf(sel);
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") i = (i + 1) % 3; else if (e.key === "ArrowUp" || e.key === "ArrowLeft") i = (i + 2) % 3;
+      else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); return pick(sel); } else return;
+      e.preventDefault(); mark(LANG_KEYS[i]); box.querySelector('[data-lang="' + sel + '"]').focus();
+    });
+    mark(sel); box.focusSel = function () { box.querySelector('[data-lang="' + sel + '"]').focus(); };
+    return box;
+  }
+  window.ValkLangChosen = langChosen;
+  /** the same step on its own screen (first start without the lock screen, e.g. a plain browser); resolves with the language */
+  window.ValkLangStep = function () {
+    return new Promise(function (res) {
+      var scr = document.createElement("div"); scr.id = "langScreen"; scr.setAttribute("role", "dialog"); scr.setAttribute("aria-modal", "true"); scr.setAttribute("aria-labelledby", "lgTitle");
+      scr.innerHTML = '<div class="lk-main"><div class="lk-card"><header class="band"><img src="img/logo-white.png" alt="Valkyrys"><span>App</span></header><div class="lk-body"><h2 id="lgTitle" class="lk-ttl">' + LANG_TITLE + "</h2></div></div></div>";
+      var box = langButtons(function (k) { scr.remove(); document.body.inert = false; res(k); });
+      scr.querySelector(".lk-body").appendChild(box); document.documentElement.appendChild(scr); document.body.inert = true; box.focusSel();
+    });
+  };
   var L = window.valkyrysLock, st = L && L.state;
   var mode = !st ? null : st.has && !st.unlocked ? "login" : !st.has && !st.skipped ? "setup" : null;
   if (!mode) { window.__valkUnlock = Promise.resolve(); return; }
@@ -636,7 +684,8 @@ window.ValkTheme = (function () {
   var root = document.createElement("div"); root.id = "lockScreen"; root.setAttribute("role", "dialog"); root.setAttribute("aria-modal", "true"); root.setAttribute("aria-labelledby", "lkTitle");
   // One hidden field (#lkIn) holds the digits; the dots show how many are typed. With a known PIN length (st.len) the PIN is
   // checked as soon as the last digit is in, so no Enter is needed. Setup: "ask" (a PIN or not: never forced) -> "pick" (4-8 digits, then ✓/Enter) -> "rep" (checked when the length matches).
-  var setup = mode === "setup", step = setup ? "ask" : "login", first = "", busy = false, timer = null;
+  // A fresh install (no PIN decision yet) whose language was never chosen starts with "lang" (the three languages), then "ask".
+  var setup = mode === "setup", step = setup ? (langChosen() ? "ask" : "lang") : "login", first = "", busy = false, timer = null;
   var keys = ""; for (var d = 1; d <= 9; d++) keys += '<button type="button" tabindex="-1" data-d="' + d + '">' + d + "</button>";
   keys += '<button type="button" tabindex="-1" data-act="del" class="lk-fn" aria-label="' + t("del") + '">⌫</button><button type="button" tabindex="-1" data-d="0">0</button><button type="button" tabindex="-1" data-act="go" class="primary" aria-label="' + t("go") + '">✓</button>';
   root.innerHTML = '<div class="lk-main"><form class="lk-card" id="lkForm" autocomplete="off" novalidate>' +
@@ -649,6 +698,12 @@ window.ValkTheme = (function () {
   document.documentElement.appendChild(root);
   document.body.inert = true;
   var $ = function (id) { return document.getElementById(id); }, form = $("lkForm"), inp = $("lkIn"), dots = $("lkDots"), err = $("lkErr"), goBtn = root.querySelector('[data-act="go"]'), pad = root.querySelectorAll(".lk-pad button");
+  var langBox = step === "lang" ? langButtons(function () { // texts made before the choice follow it, then the PIN question
+    $("lkAskYes").textContent = t("askYes"); $("lkAskNo").textContent = t("askNo"); $("lkBack").textContent = t("back");
+    root.querySelector('[data-act="del"]').setAttribute("aria-label", t("del")); goBtn.setAttribute("aria-label", t("go"));
+    setStep("ask"); $("lkAskYes").focus();
+  }) : null;
+  if (langBox) dots.parentNode.insertBefore(langBox, dots);
   function need() { return step === "login" ? (st.len || 0) : step === "rep" ? first.length : 0; } // 0 = length not known: up to 8, confirm with ✓
   function draw() {
     var n = need(), v = inp.value.length, h = "";
@@ -657,14 +712,15 @@ window.ValkTheme = (function () {
     goBtn.classList.toggle("lk-hide", !!n); goBtn.disabled = inp.disabled || v < 4;
   }
   function setStep(s) {
-    step = s; inp.value = ""; say(""); root.classList.toggle("lk-asking", s === "ask");
+    step = s; inp.value = ""; say(""); root.classList.toggle("lk-asking", s === "ask"); root.classList.toggle("lk-langstep", s === "lang"); $("lkTitle").classList.toggle("lk-ttl", s === "lang");
+    if (s === "lang") { $("lkTitle").innerHTML = LANG_TITLE; $("lkSub").textContent = ""; return draw(); }
     $("lkTitle").textContent = t(s === "ask" ? "askTitle" : s === "login" ? "loginTitle" : s === "pick" ? "setupTitle" : "repTitle");
     $("lkSub").textContent = t(s === "ask" ? "askText" : s === "login" ? "loginText" : s === "pick" ? "setupText" : "repText");
     draw();
   }
   function unlock() { clearInterval(timer); root.remove(); document.body.inert = false; finish(); }
   function say(msg) { err.textContent = msg || ""; }
-  function focusIn() { if (step !== "ask" && !inp.disabled && document.activeElement !== inp) inp.focus(); }
+  function focusIn() { if (step === "lang") return langBox.focusSel(); if (step !== "ask" && !inp.disabled && document.activeElement !== inp) inp.focus(); }
   function enable(on) { inp.disabled = !on; for (var i = 0; i < pad.length; i++) pad[i].disabled = !on; draw(); }
   function lockout(ms) { // too many wrong tries: count down, then allow typing again
     clearInterval(timer); var end = Date.now() + ms;
@@ -708,7 +764,7 @@ window.ValkTheme = (function () {
   function flash(sel) { var b = root.querySelector(".lk-pad " + sel); if (!b) return; b.classList.add("hit"); setTimeout(function () { b.classList.remove("hit"); }, 120); }
   inp.addEventListener("input", function () { if (busy) return; changed(); });
   root.addEventListener("keydown", function (e) { // physical keyboard and numpad, wherever the focus is on this screen
-    if (e.ctrlKey || e.altKey || e.metaKey || step === "ask") return; // the question: its two buttons work as usual
+    if (e.ctrlKey || e.altKey || e.metaKey || step === "ask" || step === "lang") return; // the question and the languages: their buttons work as usual
     var dg = /^[0-9]$/.test(e.key) ? e.key : (/^Numpad([0-9])$/.exec(e.code || "") || [])[1]; // numpad digits also with Num Lock off
     if (dg) { e.preventDefault(); flash('[data-d="' + dg + '"]'); key(dg); focusIn(); }
     else if (e.key === "Backspace") { e.preventDefault(); flash('[data-act="del"]'); back(); focusIn(); }
@@ -728,7 +784,7 @@ window.ValkTheme = (function () {
     $("lkAskNo").addEventListener("click", function () { L.skip().then(unlock, unlock); }); // remembered (pin.json "skipped"); a PIN can be set later in Settings
     $("lkBack").addEventListener("click", function () { first = ""; setStep("ask"); $("lkAskYes").focus(); });
   } else $("lkForgotBtn").addEventListener("click", function () { var f = $("lkForgot"); f.hidden = !f.hidden; this.setAttribute("aria-expanded", String(!f.hidden)); });
-  setStep(step); if (setup) $("lkAskYes").focus(); else inp.focus();
+  setStep(step); if (step === "lang") langBox.focusSel(); else if (setup) $("lkAskYes").focus(); else inp.focus();
   if (!setup && st.wait > 0) lockout(st.wait);
 })();
 </script>
@@ -1199,7 +1255,7 @@ window.ValkTheme = (function () {
       scopeYear: "in {0}", scopeAll: "alle jaren samen",
       vsPrev: "{0} t.o.v. {1}", vsPrevYtd: "{0} t.o.v. {1} tot dezelfde datum",
       chartMonth: "Omzet per maand, {0}", chartQuarter: "Omzet per kwartaal, {0}",
-      chartYear: "Omzet per jaar", tPeriod: "Periode",
+      chartYear: "Omzet per jaar", tPeriod: "Periode", thSortAsc: "{0}: oplopend sorteren", thSortDesc: "{0}: aflopend sorteren",
       tInvoices: "Facturen", tDays: "Dagen",
       tEx: "Excl. BTW", tVat: "BTW",
       tInc: "Incl. BTW", tTotal: "Totaal",
@@ -1365,7 +1421,7 @@ window.ValkTheme = (function () {
       scopeYear: "in {0}", scopeAll: "all years combined",
       vsPrev: "{0} vs {1}", vsPrevYtd: "{0} vs {1} up to the same date",
       chartMonth: "Revenue per month, {0}", chartQuarter: "Revenue per quarter, {0}",
-      chartYear: "Revenue per year", tPeriod: "Period",
+      chartYear: "Revenue per year", tPeriod: "Period", thSortAsc: "{0}: sort ascending", thSortDesc: "{0}: sort descending",
       tInvoices: "Invoices", tDays: "Days",
       tEx: "Excl. VAT", tVat: "VAT",
       tInc: "Incl. VAT", tTotal: "Total",
@@ -1531,7 +1587,7 @@ window.ValkTheme = (function () {
       scopeYear: "w {0}", scopeAll: "wszystkie lata razem",
       vsPrev: "{0} wobec {1}", vsPrevYtd: "{0} wobec {1} do tej samej daty",
       chartMonth: "Przychód miesięcznie, {0}", chartQuarter: "Przychód kwartalnie, {0}",
-      chartYear: "Przychód rocznie", tPeriod: "Okres",
+      chartYear: "Przychód rocznie", tPeriod: "Okres", thSortAsc: "{0}: sortuj rosnąco", thSortDesc: "{0}: sortuj malejąco",
       tInvoices: "Faktury", tDays: "Dni",
       tEx: "Bez VAT", tVat: "VAT",
       tInc: "Z VAT", tTotal: "Razem",
@@ -2254,14 +2310,35 @@ window.ValkTheme = (function () {
     if (["week", "month", "quarter", "year"].includes(sv.mode)) state.statMode = sv.mode;
     if (sv.basis === "order" || sv.basis === "work") state.poBasis = sv.basis;
     if (Array.isArray(sv.tiles)) state.kpiTiles = sv.tiles.filter((k) => KPI_ALL.includes(k));
+    if (sv.sort && typeof sv.sort === "object") for (const t of ["st", "cl"]) { const s = sv.sort[t]; if (s && STAT_SORT_KEYS[t].includes(s.k) && (s.d === "asc" || s.d === "desc")) state.statSort[t] = { k: s.k, d: s.d }; }
   }
+  // sorting of the period table (st) and the per-client table (cl); the total row always stays at the bottom
+  const STAT_SORT_KEYS = { st: ["per", "n", "days", "sub", "vat", "total"], cl: ["name", "n", "sub", "share"] };
+  const STAT_SORT_DEFAULT = { st: { k: "per", d: "asc" }, cl: { k: "sub", d: "desc" } };
+  state.statSort = { st: { ...STAT_SORT_DEFAULT.st }, cl: { ...STAT_SORT_DEFAULT.cl } };
+  const SORT_SVG = { hint: '<svg viewBox="0 0 8 10" aria-hidden="true"><path d="M4 0 8 4H0zM4 10 0 6h8z" fill="currentColor"/></svg>', asc: '<svg viewBox="0 0 8 10" aria-hidden="true"><path d="M4 1.5 8 7H0z" fill="currentColor"/></svg>', desc: '<svg viewBox="0 0 8 10" aria-hidden="true"><path d="M4 8.5 0 3h8z" fill="currentColor"/></svg>' };
+  // header cells as sort buttons; cols = [[key, label]], the arrow sits on the inner side so the text keeps its alignment
+  const sortHead = (t, cols) => { const s = cols.some((c) => c[0] === state.statSort[t].k) ? state.statSort[t] : STAT_SORT_DEFAULT[t]; return `<thead><tr>${cols.map(([k, h]) => { const on = s.k === k, next = on ? (s.d === "asc" ? "desc" : "asc") : (k === "per" || k === "name" ? "asc" : "desc");
+    return `<th${on ? ` aria-sort="${s.d === "asc" ? "ascending" : "descending"}"` : ""}><button type="button" class="thb" data-sort="${k}" aria-label="${esc(tr(next === "asc" ? "thSortAsc" : "thSortDesc", h))}"><span class="sa">${SORT_SVG[on ? s.d : "hint"]}</span><span>${esc(h)}</span></button></th>`; }).join("")}</tr></thead>`; };
+  const sortRows = (t, rows, val, keys) => { // stable: equal values keep their natural order
+    let { k, d } = state.statSort[t]; if (!keys.includes(k)) ({ k, d } = STAT_SORT_DEFAULT[t]);
+    const m = d === "asc" ? 1 : -1, r = rows.map((x, i) => [x, i]);
+    r.sort((a, b) => { const va = val(a[0], k), vb = val(b[0], k); const c = typeof va === "string" ? va.localeCompare(vb, state.lang, { sensitivity: "base" }) : va - vb; return c * m || a[1] - b[1]; });
+    return r.map((x) => x[0]);
+  };
+  const clickSort = (t, tbl, e) => {
+    const b = e.target.closest("button[data-sort]"); if (!b) return false;
+    const k = b.dataset.sort, s = $(`${tbl} button[data-sort="${state.statSort[t].k}"]`) ? state.statSort[t] : STAT_SORT_DEFAULT[t]; // a saved column that is not shown (VAT with orders) counts as the default
+    if (s.k === k) state.statSort[t] = { k, d: s.d === "asc" ? "desc" : "asc" }; else state.statSort[t] = { k, d: k === "per" || k === "name" ? "asc" : "desc" };
+    saveStatPrefs(); renderStats(); const n = $(`${tbl} button[data-sort="${k}"]`); if (n) n.focus(); return true;
+  };
   // the statistic tiles: which ones show is the person's choice (filter button above the tiles); shown in the order of KPI_ALL
   const KPI_DEFAULT = ["rev", "count", "days", "avg"];
   const KPI_ALL = ["rev", "count", "days", "avg", "inc", "best", "perInv", "rate", "hours", "weeks", "weekday", "month", "clients", "open"];
   state.kpiTiles = KPI_DEFAULT.slice();
   try { applyStatPrefs(JSON.parse(localStorage.getItem(STAT_KEY) || "{}")); } catch (e) {}
   const saveStatPrefs = () => { // remembered in the browser storage and in the saved data (survives a restart for sure)
-    const v = { src: state.statSource, mode: state.statMode, basis: state.poBasis, tiles: state.kpiTiles.slice() };
+    const v = { src: state.statSource, mode: state.statMode, basis: state.poBasis, tiles: state.kpiTiles.slice(), sort: { st: { ...state.statSort.st }, cl: { ...state.statSort.cl } } };
     try { localStorage.setItem(STAT_KEY, JSON.stringify(v)); } catch (e) {}
     if (state.db) { try { state.db.doc("settings/statprefs").set(v); } catch (e) {} }
   };
@@ -3282,9 +3359,9 @@ window.ValkTheme = (function () {
 
     // ---- table (weeks without anything on them are left out)
     const cell = (v, fmt) => (v ? `<td>${esc(fmt(v))}</td>` : `<td class="z">–</td>`);
-    const shown = mode === "week" ? buckets.filter((b) => b.a.n) : buckets;
-    const head = po ? [tr("tPeriod"), tr("tOrders"), tr("tDays"), tr("tValue")] : [tr("tPeriod"), tr("tInvoices"), tr("tDays"), tr("tEx"), tr("tVat"), tr("tInc")];
-    $("#stTable").innerHTML = `<thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>` +
+    const head = po ? [["per", tr("tPeriod")], ["n", tr("tOrders")], ["days", tr("tDays")], ["sub", tr("tValue")]] : [["per", tr("tPeriod")], ["n", tr("tInvoices")], ["days", tr("tDays")], ["sub", tr("tEx")], ["vat", tr("tVat")], ["total", tr("tInc")]];
+    const shown = sortRows("st", mode === "week" ? buckets.filter((b) => b.a.n) : buckets, (b, k) => (k === "per" ? buckets.indexOf(b) : b.a[k] || 0), head.map((c) => c[0]));
+    $("#stTable").innerHTML = sortHead("st", head) + `<tbody>` +
       shown.map((b) => `<tr${b.now ? ' class="now"' : ""}><td>${b.rows.length ? `<button type="button" class="plink" data-per="${buckets.indexOf(b)}" aria-haspopup="dialog">${esc(b.text)}</button>` : esc(b.text)}</td>${cell(b.a.n, String)}${cell(b.a.days, core.qty)}${cell(b.a.sub, core.eur)}${po ? "" : cell(b.a.vat, core.eur) + cell(b.a.total, core.eur)}</tr>`).join("") +
       `</tbody><tfoot><tr><td>${scope.length ? `<button type="button" class="plink" data-per="all" aria-haspopup="dialog">${esc(tr("tTotal"))}</button>` : esc(tr("tTotal"))}</td><td>${A.n}</td><td>${esc(core.qty(A.days))}</td><td>${esc(core.eur(A.sub))}</td>${po ? "" : `<td>${esc(core.eur(A.vat))}</td><td>${esc(core.eur(A.total))}</td>`}</tr></tfoot>`;
 
@@ -3292,8 +3369,9 @@ window.ValkTheme = (function () {
     const clients = new Map(); scope.forEach((x) => { const k = x.client || tr("noClient"); if (!clients.has(k)) clients.set(k, []); clients.get(k).push(x); });
     $("#clientPanel").hidden = clients.size < 2;
     if (clients.size > 1) {
-      const rows = [...clients.entries()].map(([k, r]) => [k, aggr(r)]).sort((a, b) => b[1].sub - a[1].sub);
-      $("#clTable").innerHTML = `<thead><tr><th>${esc(tr("tClient"))}</th><th>${esc(count)}</th><th>${esc(tr(po ? "tValue" : "tEx"))}</th><th>${esc(tr("tShare"))}</th></tr></thead><tbody>` +
+      const cols = [["name", tr("tClient")], ["n", count], ["sub", tr(po ? "tValue" : "tEx")], ["share", tr("tShare")]];
+      const rows = sortRows("cl", [...clients.entries()].map(([k, r]) => [k, aggr(r)]).sort((a, b) => b[1].sub - a[1].sub), ([k, a], c) => (c === "name" ? k : c === "n" ? a.n : a.sub), cols.map((c) => c[0]));
+      $("#clTable").innerHTML = sortHead("cl", cols) + `<tbody>` +
         rows.map(([k, a]) => `<tr><td>${esc(k)}</td><td>${a.n}</td><td>${esc(core.eur(a.sub))}</td><td>${A.sub ? Math.round(a.sub / A.sub * 100) : 0}%</td></tr>`).join("") + "</tbody>";
     }
     if (po) {
@@ -3378,7 +3456,8 @@ window.ValkTheme = (function () {
   $("#poBasis").addEventListener("change", (e) => { state.poBasis = e.target.value === "order" ? "order" : "work"; saveStatPrefs(); renderStats(); });
   $("#statYear").addEventListener("change", (e) => { state.statYear = +e.target.value; renderStats(); });
   $("#statCsv").addEventListener("click", exportCsv);
-  $("#stTable").addEventListener("click", (e) => { const b = e.target.closest("button[data-per]"); if (b) openPeriod(b.dataset.per); });
+  $("#stTable").addEventListener("click", (e) => { if (clickSort("st", "#stTable", e)) return; const b = e.target.closest("button[data-per]"); if (b) openPeriod(b.dataset.per); });
+  $("#clTable").addEventListener("click", (e) => clickSort("cl", "#clTable", e));
   $("#perDlgClose").addEventListener("click", () => $("#perDlg").close());
   const setLines = (btn, on) => { btn.setAttribute("aria-expanded", String(on)); btn.firstElementChild.textContent = on ? "▾" : "▸"; $("#perTable").querySelectorAll(`tr[data-of="${btn.dataset.tog}"]`).forEach((r) => (r.hidden = !on)); };
   $("#perTable").addEventListener("click", (e) => {
@@ -3557,8 +3636,8 @@ window.ValkTheme = (function () {
     render(); syncTabHead();
   }
   function saveLang() {
-    try { localStorage.setItem("valkyrys-lang", state.lang); } catch (e) {}
-    if (state.db) { try { state.db.doc("settings/prefs").set({ lang: state.lang }); } catch (e) {} }
+    try { localStorage.setItem("valkyrys-lang", state.lang); localStorage.setItem("valkyrys-lang-chosen", "1"); } catch (e) {}
+    if (state.db) { try { state.db.doc("settings/prefs").set({ lang: state.lang, langChosen: true }); } catch (e) {} }
   }
   $("#lang").addEventListener("change", (e) => { state.lang = e.target.value in LANGS ? e.target.value : "nl"; saveLang(); applyLang(); });
   try { const saved = localStorage.getItem("valkyrys-lang"); state.lang = saved in LANGS ? saved : "nl"; } catch (e) { state.lang = "nl"; }
@@ -3831,6 +3910,10 @@ window.ValkTheme = (function () {
     if (state.firstRunDone) return; state.firstRunDone = true;
     const fresh = state.db && !state.settings.template && !state.settings.designSkipped; // (designSkipped: a fresh install that chose to add its design later)
     if (fresh) markNewsSeen(); // a fresh install: everything is new, no "what's new" dot
+    if (fresh && window.ValkLangStep && !window.ValkLangChosen()) { // no lock screen came first (it asks the language itself): ask it here, once
+      let asked = false; try { const c = await state.db.doc("settings/prefs").get(); asked = c.exists && !!c.data().langChosen; } catch (e) {}
+      if (!asked) { const l = await window.ValkLangStep(); if (l in LANGS) { state.lang = l; saveLang(); applyLang(); } }
+    }
     if (fresh) await new Promise((res) => { $("#tplDlg").addEventListener("close", res, { once: true }); openTpl("first"); });
     maybeWelcome();
   }
@@ -3842,6 +3925,8 @@ window.ValkTheme = (function () {
   setTab("stats"); // the statistics are what opens first
   (async () => {
     await unlockGate; // with a PIN set, nothing is loaded before it is entered
+    let langPicked = window.ValkLangPicked in LANGS; // chosen on the first-start lock screen: it wins, and is saved once the data is there
+    if (langPicked && window.ValkLangPicked !== state.lang) { state.lang = window.ValkLangPicked; applyLang(); }
     if (LK) { try { const ps = await LK.status(); pinHas = !!ps.has; renderPin(); } catch (e) {} } // a PIN made on the first-start screen
     const use = window.claude && window.claude.use ? (n) => window.claude.use(n) : async () => null;
     const [db, dl] = await Promise.all([use("db"), use("downloads")]);
@@ -3873,6 +3958,7 @@ window.ValkTheme = (function () {
     }, () => {});
     db.doc("settings/prefs").onSnapshot((snap) => {
       const l = snap.exists && snap.data().lang;
+      if (langPicked) { langPicked = false; saveLang(); return; }
       if (l && l in LANGS && l !== state.lang) { state.lang = l; try { localStorage.setItem("valkyrys-lang", l); } catch (e) {} applyLang(); }
     }, () => {});
     db.collection("invoices").onSnapshot((snap) => {

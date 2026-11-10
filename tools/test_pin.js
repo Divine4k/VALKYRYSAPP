@@ -3,8 +3,8 @@ const { goTab, setLang, seedProfile } = require("./test_helpers");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 const dataHome = "/tmp/el-appdata-pin", D = path.join(dataHome, "Valkyrys app"), PINF = path.join(D, "pin.json");
-const launch = async (waitApp = false) => {
-  const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu", "--no-splash"], env: { ...process.env, APPDATA: dataHome, XDG_CONFIG_HOME: dataHome } });
+const launch = async (waitApp = false, home = dataHome) => {
+  const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu", "--no-splash"], env: { ...process.env, APPDATA: home, XDG_CONFIG_HOME: home } });
   await app.firstWindow(); let page; for (let i = 0; i < 100 && !page; i++) { page = app.windows().find((w) => !w.url().includes("splash")); if (!page) await new Promise((r) => setTimeout(r, 200)); }
   await page.waitForLoadState("domcontentloaded"); await page.waitForTimeout(700); return { app, page };
 };
@@ -17,11 +17,44 @@ const err = (page) => page.textContent("#lkErr");
 const opened = async (page) => { await page.waitForSelector("#statsView", { state: "visible" }); await page.waitForTimeout(600); return !(await locked(page)); };
 const dbStatus = (page) => page.evaluate(() => fetch("/api/db", { cache: "no-store" }).then((r) => r.status));
 const pinFile = () => { try { return JSON.parse(fs.readFileSync(PINF, "utf8")); } catch (e) { return null; } };
+const LANG_TITLE = "Kies je taal · Choose your language · Wybierz język";
+const langSel = (page) => page.$eval("#lockScreen .lk-langs button.primary", (b) => b.dataset.lang).catch(() => null);
+const dataJson = () => { try { return JSON.parse(fs.readFileSync(path.join(D, "data.json"), "utf8")); } catch (e) { return {}; } };
 (async () => {
+  // ---- a brand-new install (nothing in AppData): the very first screen is the language, then the PIN question in that language
+  fs.rmSync(dataHome, { recursive: true, force: true }); fs.mkdirSync(D, { recursive: true });
+  let { app, page } = await launch(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
+  ok(await locked(page), "fresh install: the lock screen comes first");
+  eq(await page.textContent("#lkTitle"), LANG_TITLE, "fresh install: first the language, asked in all three languages");
+  eq(await page.$$eval("#lockScreen .lk-langs button b", (a) => a.map((b) => b.textContent)), ["Nederlands", "English", "Polski"], "three buttons with the languages' own names");
+  ok(!(await page.isVisible("#lkAskYes")) && !(await page.isVisible("#lkDots")) && !(await page.isVisible('#lockScreen [data-d="1"]')), "no PIN question or keypad yet");
+  ok(await page.isVisible("#lockScreen .band img"), "logo on the language card");
+  const guess = await page.evaluate(() => { const n = String(navigator.language).slice(0, 2).toLowerCase(); return n === "pl" ? "pl" : n === "nl" ? "nl" : "en"; });
+  eq(await langSel(page), guess, "the system language is highlighted"); eq(await page.evaluate(() => document.activeElement.dataset.lang), guess, "...and has the keyboard focus");
+  await page.screenshot({ path: "/tmp/fr_lang.png" });
+  await page.click('#lockScreen [data-lang="pl"]');
+  eq(await page.textContent("#lkTitle"), "Czy chcesz zabezpieczyć aplikację kodem PIN?", "choosing Polski: the PIN question in Polish");
+  eq([await page.textContent("#lkAskYes"), await page.textContent("#lkAskNo")], ["Ustaw kod PIN", "Nie, bez kodu PIN"], "its buttons in Polish too");
+  await page.click("#lkAskNo"); await page.waitForFunction(() => !document.getElementById("lockScreen")); await page.waitForTimeout(1500);
+  eq(await page.evaluate(() => document.documentElement.lang), "pl", "the app opens in Polish"); eq(await page.textContent("#tabStats span"), "Statystyki", "...its texts too");
+  ok(!(await page.$("#langScreen")), "no second language step in the app");
+  eq(await page.inputValue("#lang"), "pl", "Settings shows Polski");
+  await page.waitForTimeout(800); eq(dataJson()["settings/prefs"], { lang: "pl", langChosen: true }, "the choice is saved with the app's data");
+  await app.close(); ({ app, page } = await launch()); page.on("pageerror", (e) => errs.push(e.message)); await page.waitForTimeout(1500);
+  ok(!(await locked(page)) && !(await page.$("#langScreen")), "restart: no lock screen, no language step again");
+  eq(await page.evaluate(() => document.documentElement.lang), "pl", "restart: still Polish"); eq(await page.textContent("#tabStats span"), "Statystyki", "restart: Polish texts");
+  await app.close();
+
+  // ---- an install whose design is chosen but without a PIN decision: language (by keyboard), then the PIN question
   fs.rmSync(dataHome, { recursive: true, force: true }); fs.mkdirSync(D, { recursive: true });
   fs.writeFileSync(path.join(D, "config.json"), JSON.stringify({ folder: "/tmp/np-inv" }));
   fs.writeFileSync(path.join(D, "data.json"), JSON.stringify({ "settings/main": { ...require("../electron-app/server.js").DEFAULT_SETTINGS, template: "valkyrys" } })); // the design is chosen already: only the PIN is asked
-  let { app, page } = await launch(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
+  ({ app, page } = await launch()); page.on("pageerror", (e) => errs.push(e.message));
+  eq(await page.textContent("#lkTitle"), LANG_TITLE, "the language step again (a new profile)");
+  const order = ["nl", "en", "pl"], gi = order.indexOf(await langSel(page));
+  await page.keyboard.press("ArrowDown"); eq(await langSel(page), order[(gi + 1) % 3], "arrow down moves the highlight"); eq(await page.evaluate(() => document.activeElement.dataset.lang), order[(gi + 1) % 3], "...and the focus");
+  for (let i = 0; i < 3 && (await langSel(page)) !== "nl"; i++) await page.keyboard.press("ArrowUp");
+  eq(await langSel(page), "nl", "arrow up reaches Nederlands"); await page.keyboard.press("Enter");
 
   // ---- first start: first the question (a PIN or not), then choose a PIN in two steps
   ok(await locked(page), "first start shows the lock screen");
@@ -133,6 +166,18 @@ const pinFile = () => { try { return JSON.parse(fs.readFileSync(PINF, "utf8")); 
   eq(await page.textContent("#lkTitle"), "Enter your PIN", "lock screen follows the language");
   await page.screenshot({ path: "/tmp/pin_login_midnight.png" });
   await keys(page, "2468"); ok(await opened(page), "unlocks");
+  await app.close();
+
+  // ---- no lock screen at the first start (PIN already decided, nothing else set up): the language step comes at the start of the first-start steps
+  const FB = dataHome + "-fb"; fs.rmSync(FB, { recursive: true, force: true }); fs.mkdirSync(path.join(FB, "Valkyrys app"), { recursive: true }); fs.writeFileSync(path.join(FB, "Valkyrys app", "pin.json"), '{"v":1,"skipped":true}');
+  ({ app, page } = await launch(false, FB)); page.on("pageerror", (e) => errs.push(e.message));
+  await page.waitForSelector("#langScreen", { timeout: 15000 }).catch(() => {});
+  ok(!(await locked(page)) && await page.isVisible("#langScreen"), "no lock screen: the language step opens with the first start");
+  eq(await page.textContent("#lgTitle"), LANG_TITLE, "...same title"); ok(!(await page.evaluate(() => document.querySelector("#tplDlg").open)), "the design step waits for it");
+  await page.click('#langScreen [data-lang="en"]'); await page.waitForSelector("#tplDlg[open]", { timeout: 15000 });
+  eq(await page.evaluate(() => document.documentElement.lang), "en", "then the design step, in English");
+  await app.close(); ({ app, page } = await launch(false, FB)); await page.waitForSelector("#tplDlg[open]", { timeout: 15000 });
+  ok(!(await page.$("#langScreen")) && (await page.evaluate(() => document.documentElement.lang)) === "en", "next start: not asked again, still English");
   console.log("errors:", errs); ok(!errs.length, "no page errors");
-  await app.close(); console.log(fails ? "FAILED: " + fails : "ALL PASSED"); process.exit(fails ? 1 : 0);
+  await app.close(); fs.rmSync(FB, { recursive: true, force: true }); console.log(fails ? "FAILED: " + fails : "ALL PASSED"); process.exit(fails ? 1 : 0);
 })().catch((e) => { console.log("FAIL " + e.message); process.exit(1); });

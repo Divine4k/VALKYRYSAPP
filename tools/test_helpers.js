@@ -12,16 +12,18 @@ const setLang = (page, lang) => page.evaluate((v) => { const s = document.queryS
 
 /** a profile that is set up: no PIN question, the first-start folder question already answered, and an invoice design chosen (the Valkyrys one unless opts.template says otherwise).
  *  `config` adds to config.json (folder, poFolder). opts.fresh (or opts.template === null) writes no data.json at all: a new install, which has no
- *  invoice designs until one is added (the first-start picker shows an empty list). Returns the data folder. */
+ *  invoice designs until one is added (the first-start picker shows an empty list); its language counts as chosen, so the first-start language step is skipped. Returns the data folder. */
 function seedProfile(home, config = {}, opts = {}) {
   const dir = path.join(home, APP_DIR);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, "pin.json"), '{"v":1,"skipped":true}');
   fs.writeFileSync(path.join(dir, "config.json"), JSON.stringify({ welcomed: true, ...config }));
   const data = path.join(dir, "data.json");
+  const { DEFAULT_SETTINGS } = require("../electron-app/server.js");
   if (opts.template !== null && !opts.fresh && !fs.existsSync(data)) {
-    const { DEFAULT_SETTINGS } = require("../electron-app/server.js");
     fs.writeFileSync(data, JSON.stringify({ "settings/main": { ...DEFAULT_SETTINGS, template: opts.template === undefined ? "valkyrys" : opts.template } }));
+  } else if (!fs.existsSync(data)) { // what electron-app/server.js makes for a new install, with the language already chosen (no first-start language step)
+    fs.writeFileSync(data, JSON.stringify({ "settings/main": { ...DEFAULT_SETTINGS, builtins: false }, "settings/prefs": { lang: "nl", langChosen: true } }));
   }
   return dir;
 }
