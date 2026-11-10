@@ -8,3 +8,4 @@ electron-app/web/
 installer/payload/
 index.before-*.html
 *.exe
+__pycache__/
