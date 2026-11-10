@@ -15,7 +15,8 @@ EXE="$SP/el/linux/electron"
 LOGS="$SP/logs"; mkdir -p "$LOGS"
 ELECTRON_TESTS="newpo po stats import folder pin theme podetail realpo dups settings electron sequence splash"
 
-build() { python3 -I tools/build_app.py && bash tools/sync_linux.sh; }
+toolchain() { { [ -x "$EXE" ] && [ -f dl/win.zip ]; } || bash tools/get_toolchain.sh; }   # Electron zips come from the "toolchain" branch when missing
+build() { toolchain && python3 -I tools/build_app.py && bash tools/sync_linux.sh; }
 
 # the tests save files into their fixture folders, so they are made again before every test
 fixtures() {
@@ -52,6 +53,7 @@ units() {
 }
 
 installer() {
+  toolchain || return 1
   python3 -I tools/build_payload.py || return 1
   ( cd installer
     export CGO_ENABLED=0

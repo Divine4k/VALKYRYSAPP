@@ -5,7 +5,7 @@ Windows desktop app (Electron 33) that turns the client's purchase orders (PO PD
 ## Working rules (also in the Project instructions)
 - Run only the tests for the area you changed. Run everything and build the installer only when asked to "release".
 - Keep replies short; do not re-check what did not change.
-- Everything is in one folder (the session scratchpad). It is not in git: back it up (zip) or put it in a repo.
+- Source lives in the GitHub repo (see Environment). Commit and push when a batch of changes is done.
 
 ## Commands (all from the project folder)
 ```
@@ -13,7 +13,7 @@ tools/dev.sh build              app files -> app/web, copied into the Linux test
 tools/dev.sh test settings dups run only these Electron tests (name without "test_"); builds first
 tools/dev.sh units              quick tests of the reading/counting code, no window
 tools/dev.sh all                everything, ~10 min
-tools/dev.sh installer          payload + Windows installer only
+tools/dev.sh installer          payload + Windows installer only (fetches the Electron zips first if missing)
 tools/dev.sh release            all tests; only if all pass: installer + a check of what is in it
 ```
 Logs: `logs/<test>.log`. Tests need xvfb (the script uses `xvfb-run -a`). Do not leave `GOOS=windows` exported when running `go test`.
@@ -52,8 +52,11 @@ Logs: `logs/<test>.log`. Tests need xvfb (the script uses `xvfb-run -a`). Do not
 - `payload/uninstall.exe` only needs rebuilding when the installer's Go code changes (`-tags uninst`); `dev.sh installer` does it anyway. Icon/manifest: `tools/make_syso.py electron-app/build/icon.ico installer/rsrc_windows_amd64.syso`.
 - Never run on real Windows from here. Everything Windows-specific (window, shortcuts, registry, replacing the old install) is untested; test it on a machine before trusting it.
 
-## Environment (no network from the shell)
-Needs: Electron 33 Linux copy in `el/linux`, Windows Electron zip `dl/win.zip`, Go (cross-compile), Node, Python, xvfb, Playwright, and libraries in `/opt/npm-tools` (pdf-lib, jszip) and `/home/claude/.npm-global` (pdfjs-dist, pdf-lib, docx). If a fresh machine lacks them, the Electron tests and installer cannot be rebuilt there.
+## Environment (no network from the shell except GitHub through the git proxy)
+- Source: GitHub repo `Divine4k/VALKYRYSAPP`, branch `main`. Attach it with add_repo (push needs the Claude GitHub App, installed on Divine4k).
+- Electron zips (Linux test copy, Windows installer payload) are too big for `main`: they live in branch `toolchain`, cut in parts. `tools/get_toolchain.sh` (called by `dev.sh build` / `dev.sh installer` when missing) fetches them, checks the checksums and sets up `dl/` and `el/linux`. Takes a few minutes. Never merge `toolchain` into main.
+- Also needed: Go (cross-compile), Node, Python, xvfb, Playwright, and libraries in `/opt/npm-tools` (pdf-lib, jszip) and `/home/claude/.npm-global` (pdfjs-dist, pdf-lib, docx).
+- Push the source with plain git (commit on main, `git push`). Do not commit installers, `app/web`, `installer/payload`, logs.
 
 ## Known limits
 - A PO layout with prices vertically centred between two text lines is not read (listed as "unread").
