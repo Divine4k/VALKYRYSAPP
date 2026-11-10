@@ -59,6 +59,7 @@ const server = http.createServer((req, res) => {
     window.__saved = [];
     const downloads = { save: async ({ filename, data }) => { const buf = data instanceof Blob ? new Uint8Array(await data.arrayBuffer()) : data; window.__saved.push({ filename, b64: btoa(Array.from(buf, (x) => String.fromCharCode(x)).join("")) }); return { status: "saved" }; } };
     window.claude = { use: async (n) => (n === "db" ? db : n === "downloads" ? downloads : null) };
+    window.__db = db;
   });
 
   await page.goto("http://localhost:8765/");
@@ -129,6 +130,52 @@ const server = http.createServer((req, res) => {
   const before = await page.evaluate(() => window.__saved.length);
   await page.click('article.po [data-act="download"]'); await page.waitForFunction((n) => window.__saved.length > n, before, { timeout: 15000 });
   console.log("file names:", await page.evaluate(() => window.__saved.map((x) => x.filename).join(" | ")));
+  // ---- × removes a card; "Opslaan (PDF + Word)" saves both and records the formats; a second invoice for an invoiced PO asks first
+  let fails = 0; const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) { fails++; process.exitCode = 1; } };
+  const rec = (n) => page.evaluate(async (n) => { const d = await window.__db.doc("invoices/" + n).get(); return d.exists ? d.data() : null; }, n);
+  const nSaved = () => page.evaluate(() => window.__saved.length);
+  await page.click("#clear");
+  await page.evaluate(() => window.__db.doc("invoices/50-2026").set({ factuurnr: "50-2026", nummer: 50, jaar: 2026, po: "PO-008148", datum: "01/10/2026", totaal: 450, btw: "verlegd", lines: [{ desc: "PO-008148", tarief: 450, aantal: 1 }] }));
+  await page.waitForTimeout(300);
+  await page.setInputFiles("#file", poPath); await page.waitForSelector("article.po h3");
+  const foot = await page.$$eval("article.po .po-foot button", (b) => b.map((x) => x.dataset.act + (x.classList.contains("primary") ? "*" : "")));
+  ok(JSON.stringify(foot) === '["preview","download-docx","download","download-both*"]', "footer order, PDF + Word is the primary: " + foot);
+  ok((await page.textContent("article.po .checks")).match(/al gefactureerd als \d+-2026/), "card warns it was invoiced");
+  const nrNew = await page.inputValue('article.po [data-k="nr"]'); let n0 = await nSaved();
+  await page.click('article.po [data-act="download-both"]'); await page.waitForSelector("#poDupDlg[open]");
+  ok(/^PO-008148 is al gefactureerd als \d+-2026\. Toch nog een factuur maken\?$/.test(await page.textContent("#poDupText")), "confirm text: " + (await page.textContent("#poDupText")));
+  await page.click("#poDupCancel"); await page.waitForTimeout(800);
+  ok((await nSaved()) === n0 && !(await rec(nrNew)), "cancel: nothing saved, nothing logged");
+  await page.click('article.po [data-act="download-both"]'); await page.waitForSelector("#poDupDlg[open]"); await page.click("#poDupGo");
+  await page.waitForFunction((n) => window.__saved.length >= n + 2, n0, { timeout: 20000 });
+  const names2 = await page.evaluate((n) => window.__saved.slice(n).map((x) => x.filename), n0);
+  ok(names2.length === 2 && names2[0].endsWith(".pdf") && names2[1].endsWith(".docx"), "save anyway + both: two downloads " + names2);
+  await page.waitForTimeout(300); const r = await rec(nrNew);
+  ok(r && JSON.stringify(r.formats) === '["pdf","docx"]', "record formats: " + JSON.stringify(r && r.formats));
+  ok((await page.textContent("article.po .done")).includes(nrNew) && (await page.textContent('article.po [data-act="download-both"]')).startsWith("Opnieuw"), "done note + 'again' label");
+  ok(JSON.stringify(await page.$$eval(`#hist li`, (li, n) => { const l = li.find((x) => x.querySelector(".t").textContent === n); return [...l.querySelectorAll("button")].map((b) => b.dataset.redo ? "redo:" + b.textContent : b.dataset.del ? "del" : "?"); }, nrNew)) === '["redo:Opnieuw maken","del"]', "history without a folder: 'Opnieuw maken' + ×");
+  // Opnieuw maken: downloads PDF + Word again
+  n0 = await nSaved(); await page.click(`#hist button[data-redo="${nrNew}"]`); await page.waitForFunction((n) => window.__saved.length >= n + 2, n0, { timeout: 20000 });
+  ok(true, "'Opnieuw maken' downloads PDF + Word");
+  // batch: one card invoiced elsewhere, one new -> skip those
+  await page.$eval("#clear", (b) => b.click()); await page.setInputFiles("#file", [poPath]); await page.waitForSelector("article.po h3"); await page.setInputFiles("#file", [poPath]);
+  await page.waitForFunction(() => document.querySelectorAll("article.po").length === 2, null, { timeout: 15000 });
+  const keepNr = await page.evaluate(() => { const c = window.__t.state.cards[1]; c.po = "PO-777777"; window.__t.render(); return c.nummer + "-" + c.jaar; });
+  n0 = await nSaved(); await page.click("#zipAll"); await page.waitForSelector("#poDupDlg[open]");
+  ok(await page.isVisible("#poDupSkip") && (await page.$$("#poDupList li")).length === 1, "batch: one dialog listing the invoiced card, with 'Deze overslaan'");
+  await page.click("#poDupCancel"); await page.waitForTimeout(800); ok((await nSaved()) === n0, "batch cancel: nothing saved");
+  await page.click("#zipAll"); await page.waitForSelector("#poDupDlg[open]"); await page.click("#poDupSkip");
+  await page.waitForFunction((n) => window.__saved.length > n, n0, { timeout: 30000 });
+  const zs = await page.evaluate(() => window.__saved[window.__saved.length - 1]);
+  const JSZip = require("/opt/npm-tools/node_modules/jszip"); const zf = Object.keys((await JSZip.loadAsync(Buffer.from(zs.b64, "base64"))).files);
+  ok(zs.filename.endsWith(".zip") && zf.length === 2 && zf.every((f) => f.includes(keepNr)), "skip: the zip holds only " + keepNr + ": " + zf);
+  // × takes the card off the list
+  const nCards = (await page.$$("article.po")).length;
+  ok(await page.$eval('article.po [data-act="remove"]', (b) => b.title === "Verwijderen uit de lijst" && !!b.querySelector("svg") && !b.textContent.trim()), "× button with title 'Verwijderen uit de lijst'");
+  await page.click('article.po [data-act="remove"]'); await page.waitForTimeout(200);
+  ok((await page.$$("article.po")).length === nCards - 1, "× removes the card");
+  await page.locator("#hist").scrollIntoViewIfNeeded(); await page.screenshot({ path: path.join(outDir, "tool-112.png"), fullPage: true });
+  console.log(fails ? `${fails} check(s) failed` : "all 1.1.2 checks passed");
   const phone = await browser.newPage({ viewport: { width: 390, height: 900 } });
   await phone.route(/./, (r) => r.request().url().startsWith("http://localhost") ? r.continue() : r.abort());
   await phone.goto("http://localhost:8765/");

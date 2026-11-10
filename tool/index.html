@@ -70,10 +70,25 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 #delDlg .dlg-body { background: var(--surface); }
 .delwhat { margin: 0; padding: 0 0 0 20px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
 .delwhat li.keep { color: var(--muted); text-decoration: line-through; }
-button.danger { background: var(--err); border-color: var(--err); color: var(--surface); }
-button.danger:hover { filter: brightness(.95); border-color: var(--err); }
+button.danger { background: #C42B21; border-color: #C42B21; color: #FFFFFF; font-weight: 700; }
+button.danger:hover { background: #A8231A; border-color: #A8231A; color: #FFFFFF; filter: none; }
+.saveopt small.fname { display: block; color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+/* invoices missing a file / two invoices for one purchase order */
+.dwarn { display: flex; flex-direction: column; gap: 10px; }
+.npwarn { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 0; }
+.npwarn p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13.5px; font-weight: 600; color: var(--warn); background: var(--warn-bg); border-radius: 8px; padding: 7px 10px; }
+.npwarn p span { flex: 1 1 220px; }
+.npwarn button, .c-warn button { min-height: 28px; padding: 3px 10px; font-size: 12px; }
+.c-warn { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: -2px; }
+.c-warn .tagw { white-space: nowrap; }
+.drow.miss { background: color-mix(in srgb, var(--warn-bg) 30%, transparent); }
+button.dchip.miss:disabled { color: var(--warn); border-color: var(--warn); opacity: .9; }
 button.refresh { min-height: 32px; width: 32px; padding: 0; color: var(--muted); }
 button.refresh:hover { color: var(--ink); border-color: var(--line); }
+button.xbtn { min-height: 34px; width: 34px; padding: 0; border-radius: 50%; flex: 0 0 auto; margin: -4px -6px 0 0; }
+button.xbtn:hover { color: var(--ink); background: var(--sunken); border-color: transparent; }
+#poDupDlg { width: min(500px, calc(100% - 24px)); }
+#poDupDlg .dlg-body { background: var(--surface); }
 button.refresh.spin svg { animation: rspin .8s linear infinite; }
 @keyframes rspin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { button.refresh.spin svg { animation-duration: 2.4s; } }
@@ -104,6 +119,8 @@ input:focus, select:focus { border-color: var(--focus); }
 .po-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 14px; }
 .total { font-size: 13px; color: var(--muted); }
 .total b { display: block; font-size: 22px; font-weight: 900; color: var(--ink); }
+.total .done { display: block; margin-top: 2px; font-size: 13px; }
+.po-foot .actions { margin-left: auto; justify-content: flex-end; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .done { color: var(--ok); font-weight: 700; font-size: 14px; }
 
@@ -123,7 +140,7 @@ details[open] summary::after { content: "\2212"; }
 .hist .t { font-weight: 700; color: var(--ink); }
 .hist .s { font-size: 13px; color: var(--muted); grid-column: 1; }
 .nw { white-space: nowrap; }
-.hist .redo { grid-row: 1 / span 2; grid-column: 2; display: flex; gap: 6px; }
+.hist .redo { grid-row: 1 / span 2; grid-column: 2; display: flex; gap: 6px; align-items: center; }
 .hist button {  min-height: 34px; padding: 6px 10px; font-size: 13px; }
 .empty { color: var(--muted); margin: 6px 0 0; font-size: 14px; }
 .banner { border-radius: var(--r); padding: 12px 14px; font-size: 14px; }
@@ -704,6 +721,7 @@ window.ValkTheme = (function () {
     <div class="panel newpo" id="newPo" hidden>
       <div class="ehead"><p class="eyebrow" data-i18n="npTitle">Nieuwe inkooporders</p><button type="button" class="ghost refresh" data-refresh data-i18n-aria="refresh" aria-label="Vernieuwen" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg></button></div>
       <p class="small np-note" id="npNote"></p>
+      <div class="npwarn" id="npWarn" hidden></div>
       <ul class="hist np" id="npList"></ul>
       <div class="frow" id="npRow">
         <button type="button" class="primary" id="npAll"></button>
@@ -819,6 +837,7 @@ window.ValkTheme = (function () {
     <button type="button" class="primary" id="docsGoSet" data-i18n="openSettings">Naar instellingen</button>
   </div>
   <div class="panel dupbar stalebar" id="staleBarD" role="status" hidden><span class="dtext" data-stale-text></span><button type="button" data-stale="del" data-i18n="staleDel">Uit de app verwijderen</button><button type="button" class="ghost" data-stale="keep" data-i18n="staleKeep">Behouden</button></div>
+  <div class="dwarn" id="docsWarn" hidden></div>
   <div class="panel dbar" id="docsBar">
     <label class="dsearch" for="docsSearch"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="sr" data-i18n="docsSearch">Zoeken op nummer, klant of inkooporder</span><input id="docsSearch" type="search" autocomplete="off" spellcheck="false"></label>
     <div class="seg" role="group" id="docsFilter" data-i18n-aria="docsFilter" aria-label="Tonen">
@@ -826,6 +845,7 @@ window.ValkTheme = (function () {
       <button type="button" data-f="open" aria-pressed="false"><span data-i18n="docsNotSent">Niet verzonden</span><span class="n num" data-n="open"></span></button>
       <button type="button" data-f="sent" aria-pressed="false"><span data-i18n="docsSent">Verzonden</span><span class="n num" data-n="sent"></span></button>
       <button type="button" data-f="noinv" aria-pressed="false"><span data-i18n="docsNoInv">Zonder factuur</span><span class="n num" data-n="noinv"></span></button>
+      <button type="button" data-f="miss" aria-pressed="false"><span data-i18n="docsIncomplete">Onvolledig</span><span class="n num" data-n="miss"></span></button>
     </div>
     <div class="dsort">
       <select id="docsSort" data-i18n-aria="docsSortBy" aria-label="Sorteren op">
@@ -998,11 +1018,20 @@ window.ValkTheme = (function () {
     <ul class="delwhat" id="delList"></ul>
     <fieldset class="saveopt" id="delOpts">
       <legend data-i18n="delInFolder">In de map</legend>
-      <label id="delFilesWrap"><input type="checkbox" id="delFiles"><span data-i18n="delFiles">Ook de bestanden in de map verwijderen (PDF, Word)</span></label>
-      <label id="delPoWrap"><input type="checkbox" id="delPo"><span data-i18n="delPo">Ook de inkooporder (PO) verwijderen</span></label>
+      <label id="delPdfWrap"><input type="checkbox" id="delPdf"><span><span data-i18n="delPdf">PDF-bestand</span> <small class="fname" id="delPdfName"></small></span></label>
+      <label id="delWordWrap"><input type="checkbox" id="delWord"><span><span data-i18n="delWord">Word-bestand</span> <small class="fname" id="delWordName"></small></span></label>
+      <label id="delPoWrap"><input type="checkbox" id="delPo"><span><span data-i18n="delPo">Inkooporder (PO)</span> <small class="fname" id="delPoName"></small></span></label>
       <small id="delBin" data-i18n="delBin">Bestanden gaan naar de Prullenbak, daar kun je ze terugzetten.</small>
     </fieldset>
     <div class="frow wact" style="margin-top:4px"><button type="button" class="danger" id="delGo" data-i18n="delGo">Verwijderen</button><button type="button" class="ghost" id="delCancel" data-i18n="delCancel">Annuleren</button></div>
+  </div>
+</dialog>
+<dialog id="poDupDlg" aria-labelledby="poDupTitle">
+  <div class="dlg-head"><strong id="poDupTitle" data-i18n="poDupTitle">Al gefactureerd</strong><button type="button" id="poDupClose" data-i18n="close">Sluiten</button></div>
+  <div class="dlg-body stack" style="margin:0">
+    <p style="margin:0" id="poDupText"></p>
+    <ul class="delwhat" id="poDupList" hidden></ul>
+    <div class="frow wact" style="margin-top:4px"><button type="button" class="primary" id="poDupGo" data-i18n="poDupGo">Toch opslaan</button><button type="button" id="poDupSkip" data-i18n="poDupSkip" hidden>Deze overslaan</button><button type="button" class="ghost" id="poDupCancel" data-i18n="delCancel">Annuleren</button></div>
   </div>
 </dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
@@ -1092,11 +1121,15 @@ window.ValkTheme = (function () {
       folderHighest: "Hoogste nummer dit jaar: {0}",
       openFail: "Het bestand kon niet worden geopend.",
       folderWriteFail: "Opslaan in de map lukte niet. Staat het bestand open in Word of een PDF-lezer?", savePdf: "Opslaan als PDF",
+      saveBoth: "Opslaan (PDF + Word)", saveBothAgain: "Opnieuw opslaan (PDF + Word)", saveWordAgain: "Opnieuw opslaan (Word)", dlBoth: "Download (PDF + Word)", dlBothAgain: "Opnieuw downloaden (PDF + Word)", dlWordAgain: "Opnieuw downloaden (Word)",
+      removeCard: "Verwijderen uit de lijst", removeCardAria: "Verwijderen uit de lijst: {0}", alreadyInvNr: "{0} is al gefactureerd als {1}.",
+      poDupTitle: "Al gefactureerd", poDupOne: "{0} is al gefactureerd als {1}. Toch nog een factuur maken?", poDupMany: "Deze inkooporders zijn al gefactureerd. Toch nog een factuur maken?", poDupItem: "{0}: al gefactureerd als {1}",
+      poDupGo: "Toch opslaan", poDupSkip: "Deze overslaan", histRemake: "Opnieuw maken", histRemakeTitle: "Het bestand staat niet in de map: maak de factuur opnieuw", histPdfAria: "PDF van {0} bekijken", histWordAria: "Word-bestand van {0} bekijken",
       saveWord: "Opslaan als Word", saveAgain: "Opnieuw opslaan (PDF)",
       saveAll: "Alles opslaan in de map", doneSaved: "✓ Opgeslagen als {0}",
       savedIn: "{0} opgeslagen in de map.", savedMany: "{0} facturen opgeslagen in de map.",
       numInFolder: "Factuurnummer {0} staat al in de map ({1}).", delToastKept: "{0} is uit de lijst gehaald. Het bestand staat nog in de map, dus het nummer blijft bezet.",
-      refresh: "Vernieuwen", delSetTitle: "Factuur {0} verwijderen?", delWhat: "Dit wordt verwijderd:", delInFolder: "In de map", delFiles: "Ook de bestanden in de map verwijderen (PDF, Word)", delPo: "Ook de inkooporder (PO) verwijderen",
+      refresh: "Vernieuwen", delSetTitle: "Factuur {0} verwijderen?", delWhat: "Dit wordt verwijderd:", delInFolder: "In de map", delFiles: "Ook de bestanden in de map verwijderen (PDF, Word)", delPo: "Inkooporder (PO)",
       delBin: "Bestanden gaan naar de Prullenbak; daar kun je ze terugzetten.", delGo: "Verwijderen", delCancel: "Annuleren", delItemRec: "De factuur in de app (gegevens en nummer)", delItemPo: "Inkooporder: {0}", delSetAria: "Factuur {0} verwijderen",
       delSomeFail: "Niet alles kon worden verwijderd. Kijk in de map.", delToastFiles: "De bestanden van {0} staan nu in de Prullenbak.", delToastAll: "{0} is verwijderd; de bestanden staan in de Prullenbak. Het nummer is weer vrij.",
       staleOne: "{0} factuur staat nog in de app, maar de bestanden zijn uit de map verwijderd: {1}", staleMany: "{0} facturen staan nog in de app, maar hun bestanden zijn uit de map verwijderd: {1}",
@@ -1107,6 +1140,8 @@ window.ValkTheme = (function () {
       docsAsc: "Oplopend", docsDesc: "Aflopend", docsColDocs: "Documenten", docsCount: "{0} van {1} verzonden", docsSentAria: "Factuur {0} is verzonden", docsOnlyApp: "alleen in de app",
       docsNoInv: "Zonder factuur", docsNoInvBadge: "Geen factuur", docsMakeInv: "Factuur maken", docsMakeInvAria: "Factuur maken van inkooporder {0}", docsPoSkipped: "overgeslagen", docsPoViewAria: "Inkooporder {0} bekijken", docsPoOnlyTitle: "Voor deze inkooporder is nog geen factuur gemaakt",
       docsGen: "Niet als bestand opgeslagen: het voorbeeld wordt opnieuw gemaakt", docsMissing: "Geen {0}", docsViewAria: "{0} van factuur {1} bekijken", docsRevealAria: "Factuur {0} tonen in de map",
+      docsIncomplete: "Onvolledig", docsMissBadge: "{0} ontbreekt", docsMissTitle: "{0} staat niet in de map", docsDupBadge: "Dubbel", docsDupTitle: "{0} staat ook op factuur {1}", docsRemake: "Opnieuw maken", docsRemakeTitle: "{0} opnieuw maken in de map", docsIgnore: "Negeren", docsIgnoreTitle: "Niet meer melden voor deze factuur",
+      docsDraw: "Bekijken zoals de app hem tekent (geen PDF in de map)", docsDrawAria: "Factuur {0} bekijken zoals de app hem tekent", missOne: "1 factuur mist een bestand: {0}", missMany: "{0} facturen missen een bestand: {1}", dupInv: "{0} heeft {1} facturen: {2}", warnView: "Bekijken", remade: "{0}: {1} opnieuw gemaakt in de map", remakeFail: "Opnieuw maken is niet gelukt", delPdf: "PDF-bestand", delWord: "Word-bestand",
       docsEmptyT: "Nog geen facturen", docsEmptyP: "Facturen die je maakt of in je map zet, verschijnen hier met hun PDF, Word-bestand en inkooporder.", docsNoMatch: "Niets gevonden", docsNoMatchP: "Pas je zoekopdracht of filter aan.",
       docsWithPo: "met inkooporder: {0}", wordOpen: "Openen in Word", wordPrevTitle: "Factuur {0} (Word)",
       statsTagline: "Je omzet en facturen in cijfers.", statsEmpty: "Nog geen facturen om te tellen. Download of sla een factuur op, of kies bij Instellingen een map met je facturen: die worden dan ook meegeteld.",
@@ -1248,11 +1283,15 @@ window.ValkTheme = (function () {
       folderHighest: "Highest number this year: {0}",
       openFail: "The file could not be opened.",
       folderWriteFail: "Saving to the folder failed. Is the file open in Word or a PDF reader?", savePdf: "Save as PDF",
+      saveBoth: "Save (PDF + Word)", saveBothAgain: "Save again (PDF + Word)", saveWordAgain: "Save again (Word)", dlBoth: "Download (PDF + Word)", dlBothAgain: "Download again (PDF + Word)", dlWordAgain: "Download again (Word)",
+      removeCard: "Remove from the list", removeCardAria: "Remove from the list: {0}", alreadyInvNr: "{0} was already invoiced as {1}.",
+      poDupTitle: "Already invoiced", poDupOne: "{0} was already invoiced as {1}. Make another invoice anyway?", poDupMany: "These purchase orders were already invoiced. Make another invoice anyway?", poDupItem: "{0}: already invoiced as {1}",
+      poDupGo: "Save anyway", poDupSkip: "Skip these", histRemake: "Make again", histRemakeTitle: "The file is not in the folder: make the invoice again", histPdfAria: "View the PDF of {0}", histWordAria: "View the Word file of {0}",
       saveWord: "Save as Word", saveAgain: "Save again (PDF)",
       saveAll: "Save all to the folder", doneSaved: "✓ Saved as {0}",
       savedIn: "{0} saved to the folder.", savedMany: "{0} invoices saved to the folder.",
       numInFolder: "Invoice number {0} is already in the folder ({1}).", delToastKept: "{0} was removed from the list. The file is still in the folder, so the number stays taken.",
-      refresh: "Refresh", delSetTitle: "Delete invoice {0}?", delWhat: "This will be deleted:", delInFolder: "In the folder", delFiles: "Also delete the files in the folder (PDF, Word)", delPo: "Also delete the purchase order (PO)",
+      refresh: "Refresh", delSetTitle: "Delete invoice {0}?", delWhat: "This will be deleted:", delInFolder: "In the folder", delFiles: "Also delete the files in the folder (PDF, Word)", delPo: "Purchase order (PO)",
       delBin: "Files go to the Recycle Bin, where you can restore them.", delGo: "Delete", delCancel: "Cancel", delItemRec: "The invoice in the app (details and number)", delItemPo: "Purchase order: {0}", delSetAria: "Delete invoice {0}",
       delSomeFail: "Not everything could be deleted. Check the folder.", delToastFiles: "The files of {0} are now in the Recycle Bin.", delToastAll: "{0} was deleted; the files are in the Recycle Bin. The number is free again.",
       staleOne: "{0} invoice is still in the app, but its files were deleted from the folder: {1}", staleMany: "{0} invoices are still in the app, but their files were deleted from the folder: {1}",
@@ -1263,6 +1302,8 @@ window.ValkTheme = (function () {
       docsAsc: "Ascending", docsDesc: "Descending", docsColDocs: "Documents", docsCount: "{0} of {1} sent", docsSentAria: "Invoice {0} has been sent", docsOnlyApp: "only in the app",
       docsNoInv: "Without invoice", docsNoInvBadge: "No invoice", docsMakeInv: "Make invoice", docsMakeInvAria: "Make an invoice from purchase order {0}", docsPoSkipped: "skipped", docsPoViewAria: "View purchase order {0}", docsPoOnlyTitle: "No invoice has been made for this purchase order yet",
       docsGen: "Not saved as a file: the preview is drawn again", docsMissing: "No {0}", docsViewAria: "View the {0} of invoice {1}", docsRevealAria: "Show invoice {0} in the folder",
+      docsIncomplete: "Incomplete", docsMissBadge: "{0} missing", docsMissTitle: "{0} is not in the folder", docsDupBadge: "Duplicate", docsDupTitle: "{0} is also on invoice {1}", docsRemake: "Make again", docsRemakeTitle: "Make the {0} again in the folder", docsIgnore: "Ignore", docsIgnoreTitle: "Stop warning about this invoice",
+      docsDraw: "View as the app draws it (no PDF in the folder)", docsDrawAria: "View invoice {0} as the app draws it", missOne: "1 invoice is missing a file: {0}", missMany: "{0} invoices are missing a file: {1}", dupInv: "{0} has {1} invoices: {2}", warnView: "View", remade: "{0}: {1} made again in the folder", remakeFail: "Could not make it again", delPdf: "PDF file", delWord: "Word file",
       docsEmptyT: "No invoices yet", docsEmptyP: "Invoices you make or put in your folder show up here with their PDF, Word file and purchase order.", docsNoMatch: "Nothing found", docsNoMatchP: "Change your search or filter.",
       docsWithPo: "with purchase order: {0}", wordOpen: "Open in Word", wordPrevTitle: "Invoice {0} (Word)",
       statsTagline: "Your revenue and invoices in numbers.", statsEmpty: "No invoices to count yet. Download or save an invoice, or choose a folder with your invoices under Settings: those are counted too.",
@@ -1404,11 +1445,15 @@ window.ValkTheme = (function () {
       folderHighest: "Najwyższy numer w tym roku: {0}",
       openFail: "Nie udało się otworzyć pliku.",
       folderWriteFail: "Zapis w folderze nie powiódł się. Czy plik jest otwarty w Wordzie lub czytniku PDF?", savePdf: "Zapisz jako PDF",
+      saveBoth: "Zapisz (PDF + Word)", saveBothAgain: "Zapisz ponownie (PDF + Word)", saveWordAgain: "Zapisz ponownie (Word)", dlBoth: "Pobierz (PDF + Word)", dlBothAgain: "Pobierz ponownie (PDF + Word)", dlWordAgain: "Pobierz ponownie (Word)",
+      removeCard: "Usuń z listy", removeCardAria: "Usuń z listy: {0}", alreadyInvNr: "{0} zostało już zafakturowane jako {1}.",
+      poDupTitle: "Już zafakturowane", poDupOne: "{0} zostało już zafakturowane jako {1}. Mimo to wystawić kolejną fakturę?", poDupMany: "Te zamówienia zostały już zafakturowane. Mimo to wystawić kolejne faktury?", poDupItem: "{0}: już zafakturowane jako {1}",
+      poDupGo: "Zapisz mimo to", poDupSkip: "Pomiń te", histRemake: "Utwórz ponownie", histRemakeTitle: "Pliku nie ma w folderze: utwórz fakturę ponownie", histPdfAria: "Pokaż PDF faktury {0}", histWordAria: "Pokaż plik Word faktury {0}",
       saveWord: "Zapisz jako Word", saveAgain: "Zapisz ponownie (PDF)",
       saveAll: "Zapisz wszystko w folderze", doneSaved: "✓ Zapisano jako {0}",
       savedIn: "Zapisano {0} w folderze.", savedMany: "Zapisano faktur w folderze: {0}.",
       numInFolder: "Numer faktury {0} jest już w folderze ({1}).", delToastKept: "Usunięto {0} z listy. Plik nadal jest w folderze, więc numer pozostaje zajęty.",
-      refresh: "Odśwież", delSetTitle: "Usunąć fakturę {0}?", delWhat: "Zostanie usunięte:", delInFolder: "W folderze", delFiles: "Usuń też pliki w folderze (PDF, Word)", delPo: "Usuń też zamówienie (PO)",
+      refresh: "Odśwież", delSetTitle: "Usunąć fakturę {0}?", delWhat: "Zostanie usunięte:", delInFolder: "W folderze", delFiles: "Usuń też pliki w folderze (PDF, Word)", delPo: "Zamówienie (PO)",
       delBin: "Pliki trafią do Kosza, skąd można je przywrócić.", delGo: "Usuń", delCancel: "Anuluj", delItemRec: "Faktura w aplikacji (dane i numer)", delItemPo: "Zamówienie: {0}", delSetAria: "Usuń fakturę {0}",
       delSomeFail: "Nie wszystko udało się usunąć. Sprawdź folder.", delToastFiles: "Pliki faktury {0} są teraz w Koszu.", delToastAll: "Usunięto {0}; pliki są w Koszu. Numer jest znów wolny.",
       staleOne: "{0} faktura jest jeszcze w aplikacji, ale jej pliki usunięto z folderu: {1}", staleMany: "Faktury w aplikacji, których pliki usunięto z folderu ({0}): {1}",
@@ -1419,6 +1464,8 @@ window.ValkTheme = (function () {
       docsAsc: "Rosnąco", docsDesc: "Malejąco", docsColDocs: "Dokumenty", docsCount: "Wysłane: {0} z {1}", docsSentAria: "Faktura {0} została wysłana", docsOnlyApp: "tylko w aplikacji",
       docsNoInv: "Bez faktury", docsNoInvBadge: "Brak faktury", docsMakeInv: "Utwórz fakturę", docsMakeInvAria: "Utwórz fakturę z zamówienia zakupu {0}", docsPoSkipped: "pominięte", docsPoViewAria: "Podgląd zamówienia zakupu {0}", docsPoOnlyTitle: "Dla tego zamówienia zakupu nie utworzono jeszcze faktury",
       docsGen: "Nie zapisano jako plik: podgląd jest tworzony ponownie", docsMissing: "Brak: {0}", docsViewAria: "Podgląd: {0} faktury {1}", docsRevealAria: "Pokaż fakturę {0} w folderze",
+      docsIncomplete: "Niekompletne", docsMissBadge: "Brak {0}", docsMissTitle: "{0} nie ma w folderze", docsDupBadge: "Duplikat", docsDupTitle: "{0} jest też na fakturze {1}", docsRemake: "Utwórz ponownie", docsRemakeTitle: "Utwórz ponownie {0} w folderze", docsIgnore: "Ignoruj", docsIgnoreTitle: "Nie ostrzegaj więcej o tej fakturze",
+      docsDraw: "Podgląd w wersji z aplikacji (brak PDF w folderze)", docsDrawAria: "Podgląd faktury {0} w wersji z aplikacji", missOne: "Brakuje pliku w 1 fakturze: {0}", missMany: "Brakuje pliku w {0} fakturach: {1}", dupInv: "{0} występuje w {1} fakturach: {2}", warnView: "Pokaż", remade: "{0}: {1} utworzono ponownie w folderze", remakeFail: "Nie udało się utworzyć ponownie", delPdf: "Plik PDF", delWord: "Plik Word",
       docsEmptyT: "Brak faktur", docsEmptyP: "Faktury, które tworzysz lub umieszczasz w folderze, pojawią się tutaj razem z PDF, plikiem Word i zamówieniem.", docsNoMatch: "Nic nie znaleziono", docsNoMatchP: "Zmień wyszukiwanie lub filtr.",
       docsWithPo: "z zamówieniem: {0}", wordOpen: "Otwórz w Wordzie", wordPrevTitle: "Faktura {0} (Word)",
       statsTagline: "Twoje przychody i faktury w liczbach.", statsEmpty: "Nie ma jeszcze faktur do policzenia. Pobierz lub zapisz fakturę albo wybierz w Ustawieniach folder z fakturami: one również zostaną policzone.",
@@ -1648,37 +1695,85 @@ window.ValkTheme = (function () {
 
   /** number and year as written on the invoice ("62-2026"); the card's own fields as a fallback */
   const nrOf = (factuurnr, c) => { const m = /^(\d+)-(\d{4})$/.exec(String(factuurnr || "")); return m ? [+m[1], +m[2]] : [c.nummer, c.jaar]; };
-  async function logInvoice(c, data) {
+  /** what was saved for an invoice number, added to what the record already had: formats ("pdf", "docx") and the file names written into the invoice folder */
+  function mergeSaved(doc, prev, fmts, names) {
+    const kinds = new Set(Array.isArray(prev && prev.formats) ? prev.formats : []), files = new Set(Array.isArray(prev && prev.savedFiles) ? prev.savedFiles : []);
+    (fmts || []).forEach((f) => kinds.add(f)); (names || []).forEach((n) => n && files.add(n));
+    if (kinds.size) doc.formats = [...kinds]; if (files.size) doc.savedFiles = [...files];
+    return doc;
+  }
+  /** fmts: the formats just saved; names: the files just written into the invoice folder (none for downloads or "Save as…") */
+  async function logInvoice(c, data, fmts, names) {
     const [nummer, jaar] = nrOf(data.factuurnr, c);
     c.nummer = nummer; c.jaar = jaar; c.done = true; c.saving = false;
     const t = core.totals(data.lines, data.btw);
     const doc = { factuurnr: data.factuurnr, nummer, jaar, po: c.po, datum: data.datum, betaaltermijn: data.betaaltermijn,
       client: data.client, lines: data.lines, btw: data.btw, totaal: t.total, dagen: c.dates || [], createdAt: new Date().toISOString(),
       template: data.template, sender: Object.fromEntries(TP.FIELDS.map((k) => [k, (data.sender && data.sender[k]) || ""])) };
-    // the files written into the invoice folder for this number (PDF and/or Word), so the app can tell later when they were deleted there
-    const prev = state.invoices.get(doc.factuurnr), files = new Set((prev && prev.savedFiles) || []);
-    if (folderSet() && state.savedTo) files.add(state.savedTo);
-    if (files.size) doc.savedFiles = [...files];
+    // the formats and files saved for this number over time, so the app can tell later when a file was deleted from the folder
+    mergeSaved(doc, state.invoices.get(doc.factuurnr), fmts, names);
     state.invoices.set(doc.factuurnr, doc);
     if (state.db) { try { await state.db.doc("invoices/" + doc.factuurnr).set(doc); } catch (e) { toast(tr("notLogged")); } }
   }
 
+  /** the number of another invoice that already names the card's PO (same matching as the new-orders list), or "" */
+  function poInvoicedAs(c) {
+    const po = c && c.po, own = nr(c); if (!po) return "";
+    for (const i of state.invoices.values()) if (i.factuurnr !== own && poMentioned(i.po, po)) return i.factuurnr;
+    for (const i of state.folderInvoices || []) if (i.factuurnr && i.factuurnr !== own && poMentioned(i.po, po)) return i.factuurnr;
+    for (const f of (desk && state.folder ? state.files : []) || []) {
+      const m = NUM_IN_NAME.exec(f.name.replace(/\.[^.]+$/, "")), n = m ? `${+m[1]}-${m[2]}` : "";
+      if (n && n !== own && poMentioned(f.name, po)) return n;
+    }
+    return "";
+  }
+  let poDupAsk = null;
+  const poDupAnswer = (v) => { const r = poDupAsk; poDupAsk = null; if ($("#poDupDlg").open) $("#poDupDlg").close(); if (r) r(v); };
+  /** before saving: cards whose PO another invoice already has. Resolves to the cards to save ([] = cancelled) */
+  async function confirmPoDupes(cards) {
+    const dups = cards.filter((c) => !c.done).map((c) => [c, poInvoicedAs(c)]).filter((x) => x[1]); // a saved card is saved again under its own number: asked before already
+    if (!dups.length) return cards;
+    $("#poDupText").textContent = dups.length === 1 ? tr("poDupOne", dups[0][0].po, dups[0][1]) : tr("poDupMany");
+    const list = $("#poDupList"); list.hidden = dups.length < 2 && cards.length < 2;
+    list.innerHTML = dups.map(([c, n]) => `<li>${esc(tr("poDupItem", c.po, n))}</li>`).join("");
+    $("#poDupSkip").hidden = dups.length === cards.length; // skipping would leave nothing to save
+    const dlg = $("#poDupDlg"); if (!dlg.open) dlg.showModal(); $("#poDupCancel").focus();
+    const ans = await new Promise((res) => { poDupAsk = res; });
+    if (ans === "go") return cards;
+    if (ans === "skip") { const skip = new Set(dups.map((x) => x[0])); return cards.filter((c) => !skip.has(c)); }
+    return [];
+  }
+  $("#poDupGo").addEventListener("click", () => poDupAnswer("go"));
+  $("#poDupSkip").addEventListener("click", () => poDupAnswer("skip"));
+  $("#poDupCancel").addEventListener("click", () => poDupAnswer(null));
+  $("#poDupClose").addEventListener("click", () => poDupAnswer(null));
+  $("#poDupDlg").addEventListener("close", () => poDupAnswer(null));
+
+  /** fmt: "pdf", "docx" or "both" (the PDF and the Word file, logged once) */
   async function downloadCard(c, btn, fmt = "pdf") {
     if (!detailsOk()) return needDetails();
-    const data = invoiceData(c);
+    if (!(await confirmPoDupes([c])).length) return;
+    const data = invoiceData(c), fmts = fmt === "both" ? ["pdf", "docx"] : [fmt], done = [], names = [];
     busy(btn, true); c.saving = true;
-    try {
-      const bytes = await build(fmt, data);
-      if (await save(fileName(data, c.po, fmt), new Blob([bytes], { type: MIME[fmt] }))) { await logInvoice(c, data); toast(doneToast(data.factuurnr)); }
-    } catch (e) { toast(tr("buildFail")); }
+    let failed = false;
+    for (const f of fmts) {
+      try {
+        const bytes = await build(f, data);
+        if (!(await save(fileName(data, c.po, f), new Blob([bytes], { type: MIME[f] })))) break;
+        done.push(f); if (state.savedTo) names.push(state.savedTo);
+      } catch (e) { failed = true; break; }
+    }
+    if (done.length) { await logInvoice(c, data, done, names); toast(tr(names.length ? "savedIn" : "downloaded", data.factuurnr)); }
+    if (failed) toast(tr("buildFail"));
     c.saving = false; renumber();
     busy(btn, false); render();
   }
 
   async function downloadAll(btn) {
-    const ready = state.cards.filter((c) => !c.error);
+    let ready = state.cards.filter((c) => !c.error);
     if (!ready.length) return;
     if (!detailsOk()) return needDetails();
+    ready = await confirmPoDupes(ready); if (!ready.length) return;
     busy(btn, true);
     if (folderSet()) { // straight into the folder: one PDF and one Word file per invoice, no zip
       try {
@@ -1686,10 +1781,12 @@ window.ValkTheme = (function () {
         ready.forEach((c) => { c.saving = true; }); // fix every number before the first file is written
         try {
           for (const c of ready) {
-            const data = invoiceData(c);
+            const data = invoiceData(c), fmts = [], names = [];
+            state.savedTo = "";
             if (!(await saveToFolder(fileName(data, c.po), new Blob([await buildPdf(data)], { type: MIME.pdf })))) break;
-            try { await saveToFolder(fileName(data, c.po, "docx"), new Blob([await buildWord(data)], { type: MIME.docx })); } catch (e) {}
-            await logInvoice(c, data); n++;
+            fmts.push("pdf"); names.push(state.savedTo); state.savedTo = "";
+            try { if (await saveToFolder(fileName(data, c.po, "docx"), new Blob([await buildWord(data)], { type: MIME.docx }))) { fmts.push("docx"); names.push(state.savedTo); } } catch (e) {}
+            await logInvoice(c, data, fmts, names); n++;
           }
         } finally { ready.forEach((c) => { c.saving = false; }); renumber(); }
         if (n) toast(n === 1 ? tr("savedIn", nr(ready[0])) : tr("savedMany", n));
@@ -1698,11 +1795,11 @@ window.ValkTheme = (function () {
     }
     try {
       const zip = new JSZip(); const made = [];
-      for (const c of ready) { const data = invoiceData(c); zip.file(fileName(data, c.po), await buildPdf(data)); try { zip.file(fileName(data, c.po, "docx"), await buildWord(data)); } catch (e) {} made.push([c, data]); }
+      for (const c of ready) { const data = invoiceData(c), fmts = ["pdf"]; zip.file(fileName(data, c.po), await buildPdf(data)); try { zip.file(fileName(data, c.po, "docx"), await buildWord(data)); fmts.push("docx"); } catch (e) {} made.push([c, data, fmts]); }
       const blob = await zip.generateAsync({ type: "blob" });
       const d = new Date();
       if (await save(`Facturen ${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}.zip`, blob)) {
-        for (const [c, data] of made) await logInvoice(c, data);
+        for (const [c, data, fmts] of made) await logInvoice(c, data, fmts, []);
         toast(made.length === 1 ? tr("downloadedOne") : tr("downloadedMany", made.length));
       }
     } catch (e) { toast(tr("buildFailMany")); }
@@ -1773,7 +1870,7 @@ window.ValkTheme = (function () {
         else { ok = await save(zname, new Blob([bytes], { type: "application/zip" }), { plain: true }); msg = ok ? tr("downloaded", zname) : ""; }
       }
       if (ok && (want.pdf || want.docx)) { // the invoices are made: record them like the normal save does (once; saving again elsewhere adds nothing)
-        for (const [c, data] of made) if (!(c.done && state.invoices.has(data.factuurnr))) await logInvoice(c, data);
+        for (const [c, data] of made) if (!(c.done && state.invoices.has(data.factuurnr))) await logInvoice(c, data, ["pdf", "docx"].filter((f) => want[f]), []);
       }
       if (ok && noPo.length) msg += tr("saveAsNoPo", noPo.join(", "));
       if (msg) toast(msg);
@@ -1812,6 +1909,7 @@ window.ValkTheme = (function () {
     const notes = (c.checks || []).map((n) => ({ level: n.level, text: n.code ? tr(n.code, ...(n.args || [])) : n.text }));
     const prev = [...state.invoices.values()].find((i) => i.po && i.po === c.po && !(c.done && i.factuurnr === nr(c)));
     if (prev) notes.push({ level: "warn", text: tr("alreadyInv", c.po, prev.factuurnr, prev.datum) });
+    else { const other = poInvoicedAs(c); if (other) notes.push({ level: "warn", text: tr("alreadyInvNr", c.po, other) }); } // an invoice in the folder names it
     const taken = state.invoices.get(nr(c));
     if (taken && !(c.done && taken.po === c.po)) notes.push({ level: "warn", text: tr("numTaken", nr(c), taken.po || tr("otherInvoice")) });
     const inF = !c.done && (state.fileNums.get(c.jaar) || new Map()).get(c.nummer);
@@ -1825,10 +1923,12 @@ window.ValkTheme = (function () {
     return notes;
   }
 
+  /** the round × in a card's corner: takes the card off the list (nothing is deleted) */
+  function removeBtn(what) { return `<button type="button" class="ghost xbtn" data-act="remove" aria-label="${esc(tr("removeCardAria", what || ""))}" title="${esc(tr("removeCard"))}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`; }
   function cardHtml(c) {
     if (c.error) {
       return `<article class="panel po" data-id="${c.id}"><div class="po-head"><div><h3>${esc(c.fileName)}</h3></div>
-        <button class="ghost" data-act="remove" aria-label="${esc(tr("removeAria", c.fileName))}">${esc(tr("remove"))}</button></div>
+        ${removeBtn(c.fileName)}</div>
         <ul class="checks"><li class="chip error">${esc(tr(c.error))}</li></ul></article>`;
     }
     const t = core.totals(c.lines, c.btw);
@@ -1843,7 +1943,7 @@ window.ValkTheme = (function () {
     const notes = cardNotes(c).map((n) => `<li class="chip ${n.level}">${esc(n.text)}</li>`).join("");
     return `<article class="panel po" data-id="${c.id}">
       <div class="po-head"><div><h3>${esc(c.po || tr("unknownPo"))}</h3><p class="meta">${meta}</p></div>
-        <button class="ghost" data-act="remove" aria-label="${esc(tr("removeAria", c.po))}">${esc(tr("remove"))}</button></div>
+        ${removeBtn(c.po || c.fileName)}</div>
       ${c.dates.length ? `<p class="days">${daysText(c.dates)}</p>` : ""}
       <div class="fields">
         <label class="f" for="${c.id}-nr">${esc(tr("invNo"))}<input id="${c.id}-nr" data-k="nr" value="${esc(nr(c))}" inputmode="numeric" autocomplete="off"></label>
@@ -1853,12 +1953,12 @@ window.ValkTheme = (function () {
       <div class="lines">${lines}</div>
       ${notes ? `<ul class="checks">${notes}</ul>` : ""}
       <div class="po-foot">
-        <div class="total">${esc(tr("totalPay"))}<b class="num" data-total>${esc(core.eur(t.total))}</b></div>
+        <div class="total">${esc(tr("totalPay"))}<b class="num" data-total>${esc(core.eur(t.total))}</b>${c.done ? `<span class="done">${esc(tr(folderSet() ? "doneSaved" : "doneAs", nr(c)))}</span>` : ""}</div>
         <div class="actions">
-          ${c.done ? `<span class="done">${esc(tr(folderSet() ? "doneSaved" : "doneAs", nr(c)))}</span>` : ""}
           <button type="button" data-act="preview">${esc(tr("view"))}</button>
-          <button type="button" data-act="download-docx">${esc(tr(folderSet() ? "saveWord" : "dlWord"))}</button>
-          <button type="button" class="primary" data-act="download">${esc(folderSet() ? tr(c.done ? "saveAgain" : "savePdf") : c.done ? tr("dlAgain") : tr("dlPdf"))}</button>
+          <button type="button" data-act="download-docx">${esc(tr(folderSet() ? (c.done ? "saveWordAgain" : "saveWord") : c.done ? "dlWordAgain" : "dlWord"))}</button>
+          <button type="button" data-act="download">${esc(tr(folderSet() ? (c.done ? "saveAgain" : "savePdf") : c.done ? "dlAgain" : "dlPdf"))}</button>
+          <button type="button" class="primary" data-act="download-both">${esc(tr(folderSet() ? (c.done ? "saveBothAgain" : "saveBoth") : c.done ? "dlBothAgain" : "dlBoth"))}</button>
         </div>
       </div>
     </article>`;
@@ -1884,9 +1984,17 @@ window.ValkTheme = (function () {
 
   function renderHistory() {
     const list = [...state.invoices.values()].sort((a, b) => (b.jaar - a.jaar) || (b.nummer - a.nummer)).slice(0, 25);
-    $("#hist").innerHTML = list.map((i) => `<li><span class="t num">${esc(i.factuurnr)}</span>
+    // PDF / Word open the file that is in the invoice folder (matched like the Documents tab); none there: one button that makes it again
+    const sets = new Map(list.length ? docSets().filter((s) => !s.poOnly).map((s) => [s.nr, s]) : []);
+    $("#hist").innerHTML = list.map((i) => {
+      const n = esc(i.factuurnr), s = sets.get(i.factuurnr) || {};
+      const btns = (s.pdf ? `<button type="button" data-hprev="pdf" data-nr="${n}" aria-label="${esc(tr("histPdfAria", i.factuurnr))}" title="${esc(s.pdf.name)}">PDF</button>` : "")
+        + (s.docx ? `<button type="button" data-hprev="word" data-nr="${n}" aria-label="${esc(tr("histWordAria", i.factuurnr))}" title="${esc(s.docx.name)}">Word</button>` : "")
+        + (!s.pdf && !s.docx && i.lines && i.lines.length ? `<button type="button" class="ghost" data-redo="${n}"${folderSet() ? ` title="${esc(tr("histRemakeTitle"))}"` : ""}>${esc(tr("histRemake"))}</button>` : "");
+      return `<li><span class="t num">${n}</span>
       <span class="s">${esc([i.po, i.datum].filter(Boolean).join(" · "))} · <span class="nw num">${esc(core.eur(i.totaal || 0))}</span></span>
-      ${i.lines && i.lines.length ? `<span class="redo"><button type="button" data-redo="${esc(i.factuurnr)}">PDF</button><button type="button" data-redo="${esc(i.factuurnr)}" data-fmt="docx">Word</button><button type="button" class="ghost" data-del="${esc(i.factuurnr)}" aria-label="${esc(tr("delAria", i.factuurnr))}" title="${esc(tr("delTitle"))}">×</button></span>` : `<span class="redo"><button type="button" class="ghost" data-del="${esc(i.factuurnr)}" title="${esc(tr("delTitle"))}">×</button></span>`}</li>`).join("");
+      <span class="redo">${btns}<button type="button" class="ghost" data-del="${n}" aria-label="${esc(tr("delAria", i.factuurnr))}" title="${esc(tr("delTitle"))}">×</button></span></li>`;
+    }).join("");
     $("#histEmpty").hidden = list.length > 0;
   }
 
@@ -2265,7 +2373,7 @@ window.ValkTheme = (function () {
   const NP_ROWS = 6;
   function renderNewPos() {
     renderDocs(); // the Documents tab follows the same updates (folders read, invoices changed, purchase orders read)
-    renderStale();
+    renderStale(); renderDocWarns();
     const panel = $("#newPo"); panel.hidden = !desk || !state.poChecked; if (panel.hidden) return;
     const note = $("#npNote"), list = $("#npList"), on = (id, v) => { $(id).hidden = !v; };
     ["#npAll", "#npMore", "#npSkipAll", "#npPick", "#npRestore"].forEach((i) => on(i, false));
@@ -2506,7 +2614,7 @@ window.ValkTheme = (function () {
   }
 
   // ------------------------------------------------------------ documents tab: one row per invoice number, with its PDF and Word file in the invoice folder and its purchase order
-  const DOC_SORTS = ["nr", "date", "client", "po", "amount"], DOC_FILTERS = ["all", "open", "sent", "noinv"];
+  const DOC_SORTS = ["nr", "date", "client", "po", "amount"], DOC_FILTERS = ["all", "open", "sent", "noinv", "miss"];
   state.sent = new Set(); state.docs = { sort: "nr", dir: "desc", filter: "all", q: "" };
   const saveSent = () => { if (state.db) { try { state.db.doc("settings/sent").set({ list: [...state.sent] }); } catch (e) {} } };
   const saveDocsPrefs = () => { if (state.db) { try { state.db.doc("settings/docsprefs").set({ sort: state.docs.sort, dir: state.docs.dir, filter: state.docs.filter }); } catch (e) {} } };
@@ -2533,7 +2641,8 @@ window.ValkTheme = (function () {
       let total = null;
       if (i && i.lines && i.lines.length) total = core.totals(i.lines, i.btw || "verlegd").total; else if (i && +i.totaal) total = +i.totaal; else if (fi && fi.amounts && isFinite(fi.amounts.total)) total = fi.amounts.total;
       const datum = (i && i.datum) || (fi && fi.datum) || "", client = ((i && i.client && i.client.name) || (fi && fi.client && fi.client.name) || "").trim();
-      return { ...s, po: poRec ? poRec.r.po : poText, poRec, total, datum, dkey: nlDateKey(datum), client, sent: state.sent.has(s.nr), gen: !s.pdf && !!(i && i.lines && i.lines.length) };
+      const ment = [i && i.po, fi && fi.po, names].filter(Boolean).join(" "); // everything that can name a purchase order (for two invoices on one PO)
+      return { ...s, po: poRec ? poRec.r.po : poText, poRec, total, datum, dkey: nlDateKey(datum), client, sent: state.sent.has(s.nr), gen: !s.pdf && !!(i && i.lines && i.lines.length), ment };
     });
     return out.concat(poOnlySets(out));
   }
@@ -2547,6 +2656,84 @@ window.ValkTheme = (function () {
       return { nr: "", n: 0, y: 0, poOnly: true, skipped: state.poSkip.has(r.po), pdf: null, docx: null, inv: null, fi: null, po: r.po, poRec: x, total, datum, dkey: poSortKey(r), client: cl || r.orderedBy || "", sent: false, gen: false };
     });
   }
+  /** what is wrong with the sets, once the folder and the invoices are read: invoices missing a file they should have, and purchase orders named by more than one invoice.
+   *  Expected files: the record's `formats` (every format ever saved), "pdf" + "docx" for older records without it; an invoice only in the folder expects what it has.
+   *  A record with no file at all is the stale banner's business, so it is not listed here. Ignored ones: settings/keptmissing (numbers), settings/keptdupinv (PO|numbers). */
+  const DOC_LABEL = { pdf: "PDF", docx: "Word" };
+  const byNrKey = (a, b) => { const [x, y] = [a, b].map((v) => v.split("-").map(Number)); return x[1] - y[1] || x[0] - y[0]; };
+  function docWarns(sets) {
+    const W = { ready: false, missAll: new Map(), miss: new Map(), dups: [], dupOf: new Map() };
+    if (!desk || !state.folder || !state.folder.exists || !state.folderScanned || state.scan || !state.invoicesLoaded) return W;
+    W.ready = true;
+    const keptM = state.keptMissing || new Set(), keptD = state.keptDupInv || new Set();
+    const invs = sets.filter((s) => !s.poOnly);
+    for (const s of invs) {
+      if (!s.inv || !(s.pdf || s.docx)) continue;
+      // newer records: only what was written into the invoice folder counts (downloads and "Save as…" elsewhere are not expected here)
+      const inFolder = (Array.isArray(s.inv.savedFiles) ? s.inv.savedFiles : []).map((n) => (/\.docx$/i.test(n) ? "docx" : /\.pdf$/i.test(n) ? "pdf" : "")).filter(Boolean);
+      const want = Array.isArray(s.inv.formats) && s.inv.formats.length ? inFolder : ["pdf", "docx"];
+      const miss = ["pdf", "docx"].filter((f) => want.includes(f) && !s[f]);
+      if (!miss.length) continue;
+      W.missAll.set(s.nr, miss); if (!keptM.has(s.nr)) W.miss.set(s.nr, miss);
+    }
+    const named = invs.filter((s) => s.ment), keys = new Map();
+    for (const x of state.poRecs) keys.set(String(x.r.po).toUpperCase(), String(x.r.po));
+    for (const s of named) if (s.po && /^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(s.po) && !keys.has(s.po.toUpperCase())) keys.set(s.po.toUpperCase(), s.po);
+    for (const po of keys.values()) {
+      const re = new RegExp("(?<![A-Za-z0-9])" + po.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?![A-Za-z0-9])", "i"); // as poMentioned, built once per PO
+      const nrs = named.filter((s) => re.test(s.ment)).map((s) => s.nr).sort(byNrKey);
+      if (nrs.length < 2) continue;
+      const key = `${po.toUpperCase()}|${nrs.join(",")}`; if (keptD.has(key)) continue;
+      W.dups.push({ po, nrs, key });
+      for (const n of nrs) { const l = W.dupOf.get(n) || []; l.push({ po, others: nrs.filter((m) => m !== n) }); W.dupOf.set(n, l); }
+    }
+    W.dups.sort((a, b) => byNrKey(a.nrs[0], b.nrs[0]));
+    return W;
+  }
+  const andList = (l) => (l.length > 1 ? l.slice(0, -1).join(", ") + tr("and") + l[l.length - 1] : l[0] || "");
+  /** the banners in Documents and the lines in the new-orders panel on the Invoices tab */
+  function renderDocWarns() {
+    const W = docWarns(docSets()), items = [];
+    if (W.miss.size) {
+      const l = [...W.miss.entries()].sort((a, b) => byNrKey(a[0], b[0])).map(([nr, m]) => `${nr} (${m.map((f) => DOC_LABEL[f]).join(", ")})`);
+      items.push({ text: W.miss.size === 1 ? tr("missOne", l[0]) : tr("missMany", W.miss.size, l.join(", ")), btns: [["miss", "", "warnView", false]] });
+    }
+    for (const d of W.dups) items.push({ text: tr("dupInv", d.po, d.nrs.length, andList(d.nrs)), btns: [["dup", d.po, "warnView", false], ["dupignore", d.key, "docsIgnore", true]] });
+    const btns = (b) => b.map(([k, v, key, ghost]) => `<button type="button"${ghost ? ' class="ghost"' : ""} data-dw="${k}" data-v="${esc(v)}">${esc(tr(key))}</button>`).join("");
+    const d = $("#docsWarn"), n = $("#npWarn");
+    d.innerHTML = items.map((x) => `<div class="panel dupbar" role="status" data-w="${x.btns[0][0]}"><span class="dtext">${esc(x.text)}</span>${btns(x.btns)}</div>`).join(""); d.hidden = !items.length;
+    n.innerHTML = items.map((x) => `<p data-w="${x.btns[0][0]}"><span>${esc(x.text)}</span>${btns(x.btns)}</p>`).join(""); n.hidden = !items.length;
+  }
+  const saveKept = (doc, set) => { if (state.db) { try { state.db.doc("settings/" + doc).set({ list: [...set] }); } catch (e) {} } };
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-dw]"); if (!b) return;
+    const k = b.dataset.dw, v = b.dataset.v || "";
+    if (k === "dupignore") { state.keptDupInv = new Set([...(state.keptDupInv || []), v]); saveKept("keptdupinv", state.keptDupInv); render(); return; }
+    state.docs.filter = k === "miss" ? "miss" : "all"; state.docs.q = k === "dup" ? v : ""; saveDocsPrefs();
+    setTab("docs"); renderDocs(); window.scrollTo({ top: 0 });
+  });
+  /** makes the missing PDF and/or Word file of an invoice made in the app again, into the invoice folder, from what was saved */
+  async function remakeMissing(nr, btn) {
+    const all = docSets(), rec = state.invoices.get(nr), miss = docWarns(all).missAll.get(nr) || [];
+    if (!desk || !rec || !rec.lines || !rec.lines.length || !miss.length || state.delBusy) return;
+    busy(btn, true); const names = [];
+    try {
+      const data = { factuurnr: rec.factuurnr, datum: rec.datum, betaaltermijn: rec.betaaltermijn || state.settings.betaaltermijn, client: rec.client || state.settings.client, lines: rec.lines, btw: rec.btw || "verlegd", ...recordLook(rec) };
+      for (const fmt of miss) {
+        const bytes = await build(fmt, data); state.savedTo = "";
+        if (await saveToFolder(fileName(data, rec.po, fmt), new Blob([bytes], { type: MIME[fmt] })) && state.savedTo) names.push(state.savedTo);
+      }
+      if (names.length) { // the record knows the files again (same fields as when it was saved)
+        const want = Array.isArray(rec.formats) && rec.formats.length ? rec.formats : ["pdf", "docx"];
+        const doc = { ...rec, savedFiles: [...new Set([...(Array.isArray(rec.savedFiles) ? rec.savedFiles : []), ...names])], formats: [...new Set([...want, ...miss])] };
+        state.invoices.set(nr, doc);
+        if (state.db) { try { await state.db.doc("invoices/" + nr).set(doc); } catch (e) {} }
+      }
+    } catch (e) { toast(tr("remakeFail")); }
+    busy(btn, false);
+    await refreshAll(); render();
+    if (names.length === miss.length) toast(tr("remade", nr, miss.map((f) => DOC_LABEL[f]).join(", ")));
+  }
   function sortDocs(list) {
     const { sort, dir } = state.docs, k = dir === "asc" ? 1 : -1, byNr = (a, b) => a.y - b.y || a.n - b.n || a.dkey - b.dkey;
     if (sort === "nr") { const top = list.filter((s) => s.poOnly).sort((a, b) => (a.skipped - b.skipped) || (b.dkey - a.dkey) || natPo(b.po, a.po)); // orders without an invoice first (newest first, skipped ones after), so they are noticed
@@ -2556,19 +2743,21 @@ window.ValkTheme = (function () {
     return list.sort((a, b) => (empty(a) - empty(b)) || k * cmp(a, b) || byNr(b, a)); // empty values last, then newest number first
   }
   const ICON_FOLDER = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+  const ICON_EYE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
   const ICON_TRASH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
   const ICON_DIR = { asc:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></svg>',
     desc: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m6 13 6 6 6-6"/></svg>' };
   function renderDocs() {
     if (state.tab !== "docs") return;
-    const D = state.docs, all = docSets(), f = desk ? state.folder : null;
+    const D = state.docs, all = docSets(), f = desk ? state.folder : null, W = docWarns(all);
+    if (D.filter === "miss" && W.ready && !W.miss.size) D.filter = "all"; // nothing incomplete (any more)
     const q = D.q.trim().toLowerCase(), match = (s) => !q || [s.nr, s.client, s.po].some((v) => String(v || "").toLowerCase().includes(q));
-    const keepF = (s) => D.filter === "all" || (D.filter === "noinv" ? !!s.poOnly : !s.poOnly && (D.filter === "sent") === s.sent); // sent / not sent: invoices only
+    const keepF = (s) => D.filter === "all" || (D.filter === "miss" ? W.miss.has(s.nr) : D.filter === "noinv" ? !!s.poOnly : !s.poOnly && (D.filter === "sent") === s.sent); // sent / not sent: invoices only
     const found = all.filter(match), shown = sortDocs(found.filter(keepF)), invs = all.filter((s) => !s.poOnly), nSent = invs.filter((s) => s.sent).length;
     $("#docsNoFolder").hidden = !(desk && !f);
     $("#docsBar").hidden = !all.length;
-    const counts = { all: found.length, open: found.filter((s) => !s.poOnly && !s.sent).length, sent: found.filter((s) => !s.poOnly && s.sent).length, noinv: found.filter((s) => s.poOnly).length };
-    $("#docsFilter").querySelectorAll("button[data-f]").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.f === D.filter)); b.querySelector(".n").textContent = ` ${counts[b.dataset.f]}`; });
+    const counts = { all: found.length, open: found.filter((s) => !s.poOnly && !s.sent).length, sent: found.filter((s) => !s.poOnly && s.sent).length, noinv: found.filter((s) => s.poOnly).length, miss: found.filter((s) => W.miss.has(s.nr)).length };
+    $("#docsFilter").querySelectorAll("button[data-f]").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.f === D.filter)); b.querySelector(".n").textContent = ` ${counts[b.dataset.f]}`; if (b.dataset.f === "miss") b.hidden = !W.miss.size && D.filter !== "miss"; });
     $("#docsSort").value = D.sort;
     const dirB = $("#docsDir"), dk = D.dir === "asc" ? "docsAsc" : "docsDesc"; dirB.innerHTML = ICON_DIR[D.dir]; dirB.setAttribute("aria-label", tr(dk)); dirB.title = tr(dk);
     const sIn = $("#docsSearch"); sIn.placeholder = tr("docsSearch"); if (sIn.value !== D.q) sIn.value = D.q;
@@ -2601,18 +2790,28 @@ window.ValkTheme = (function () {
     };
     $("#docsList").innerHTML = shown.map((s) => {
       if (s.poOnly) return poRow(s);
+      const miss = W.miss.get(s.nr) || [], dup = W.dupOf.get(s.nr) || [];
       const chip = (kind, label, on, extra) => on ? `<button type="button" class="dchip k-${kind}${extra || ""}" data-doc="${kind}" data-nr="${esc(s.nr)}" aria-label="${esc(tr("docsViewAria", label, s.nr))}" title="${esc(on)}">${label}</button>`
-        : `<button type="button" class="dchip k-${kind}" disabled title="${esc(tr("docsMissing", label))}">${label}</button>`;
-      const pdfOn = s.pdf ? s.pdf.name : s.gen ? tr("docsGen") : "", rel = (s.pdf || s.docx || {}).rel;
-      return `<li class="drow${s.sent ? " sent" : ""}" data-nr="${esc(s.nr)}">
+        : `<button type="button" class="dchip k-${kind}${extra || ""}" disabled title="${esc(tr(extra ? "docsMissTitle" : "docsMissing", label))}">${label}</button>`;
+      // with an invoice folder the chips tell only what is really in it; a plain browser has no folder, so an invoice made here is drawn again (dashed chip)
+      const pdfOn = s.pdf ? s.pdf.name : s.gen && !showApp ? tr("docsGen") : "", rel = (s.pdf || s.docx || {}).rel;
+      const pdfX = s.pdf ? "" : pdfOn ? " gen" : miss.includes("pdf") ? " miss" : "", wordX = !s.docx && miss.includes("docx") ? " miss" : "";
+      const canRemake = !!(s.inv && s.inv.lines && s.inv.lines.length);
+      const warn = miss.length || dup.length ? `<span class="c-warn">${miss.map((m) => `<span class="tagw" title="${esc(tr("docsMissTitle", DOC_LABEL[m]))}">${esc(tr("docsMissBadge", DOC_LABEL[m]))}</span>`).join("")}`
+        + dup.map((d) => `<span class="tagw dup" title="${esc(tr("docsDupTitle", d.po, d.others.join(", ")))}">${esc(tr("docsDupBadge"))} · ${esc(d.po)}</span>`).join("")
+        + (miss.length && canRemake ? `<button type="button" data-remake="${esc(s.nr)}" title="${esc(tr("docsRemakeTitle", miss.map((m) => DOC_LABEL[m]).join(", ")))}">${esc(tr("docsRemake"))}</button>` : "")
+        + (miss.length ? `<button type="button" class="ghost" data-missignore="${esc(s.nr)}" title="${esc(tr("docsIgnoreTitle"))}">${esc(tr("docsIgnore"))}</button>` : "") + "</span>" : "";
+      const draw = showApp && s.gen && !rel ? `<button type="button" data-draw="${esc(s.nr)}" aria-label="${esc(tr("docsDrawAria", s.nr))}" title="${esc(tr("docsDraw"))}">${ICON_EYE}</button>` : "";
+      return `<li class="drow${s.sent ? " sent" : ""}${miss.length ? " miss" : ""}${dup.length ? " dupinv" : ""}" data-nr="${esc(s.nr)}">
         <span class="c-nr num">${esc(s.nr)}${showApp && !s.pdf && !s.docx ? `<small>${esc(tr("docsOnlyApp"))}</small>` : ""}</span>
         <span class="c-cl${s.client ? "" : " none"}" title="${esc(s.client)}">${esc(s.client || tr("noClient"))}</span>
         <span class="c-dt">${esc(s.datum || "–")}</span>
         <span class="c-po${s.po ? "" : " none"}">${esc(s.po || "–")}</span>
         <span class="c-amt">${s.total == null ? "–" : esc(core.eur(s.total))}</span>
-        <span class="c-docs">${chip("pdf", "PDF", pdfOn, s.pdf ? "" : " gen")}${chip("word", "Word", s.docx ? s.docx.name : "")}${chip("po", "PO", s.poRec ? s.poRec.f.name : "")}</span>
+        <span class="c-docs">${chip("pdf", "PDF", pdfOn, pdfX)}${chip("word", "Word", s.docx ? s.docx.name : "", wordX)}${chip("po", "PO", s.poRec ? s.poRec.f.name : "")}</span>
         <span class="c-sent"><label class="sentbox"><input type="checkbox" data-sent="${esc(s.nr)}"${s.sent ? " checked" : ""} aria-label="${esc(tr("docsSentAria", s.nr))}"><span aria-hidden="true">${esc(tr("docsSent"))}</span></label></span>
-        <span class="c-act">${rel ? `<button type="button" data-reveal="${esc(rel)}" aria-label="${esc(tr("docsRevealAria", s.nr))}" title="${esc(tr("dupShow"))}">${ICON_FOLDER}</button>` : ""}<button type="button" class="del" data-deldoc="${esc(s.nr)}" aria-label="${esc(tr("delSetAria", s.nr))}" title="${esc(tr("delGo"))}">${ICON_TRASH}</button></span>
+        <span class="c-act">${rel ? `<button type="button" data-reveal="${esc(rel)}" aria-label="${esc(tr("docsRevealAria", s.nr))}" title="${esc(tr("dupShow"))}">${ICON_FOLDER}</button>` : draw}<button type="button" class="del" data-deldoc="${esc(s.nr)}" aria-label="${esc(tr("delSetAria", s.nr))}" title="${esc(tr("delGo"))}">${ICON_TRASH}</button></span>
+        ${warn}
       </li>`;
     }).join("");
     if (keep) { const el = $("#docsList").querySelector(keep); if (el) el.focus(); }
@@ -2625,6 +2824,9 @@ window.ValkTheme = (function () {
     const c = e.target.closest("button[data-doc]"), r = e.target.closest("button[data-reveal]");
     if (r && desk) { try { const x = await desk.revealFile(r.dataset.reveal); if (x && x.error) toast(tr("dupShowFail")); } catch (err) { toast(tr("dupShowFail")); } return; }
     const dd = e.target.closest("button[data-deldoc]"); if (dd) { deleteSet(dd.dataset.deldoc, dd); return; }
+    const rm = e.target.closest("button[data-remake]"); if (rm) { remakeMissing(rm.dataset.remake, rm); return; }
+    const ig = e.target.closest("button[data-missignore]"); if (ig) { state.keptMissing = new Set([...(state.keptMissing || []), ig.dataset.missignore]); saveKept("keptmissing", state.keptMissing); render(); return; }
+    const dw = e.target.closest("button[data-draw]"); if (dw) { previewInvoice({ key: dw.dataset.draw, i: {} }); return; }
     const mk =e.target.closest("button[data-mkinv]");
     if (mk && desk) { setTab("inv"); addPos([mk.dataset.mkinv]); return; } // a purchase order without an invoice: onto the Invoices tab, like "Toevoegen" under new purchase orders
     if (c && c.dataset.po) { const x = desk && state.poRecs.find((y) => y.r.po === c.dataset.po); if (x) previewPo(x.f.rel, x.r.po); return; }
@@ -2652,23 +2854,24 @@ window.ValkTheme = (function () {
   const refreshAll = () => (desk ? Promise.all([refreshFolder(), refreshPoFolder()]) : Promise.resolve());
   let delAsk = null; // resolves the open delete dialog
   function askDelete(s, rec) {
-    const files = desk ? [s.pdf, s.docx].filter(Boolean) : [], po = desk && s.poRec ? s.poRec.f : null, fb = $("#delFiles"), pb = $("#delPo");
+    // one checkbox per file that is really there: PDF and Word on, the PO (the client's document) only on request
+    const opts = [["Pdf", desk && s.pdf, true], ["Word", desk && s.docx, true], ["Po", desk && s.poRec && s.poRec.f, false]].map(([k, f, on]) => ({ k, f: f || null, box: $("#del" + k), on }));
     $("#delDlgTitle").textContent = tr("delSetTitle", s.nr);
-    fb.checked = files.length > 0; pb.checked = false; // the PO is the client's document: only on request
-    $("#delFilesWrap").hidden = !files.length; $("#delPoWrap").hidden = !po; $("#delOpts").hidden = !files.length && !po;
+    for (const o of opts) { o.box.checked = !!o.f && o.on; $(`#del${o.k}Wrap`).hidden = !o.f; $(`#del${o.k}Name`).textContent = o.f ? o.f.name : ""; }
+    $("#delOpts").hidden = !opts.some((o) => o.f);
     const draw = () => {
       const items = [];
       if (rec) items.push([tr("delItemRec"), false]);
-      files.forEach((f) => items.push([f.name, !fb.checked]));
-      if (po) items.push([tr("delItemPo", po.name), !pb.checked]);
+      for (const o of opts) if (o.f) items.push([o.k === "Po" ? tr("delItemPo", o.f.name) : o.f.name, !o.box.checked]);
       $("#delList").innerHTML = items.map(([t, keep]) => `<li${keep ? ' class="keep"' : ""}>${esc(t)}</li>`).join("");
     };
-    fb.onchange = pb.onchange = draw; draw();
+    for (const o of opts) o.box.onchange = draw;
+    draw();
     const dlg = $("#delDlg"); if (!dlg.open) dlg.showModal(); $("#delCancel").focus();
     return new Promise((res) => { delAsk = res; });
   }
   const delAnswer = (v) => { const r = delAsk; delAsk = null; if ($("#delDlg").open) $("#delDlg").close(); if (r) r(v); };
-  $("#delGo").addEventListener("click", () => delAnswer({ files: $("#delFiles").checked && !$("#delFilesWrap").hidden, po: $("#delPo").checked && !$("#delPoWrap").hidden }));
+  $("#delGo").addEventListener("click", () => { const on = (k) => $("#del" + k).checked && !$(`#del${k}Wrap`).hidden; delAnswer({ pdf: on("Pdf"), docx: on("Word"), po: on("Po") }); });
   $("#delCancel").addEventListener("click", () => delAnswer(null));
   $("#delDlgClose").addEventListener("click", () => delAnswer(null));
   $("#delDlg").addEventListener("close", () => delAnswer(null));
@@ -2682,7 +2885,8 @@ window.ValkTheme = (function () {
       const ans = await askDelete(s, rec); if (!ans) return;
       let bad = 0, trashed = 0;
       const trash = async (rel, kind) => { try { const r = await desk.trashFile(rel, kind); if (r && r.ok) trashed++; else bad++; } catch (e) { bad++; } };
-      if (desk && ans.files) for (const f of [s.pdf, s.docx].filter(Boolean)) await trash(f.rel, "invoices");
+      if (desk && ans.pdf && s.pdf) await trash(s.pdf.rel, "invoices");
+      if (desk && ans.docx && s.docx) await trash(s.docx.rel, "invoices");
       if (desk && ans.po && s.poRec) await trash(s.poRec.f.rel, "pos");
       if (rec) { state.invoices.delete(nr); if (state.db) { try { await state.db.doc("invoices/" + nr).delete(); } catch (e) { bad++; } } }
       if (state.sent.delete(nr)) saveSent();
@@ -3262,20 +3466,36 @@ window.ValkTheme = (function () {
     if (b.dataset.act === "preview") preview(invoiceData(c));
     if (b.dataset.act === "download") downloadCard(c, b);
     if (b.dataset.act === "download-docx") downloadCard(c, b, "docx");
+    if (b.dataset.act === "download-both") downloadCard(c, b, "both");
   });
   $("#hist").addEventListener("click", async (e) => {
     const d = e.target.closest("button[data-del]");
     if (d) { deleteSet(d.dataset.del, d); return; }
-    const b = e.target.closest("button[data-redo]"); if (!b) return;
+    const v = e.target.closest("button[data-hprev]");
+    if (v) { // look at the file in the folder; nothing is made or written
+      const s = desk && docOf(v.dataset.nr), f = s && (v.dataset.hprev === "word" ? s.docx : s.pdf); if (!f) { render(); return; }
+      if (v.dataset.hprev === "word") previewDoc({ title: tr("wordPrevTitle", s.nr), load: () => desk.readFile(f.rel), open: { rel: f.rel }, word: true });
+      else previewDoc({ title: tr("invPrevTitle", s.nr), load: () => desk.readFile(f.rel), open: { rel: f.rel } });
+      return;
+    }
+    const b = e.target.closest("button[data-redo]"); if (!b) return; // no file of it anywhere: make it again (PDF + Word)
     const i = state.invoices.get(b.dataset.redo); if (!i) return;
     busy(b, true);
+    const done = [], names = [];
     try {
       const data = { factuurnr: i.factuurnr, datum: i.datum, betaaltermijn: i.betaaltermijn || state.settings.betaaltermijn, client: i.client || state.settings.client, lines: i.lines, btw: i.btw || "verlegd", ...recordLook(i) };
-      const fmt = b.dataset.fmt === "docx" ? "docx" : "pdf";
-      const bytes = await build(fmt, data);
-      if (await save(fileName(data, i.po, fmt), new Blob([bytes], { type: MIME[fmt] }))) toast(doneToast(i.factuurnr));
+      for (const fmt of ["pdf", "docx"]) {
+        const bytes = await build(fmt, data);
+        if (!(await save(fileName(data, i.po, fmt), new Blob([bytes], { type: MIME[fmt] })))) break;
+        done.push(fmt); if (state.savedTo) names.push(state.savedTo);
+      }
+      if (done.length) toast(tr(names.length ? "savedIn" : "downloaded", i.factuurnr));
     } catch (err) { toast(tr("buildFail")); }
-    busy(b, false);
+    if (done.length) { // the record learns what was written, like a normal save
+      const rec = mergeSaved({ ...i }, i, done, names); state.invoices.set(rec.factuurnr, rec);
+      if (state.db) { try { await state.db.doc("invoices/" + rec.factuurnr).set(rec); } catch (err) {} }
+    }
+    busy(b, false); render();
   });
   $("#zipAll").addEventListener("click", (e) => downloadAll(e.currentTarget));
   $("#saveAs").addEventListener("click", openSaveAs);
@@ -3522,6 +3742,7 @@ window.ValkTheme = (function () {
     if (db) { try { const c = await db.doc("settings/poskip").get(); if (c.exists && Array.isArray(c.data().list)) state.poSkip = new Set(c.data().list); } catch (e) {} }
     if (db) { try { const c = await db.doc("settings/sent").get(); if (c.exists && Array.isArray(c.data().list)) state.sent = new Set(c.data().list.map(String)); } catch (e) {} }
     if (db) { try { const c = await db.doc("settings/keptstale").get(); if (c.exists && Array.isArray(c.data().list)) state.keptStale = new Set(c.data().list.map(String)); } catch (e) {} }
+    if (db) for (const [doc, k] of [["keptmissing", "keptMissing"], ["keptdupinv", "keptDupInv"]]) { try { const c = await db.doc("settings/" + doc).get(); if (c.exists && Array.isArray(c.data().list)) state[k] = new Set(c.data().list.map(String)); } catch (e) {} }
     if (db) { try { const c = await db.doc("settings/docsprefs").get(); if (c.exists) applyDocsPrefs(c.data()); } catch (e) {} renderDocs(); }
     if (db) { try { const c = await db.doc("settings/news").get(); const s = c.exists && c.data().seen; // seen in either place counts
       if (s && newsSeen !== NEWS_LATEST) { newsSeen = s; try { localStorage.setItem("valkyrys-news-seen", s); } catch (e) {} }

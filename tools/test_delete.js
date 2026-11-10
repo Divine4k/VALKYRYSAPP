@@ -15,6 +15,7 @@ async function makePo(file, po, order, items) {
 }
 const db = () => { try { return JSON.parse(fs.readFileSync(path.join(dataHome, APP_DIR, "data.json"), "utf8")); } catch (e) { return {}; } };
 const exists = (n) => fs.existsSync(path.join(INV, n));
+const eq2 = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 (async () => {
   for (const d of [INV, PO, TRASH, dataHome]) { fs.rmSync(d, { recursive: true, force: true }); fs.mkdirSync(d, { recursive: true }); }
   fs.writeFileSync(path.join(INV, "VALKYRYS 61-2026.pdf"), "x"); // an older invoice already in the folder (not readable, its name has the number)
@@ -43,11 +44,20 @@ const exists = (n) => fs.existsSync(path.join(INV, n));
   // ---- 1. delete from the history with its files: record gone, files to the bin, the PO stays
   await page.click('#hist button[data-del="66-2026"]'); await page.waitForSelector("#delDlg[open]");
   ok((await page.textContent("#delDlgTitle")).includes("66-2026"), "dialog title names the invoice");
-  ok(await page.isChecked("#delFiles") && await page.isVisible("#delFilesWrap"), "files checkbox shown and checked (files exist)");
-  ok(await page.isVisible("#delPoWrap") && !(await page.isChecked("#delPo")), "PO checkbox shown, not checked");
-  const list = await page.$$eval("#delList li", (l) => l.map((x) => x.textContent + (x.classList.contains("keep") ? " [keep]" : "")));
-  console.log("dialog list:", list);
-  ok(list.some((t) => t.includes("VALKYRYS 66-2026.pdf")) && list.some((t) => t.includes("PO-200005") && t.includes("[keep]")), "dialog lists the files and the (kept) PO");
+  ok(await page.isVisible("#delPdfWrap") && await page.isChecked("#delPdf") && (await page.textContent("#delPdfWrap")).includes("VALKYRYS 66-2026.pdf"), "PDF checkbox shown, checked, with its file name");
+  ok(await page.isVisible("#delWordWrap") && await page.isChecked("#delWord") && (await page.textContent("#delWordWrap")).includes("VALKYRYS 66-2026.docx"), "Word checkbox shown, checked, with its file name");
+  ok(await page.isVisible("#delPoWrap") && !(await page.isChecked("#delPo")) && (await page.textContent("#delPoWrap")).includes("PO-200005.pdf"), "PO checkbox shown, not checked, with its file name");
+  const dlist = () => page.$$eval("#delList li", (l) => l.map((x) => x.textContent + (x.classList.contains("keep") ? " [keep]" : "")));
+  const list = await dlist(); console.log("dialog list:", list);
+  ok(list.some((t) => t.includes("in de app")) && list.some((t) => t === "VALKYRYS 66-2026.pdf") && list.some((t) => t === "VALKYRYS 66-2026.docx") && list.some((t) => t.includes("PO-200005") && t.includes("[keep]")), "dialog lists the record, both files and the (kept) PO");
+  await page.uncheck("#delWord"); ok((await dlist()).includes("VALKYRYS 66-2026.docx [keep]"), "unticking Word strikes it through in the list");
+  await page.check("#delPo"); ok((await dlist()).some((t) => t.includes("PO-200005") && !t.includes("[keep]")), "ticking the PO puts it in the list");
+  await page.uncheck("#delPo"); await page.check("#delWord");
+  { const c = await page.$eval("#delGo", (b) => { const s = getComputedStyle(b); return [s.backgroundColor, s.color]; }); ok(c[0] === "rgb(196, 43, 33)" && c[1] === "rgb(255, 255, 255)", "Delete button: solid red with white text", c); }
+  await page.evaluate(() => window.ValkTheme.apply({ id: "dark" })); await page.waitForTimeout(200);
+  { const c = await page.$eval("#delGo", (b) => { const s = getComputedStyle(b); return [s.backgroundColor, s.color]; }); ok(c[0] === "rgb(196, 43, 33)" && c[1] === "rgb(255, 255, 255)", "Delete button in dark: same red, white text", c); }
+  await page.screenshot({ path: "/tmp/del_dlg2.png" });
+  await page.evaluate(() => window.ValkTheme.apply({ id: "light" })); await page.waitForTimeout(200);
   await page.screenshot({ path: "/tmp/del_dlg.png" });
   await page.click("#delGo"); await sleep(1500);
   ok(!db()["invoices/66-2026"], "record 66-2026 deleted");
@@ -57,18 +67,57 @@ const exists = (n) => fs.existsSync(path.join(INV, n));
   ok((await page.textContent("#nextNr")) === "66-2026", "number 66 free again: " + (await page.textContent("#nextNr")));
   console.log("toast:", await page.textContent("#toast"));
 
-  // ---- 2. Documents: delete 65 with the files checkbox off → files stay; then delete the folder-only 65 → files go
+  // ---- 1b. a file deleted outside the app: the row says the PDF is missing, banners on Documents and in the new-orders panel, the Incomplete filter, make again, ignore
+  fs.rmSync(path.join(INV, "VALKYRYS 62-2026.pdf"));
+  await page.click("#newPo [data-refresh]"); await sleep(1500);
+  const npw = await page.textContent("#npWarn").catch(() => ""); console.log("new-orders line:", npw);
+  ok(await page.isVisible("#npWarn") && npw.includes("1 factuur mist een bestand: 62-2026 (PDF)"), "new-orders panel: '1 factuur mist een bestand: 62-2026 (PDF)'");
+  ok(!(await page.isVisible("#staleBar")), "not listed as stale (its Word file is still there)");
+  await page.click('#npWarn button[data-dw="miss"]'); await sleep(500);
+  ok(await page.isVisible("#docsView"), "'Bekijken' opens Documents");
+  eq2(await page.$eval('#docsFilter [aria-pressed="true"]', (b) => b.dataset.f), "miss", "...with the Incomplete filter on");
+  eq2(await page.$$eval("#docsList li", (l) => l.map((x) => x.dataset.nr)), ["62-2026"], "Incomplete filter: only 62-2026");
+  eq2((await page.textContent('#docsFilter [data-f="miss"]')).replace(/\s+/g, " ").trim(), "Onvolledig 1", "Incomplete filter button with its count");
+  ok(await page.isVisible("#docsWarn") && (await page.textContent("#docsWarn")).includes("62-2026 (PDF)"), "Documents banner names 62-2026 (PDF)");
+  const r62 = '#docsList li[data-nr="62-2026"]';
+  ok(await page.$eval(r62 + " button.k-pdf", (b) => b.disabled && b.classList.contains("miss")) && await page.$eval(r62 + " button.k-word", (b) => !b.disabled), "62: PDF chip off (missing), Word chip on");
+  eq2((await page.textContent(r62 + " .c-warn .tagw")).trim(), "PDF ontbreekt", "62: warn badge 'PDF ontbreekt'");
+  await page.screenshot({ path: "/tmp/docs_missing.png" });
+  await page.click(r62 + " button[data-remake]");
+  for (let i = 0; i < 100 && !exists("VALKYRYS 62-2026.pdf"); i++) await sleep(150); await sleep(1500);
+  ok(exists("VALKYRYS 62-2026.pdf"), "'Opnieuw maken' writes the PDF into the folder again");
+  ok(!(await page.$(r62 + " .c-warn")) && !(await page.isVisible("#docsWarn")), "warning and banner gone");
+  ok(await page.$eval(r62 + " button.k-pdf", (b) => !b.disabled), "62: PDF chip on again");
+  eq2(await page.$eval('#docsFilter [aria-pressed="true"]', (b) => b.dataset.f), "all", "nothing incomplete any more: back to All");
+  ok((db()["invoices/62-2026"].savedFiles || []).includes("VALKYRYS 62-2026.pdf"), "the record knows the file again");
+  console.log("toast:", await page.textContent("#toast"));
+  // ignore: the Word file goes; 'Negeren' silences it, also after a reload
+  fs.rmSync(path.join(INV, "VALKYRYS 62-2026.docx"));
+  await page.click("#docsBar [data-refresh]"); await sleep(1500);
+  eq2((await page.textContent(r62 + " .c-warn .tagw").catch(() => "")).trim(), "Word ontbreekt", "62: 'Word ontbreekt' after deleting the Word file");
+  await page.click(r62 + " button[data-missignore]"); await sleep(600);
+  ok(!(await page.$(r62 + " .c-warn")) && !(await page.isVisible("#docsWarn")), "ignore: warning and banner gone");
+  ok(await page.$eval(r62 + " button.k-word", (b) => b.disabled), "the Word chip still says the truth (off)");
+  ok(((db()["settings/keptmissing"] || {}).list || []).includes("62-2026"), "ignored number stored in settings/keptmissing");
+  await page.reload(); await page.waitForSelector("#pick", { state: "attached" }); await goTab(page, "docs");
+  await page.waitForSelector(r62, { timeout: 20000 }); await sleep(1500);
+  ok(!(await page.$(r62 + " .c-warn")) && !(await page.isVisible("#docsWarn")), "ignore kept after a reload");
+  await goTab(page, "inv"); await sleep(300);
+  ok(!(await page.isVisible("#npWarn")), "no line in the new-orders panel either");
+
+  // ---- 2. Documents: delete 65 with only the Word box ticked → files stay; then delete the folder-only 65 → files go
   await goTab(page, "docs"); await page.waitForSelector('#docsList li[data-nr="65-2026"]');
   ok(await page.isVisible("#docsBar [data-refresh]"), "refresh button in the Documents toolbar");
   await page.click('#docsList button[data-deldoc="65-2026"]'); await page.waitForSelector("#delDlg[open]");
-  await page.uncheck("#delFiles"); await page.click("#delGo"); await sleep(1200);
-  ok(!db()["invoices/65-2026"] && exists("VALKYRYS 65-2026.pdf") && exists("VALKYRYS 65-2026.docx"), "record gone, files kept");
+  await page.uncheck("#delPdf"); await page.click("#delGo"); await sleep(1200);
+  ok(!db()["invoices/65-2026"] && exists("VALKYRYS 65-2026.pdf") && !exists("VALKYRYS 65-2026.docx") && fs.existsSync(path.join(TRASH, "VALKYRYS 65-2026.docx")), "only Word ticked: record gone, Word to the bin, PDF kept");
   console.log("toast:", await page.textContent("#toast"));
   ok(/nog in de map/.test(await page.textContent("#toast")), "toast says the file is still in the folder");
-  ok(await page.isVisible('#docsList li[data-nr="65-2026"]'), "65 still listed (its files are in the folder)");
+  ok(await page.isVisible('#docsList li[data-nr="65-2026"]'), "65 still listed (its PDF is in the folder)");
+  ok(!(await page.$('#docsList li[data-nr="65-2026"] .c-warn')), "65 is now folder-only: no missing-Word warning");
   await page.click('#docsList button[data-deldoc="65-2026"]'); await page.waitForSelector("#delDlg[open]");
   const l2 = await page.$$eval("#delList li", (l) => l.map((x) => x.textContent));
-  ok(!l2.some((t) => /in de app/.test(t)) && await page.isChecked("#delFiles"), "folder-only invoice: no app record listed, files checked", l2);
+  ok(!l2.some((t) => /in de app/.test(t)) && await page.isChecked("#delPdf") && !(await page.isVisible("#delWordWrap")), "folder-only invoice: no app record listed, PDF checked, no Word box (no file)", l2);
   await page.click("#delGo"); await sleep(1200);
   ok(!exists("VALKYRYS 65-2026.pdf") && !exists("VALKYRYS 65-2026.docx"), "folder-only invoice files trashed");
   ok(!(await page.isVisible('#docsList li[data-nr="65-2026"]')), "65 no longer listed");
@@ -108,12 +157,28 @@ const exists = (n) => fs.existsSync(path.join(INV, n));
   ok((await page.textContent("#nextNr")) === "63-2026", "next number drops back to 63: " + (await page.textContent("#nextNr")));
 
   // ---- 7. "Keep" remembers; an older record without savedFiles counts by the folder's range
-  fs.rmSync(path.join(INV, "VALKYRYS 62-2026.pdf")); fs.rmSync(path.join(INV, "VALKYRYS 62-2026.docx"));
+  fs.rmSync(path.join(INV, "VALKYRYS 62-2026.pdf")); fs.rmSync(path.join(INV, "VALKYRYS 62-2026.docx"), { force: true }); // (its Word file went in 1b)
   await page.click("aside [data-refresh]"); await sleep(1500);
   ok(await page.isVisible("#staleBar") && (await page.textContent("#staleBar")).includes("62-2026"), "history refresh button: 62 flagged");
   await page.click('#staleBar button[data-stale="keep"]'); await sleep(800);
   ok(!(await page.isVisible("#staleBar")) && db()["invoices/62-2026"], "keep: banner gone, record kept");
   ok(((db()["settings/keptstale"] || {}).list || []).includes("62-2026"), "kept numbers stored");
+
+  // ---- 7b. two invoices for one purchase order: 62-2026 (made here for PO-200001) and a file "VALKYRYS 70-2026 PO-200001.pdf"
+  fs.writeFileSync(path.join(INV, "VALKYRYS 70-2026 PO-200001.pdf"), "x");
+  await page.click("aside [data-refresh]"); await sleep(1500);
+  const dupLine = await page.textContent("#npWarn").catch(() => ""); console.log("dup line:", dupLine);
+  ok(await page.isVisible("#npWarn") && dupLine.includes("PO-200001 heeft 2 facturen: 62-2026 en 70-2026"), "new-orders panel: 'PO-200001 heeft 2 facturen: 62-2026 en 70-2026'");
+  await page.click('#npWarn button[data-dw="dup"]'); await sleep(500);
+  ok(await page.isVisible("#docsView") && (await page.inputValue("#docsSearch")) === "PO-200001", "'Bekijken': Documents searched on PO-200001");
+  eq2((await page.$$eval("#docsList li", (l) => l.map((x) => x.dataset.nr))).sort(), ["62-2026", "70-2026"], "both invoices shown");
+  ok(await page.isVisible("#docsWarn") && (await page.textContent("#docsWarn")).includes("PO-200001 heeft 2 facturen"), "Documents banner too");
+  eq2(await page.$$eval("#docsList li .c-warn .tagw.dup", (l) => l.map((x) => x.textContent)), ["Dubbel · PO-200001", "Dubbel · PO-200001"], "both rows marked 'Dubbel'");
+  await page.screenshot({ path: "/tmp/docs_dup.png" });
+  await page.click('#docsWarn button[data-dw="dupignore"]'); await sleep(600);
+  ok(!(await page.isVisible("#docsWarn")) && !(await page.$("#docsList .c-warn")), "'Negeren': banner and labels gone");
+  ok(((db()["settings/keptdupinv"] || {}).list || []).some((k) => k.startsWith("PO-200001|")), "ignored in settings/keptdupinv", db()["settings/keptdupinv"]);
+  await page.fill("#docsSearch", ""); fs.rmSync(path.join(INV, "VALKYRYS 70-2026 PO-200001.pdf")); await page.click("#docsBar [data-refresh]"); await sleep(1200);
 
   // ---- 8. the Statistics source line has a refresh button that works
   await goTab(page, "stats"); await sleep(300);

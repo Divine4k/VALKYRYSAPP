@@ -68,13 +68,16 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
   eq(by("1-2026").docs, ["pdf", "word", "po"], "1-2026: PDF + Word + PO"); eq(by("1-2026").po, "PO-100002", "1-2026: PO named in the invoice");
   eq(by("2-2026").docs, ["pdf", "po"], "2-2026: PDF + PO"); eq(by("2-2026").off, ["Word"], "2-2026: Word shown as missing"); eq(by("2-2026").po, "PO-100003", "2-2026: PO from the file name");
   eq(by("3-2026").docs, ["word", "po"], "3-2026: Word only + PO"); eq(by("3-2026").po, "PO-100004", "3-2026: PO read from the Word file");
-  eq(by("4-2026").docs, ["pdf", "po"], "4-2026 (app only): drawn PDF + PO"); ok(by("4-2026").app, "4-2026 is marked as only in the app");
-  eq(by("5-2026").docs, ["pdf"], "5-2026: drawn PDF, no PO"); eq(by("5-2026").po, "–", "5-2026: no PO number");
+  eq([by("4-2026").docs, by("4-2026").off], [["po"], ["PDF", "Word"]], "4-2026 (app only): PDF and Word shown as missing (no file), PO"); ok(by("4-2026").app, "4-2026 is marked as only in the app");
+  eq([by("5-2026").docs, by("5-2026").off], [[], ["PDF", "Word", "PO"]], "5-2026: no files, no PO"); eq(by("5-2026").po, "–", "5-2026: no PO number");
+  ok(await page.isVisible('#docsList li[data-nr="4-2026"] button[data-draw]'), "4-2026: a separate eye button to view it as the app draws it");
+  ok(!(await page.$('#docsList li[data-nr="1-2026"] button[data-draw]')), "1-2026 (has its PDF): no draw button");
+  ok(!(await page.isVisible("#docsWarn")) && !(await page.$("#docsList .c-warn")), "no missing-file or duplicate warnings for folder-only invoices");
   eq([by("1-2026").amt, by("4-2026").amt, by("5-2026").amt], ["€ 2.250,00", "€ 1.350,00", "€ 500,00"], "amounts like elsewhere");
   eq([by("4-2026").client, by("5-2026").client, by("4-2026").date], ["Aannemer Alfa BV", "Zeta Bouw", "15/01/2026"], "client and date");
   ok(by("1-2026").client.includes("Piguillet"), "client read from the invoice file: " + by("1-2026").client);
   { const t = await page.textContent("#docsInfo"); ok(t.includes("Facturen in de map: 3") && t.includes("Hoogste nummer dit jaar: 3-2026") && t.includes("met inkooporder: 4"), "info line: " + t); }
-  ok(await page.$eval('#docsList li[data-nr="4-2026"] button[data-doc="pdf"]', (b) => b.classList.contains("gen")), "a drawn PDF looks different (dashed)");
+  ok(await page.$eval('#docsList li[data-nr="4-2026"] button.k-pdf', (b) => b.disabled && !b.classList.contains("gen")), "an invoice without a PDF file: the PDF chip is off, not drawn");
 
   // ---- purchase orders without an invoice
   const P = await page.$$eval("#docsList li.po-only", (li) => li.map((l) => ({ po: l.dataset.po, nr: l.dataset.nr, badge: l.querySelector(".c-nr .chip").textContent, note: (l.querySelector(".c-nr small") || {}).textContent || "", client: l.querySelector(".c-cl").textContent,
@@ -121,7 +124,8 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
   ok(await page.$eval('#docsList li[data-nr="1-2026"]', (l) => l.classList.contains("sent")), "a sent row looks done");
   await page.click('#docsFilter [data-f="sent"]'); await page.waitForTimeout(150); eq(await rows(page), ["4-2026", "1-2026"], "filter: sent");
   await page.click('#docsFilter [data-f="open"]'); await page.waitForTimeout(150); eq(await rows(page), ["5-2026", "3-2026", "2-2026"], "filter: not sent");
-  eq(await page.$$eval("#docsFilter .n", (n) => n.map((x) => x.textContent.trim())), ["7", "3", "2", "2"], "the filter buttons count (sent / not sent: invoices only)");
+  eq(await page.$$eval("#docsFilter .n", (n) => n.map((x) => x.textContent.trim())), ["7", "3", "2", "2", "0"], "the filter buttons count (sent / not sent: invoices only)");
+  ok(!(await page.isVisible('#docsFilter [data-f="miss"]')), "the Incomplete filter is hidden while nothing is incomplete");
   await page.click('#docsFilter [data-f="noinv"]'); await page.waitForTimeout(150);
   eq([await rows(page), await poRows(page)], [[], ["PO-100006", "PO-100007"]], "filter: without invoice");
   await page.click('#docsFilter [data-f="open"]'); await page.waitForTimeout(150);
@@ -147,7 +151,7 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
   eq(await page.textContent("#poDlgOpen"), "Openen in je PDF-lezer", "open-with button for a PDF");
   await page.click("#poDlgOpen"); await page.waitForTimeout(300); eq(await app.evaluate(() => globalThis.__opened), [INV + "/VALKYRYS 1-2026.pdf"], "the PDF opens outside the app");
   await page.click("#poDlgClose");
-  await page.click('#docsList li[data-nr="4-2026"] button[data-doc="pdf"]'); await page.waitForSelector("#poPages canvas", { timeout: 15000 }).catch(() => {});
+  await page.click('#docsList li[data-nr="4-2026"] button[data-draw]'); await page.waitForSelector("#poPages canvas", { timeout: 15000 }).catch(() => {});
   ok((await page.$$("#poPages canvas")).length >= 1 && !(await page.isVisible("#poDlgOpen")), "an invoice only in the app is drawn again (nothing to open)"); await page.click("#poDlgClose");
   await page.click('#docsList li[data-nr="3-2026"] button[data-doc="word"]'); await page.waitForSelector("#poPages .wpage", { timeout: 15000 }).catch(() => {});
   const wtxt = (await page.$eval("#poPages", (p) => p.innerText).catch(() => "")).replace(/\s+/g, " "); console.log("word page:", wtxt.slice(0, 300));

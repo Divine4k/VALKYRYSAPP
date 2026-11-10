@@ -20,7 +20,7 @@ const launch = async () => {
 };
 const D1 = { person: "J. Jansen", street: "Voorbeeldstraat 12", city: "1234 AB Teststad", phone: "0612345678", email: "info@extreme.example", iban: "NL91 ABNA 0417 1643 00", btw: "NL123456789B01", kvk: "12345678" };
 /** one card: its PDF button, and its Word button (the batch button only shows with two or more cards) */
-const dl = async (page, word) => { await page.click("button[data-act=download]"); if (word) { await page.waitForTimeout(1000); await page.click("button[data-act=download-docx]"); } };
+const dl = async (page, word) => { await page.click("button[data-act=download]"); if (await page.waitForSelector("#poDupDlg[open]", { timeout: 1000 }).catch(() => null)) await page.click("#poDupGo"); /* same PO as an earlier invoice: save anyway */ if (word) { await page.waitForTimeout(1000); await page.click("button[data-act=download-docx]"); } };
 const fillWz = async (page, p) => { for (const [k, v] of Object.entries(D1)) await page.fill("#" + p + k, v); };
 
 (async () => {
@@ -103,8 +103,9 @@ const fillWz = async (page, p) => { for (const [k, v] of Object.entries(D1)) awa
   ok(w.includes(D1.iban) && w.includes("Voorbeeldstraat 12") && w.includes("J. Jansen") && !/\[(IBAN|Naam|nr|bedrag|tarief)/.test(w), "the Word file has the details and no placeholders left");
 
   // an invoice made earlier keeps the design it was made in
-  fs.rmSync(file(62, "pdf"));
-  await page.click(`button[data-redo="62-${year}"]:not([data-fmt])`); ok(await wait(() => fs.existsSync(file(62, "pdf"))), "an old invoice can be made again");
+  fs.rmSync(file(62, "pdf")); fs.rmSync(file(62, "docx"), { force: true });
+  await page.click("aside button[data-refresh]"); await page.waitForSelector(`#hist button[data-redo="62-${year}"]`, { timeout: 10000 }); // no file left: "Opnieuw maken"
+  await page.click(`#hist button[data-redo="62-${year}"]`); ok(await wait(() => fs.existsSync(file(62, "pdf"))), "an old invoice can be made again");
   t = pdfText(file(62, "pdf"));
   ok(t.includes("Valkyrys") && t.includes("NL42 INGB 0103 2069 73") && !t.includes("Extreme Building"), "and it still has the design and details it was made with");
   const inv = data();
