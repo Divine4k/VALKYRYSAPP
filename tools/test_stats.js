@@ -24,7 +24,7 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
   ok(await page.isVisible("#statsView") && !(await page.isVisible("#viewInv")), "starts on the statistics tab"); eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.dataset.tab)), ["stats", "inv", "settings"], "tabs: statistics, invoices, settings");
   await goTab(page, "stats"); await page.waitForTimeout(300);
   ok(await page.isVisible("#statsView") && !(await page.isVisible("#viewInv")), "statistics tab opens");
-  eq(await page.textContent("#tagline"), "Je omzet en facturen in cijfers.", "tagline follows the tab");
+  eq(await page.textContent("#tagline"), "Je omzet en facturen in cijfers.", "tagline follows the tab"); eq(await page.textContent("#pageTitle"), "Statistieken", "page title follows the tab");
   const kv = async () => page.$$eval("#kpis .kpi", (k) => k.map((x) => [x.querySelector(".v").textContent, x.querySelector(".s").textContent.trim()]));
   let k = await kv(); console.log(k);
   eq(k.map((x) => x[0]), ["€ 13.400", "6", "31", "€ 1.218"], "2026 tiles: revenue / invoices / days / avg per month");
@@ -76,7 +76,7 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
   eq(await page.textContent("#tabStats"), "Statistics", "tab label in English");
   eq(await page.textContent("#kpis .kpi .eyebrow"), "Revenue (excl. VAT)", "tile label in English");
   eq(await page.$$eval("#statMode button", (b) => b.map((x) => x.textContent)), ["By week", "By month", "By quarter", "By year"], "segment labels in English");
-  eq(await page.textContent("#tagline"), "Your revenue and invoices in numbers.", "tagline in English");
+  eq(await page.textContent("#tagline"), "Your revenue and invoices in numbers.", "tagline in English"); eq(await page.textContent("#pageTitle"), "Statistics", "page title in English");
   await setLang(page, "pl"); await page.waitForTimeout(300);
   eq(await page.textContent("#tabStats"), "Statystyki", "tab label in Polish");
   eq(await page.$$eval("#stTable tbody tr td:first-child", (t) => t.slice(0, 3).map((x) => x.textContent)), ["Styczeń", "Luty", "Marzec"], "Polish month names");
@@ -84,7 +84,7 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
   // back to invoices tab
   await goTab(page, "inv"); await page.waitForTimeout(200);
   ok(await page.isVisible("#viewInv") && !(await page.isVisible("#statsView")), "back on the invoices tab");
-  eq(await page.textContent("#tagline"), "Sleep inkooporders erin en download kant-en-klare facturen.", "tagline restored");
+  eq(await page.textContent("#tagline"), "Sleep inkooporders erin en download kant-en-klare facturen.", "tagline restored"); eq(await page.textContent("#pageTitle"), "Facturen", "page title: Facturen");
   // new invoice shows up in the statistics straight away
   await page.setInputFiles("#file", process.argv[3]); await page.waitForSelector("article.po h3");
   console.log("card nr:", await page.inputValue('[data-k="nr"]'));

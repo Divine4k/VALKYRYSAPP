@@ -16,7 +16,7 @@ const choose = async (page, id) => { await page.click(`#themeGrid [data-theme-id
   fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome);
   let { app, page } = await launch(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
   await page.emulateMedia({ colorScheme: "light" });
-  ok(!(await page.isVisible("#themeBtn")) && (await page.$eval("header.band", (h) => !h.querySelector("#themeBtn, #lang"))), "no theme button or language list in the header"); await goTab(page, "settings"); ok(await page.isVisible("#themeBtn") && await page.isVisible("#lang"), "theme button and language list are in Settings"); eq(await page.textContent("#themeBtn"), "Thema", "button label");
+  ok(!(await page.isVisible("#themeBtn")) && (await page.$eval("#appbar", (h) => !h.querySelector("#themeBtn, #lang"))), "no theme button or language list in the header"); await goTab(page, "settings"); ok(await page.isVisible("#themeBtn") && await page.isVisible("#lang"), "theme button and language list are in Settings"); eq(await page.textContent("#themeBtn"), "Thema", "button label");
   await page.click("#themeBtn"); ok(await page.$eval("#themeDlg", (d) => d.open), "dialog opens");
   eq(await page.$$eval("#themeGrid [data-theme-id]", (b) => b.map((x) => x.dataset.themeId)), ["auto", "light", "dark", "midnight", "paper", "forest", "contrast", "custom"], "eight themes");
   eq(await page.$$eval("#themeGrid .tname", (b) => b.map((x) => x.textContent)), ["Automatisch", "Licht", "Donker", "Middernacht", "Papier", "Bos", "Hoog contrast", "Eigen thema"], "Dutch names");
@@ -35,11 +35,11 @@ const choose = async (page, id) => { await page.click(`#themeGrid [data-theme-id
   await choose(page, "light"); eq(await css(page, "body", "backgroundColor"), rgb("#F1F2F4"), "Licht");
   await page.emulateMedia({ colorScheme: "dark" }); await page.waitForTimeout(150);
   eq(await css(page, "body", "backgroundColor"), rgb("#F1F2F4"), "Licht stays light when the system is dark"); await page.emulateMedia({ colorScheme: "light" });
-  const logoSrc = await page.$eval(".band img", (i) => i.getAttribute("src"));
+  const logoSrc = await page.$eval("#appbar .brand img", (i) => i.getAttribute("src"));
   for (const [id, bg, accent, band] of [["midnight", "#0A0F1E", "#6C9CFF", "#000000"], ["paper", "#F3EEE3", "#C4531B", "#111111"], ["forest", "#0C1410", "#4FD18B", "#000000"], ["contrast", "#000000", "#FFD500", "#000000"]]) {
     await choose(page, id);
-    eq([await css(page, "body", "backgroundColor"), await v(page, "--accent"), await css(page, ".band", "backgroundColor")], [rgb(bg), accent, rgb(band)], `${id}: page, accent and the band`);
-    eq([await css(page, ".band", "borderBottomColor"), await page.$eval(".band img", (i) => i.getAttribute("src"))], [rgb("#FEBD17"), logoSrc], `${id}: logo and its yellow line untouched`);
+    eq([await css(page, "body", "backgroundColor"), await v(page, "--accent"), await css(page, "#appbar", "backgroundColor")], [rgb(bg), accent, rgb(band)], `${id}: page, accent and the app bar`);
+    eq([await css(page, "#tabs .seg-ind", "backgroundColor"), await page.$eval("#appbar .brand img", (i) => i.getAttribute("src"))], [rgb(accent), logoSrc], `${id}: tab pill in the accent, logo untouched`);
   }
   await choose(page, "midnight"); eq(await css(page, "button.primary, #npPick, #folderPick", "backgroundColor"), rgb("#6C9CFF"), "primary buttons use the theme accent");
 
@@ -49,7 +49,7 @@ const choose = async (page, id) => { await page.click(`#themeGrid [data-theme-id
   await page.fill("#tc-bg-hex", "#102030"); await page.fill("#tc-surface-hex", "#18283C"); await page.fill("#tc-ink-hex", "#E0E6EE"); await page.fill("#tc-accent-hex", "#FF5577"); await page.waitForTimeout(200);
   eq([await v(page, "--bg"), await v(page, "--surface"), await v(page, "--ink"), await v(page, "--accent")], ["#102030", "#18283C", "#E0E6EE", "#FF5577"], "your colours are applied live");
   eq(await page.evaluate(() => document.documentElement.dataset.theme), "dark", "a dark custom theme gets dark controls");
-  eq(await css(page, ".band", "backgroundColor"), rgb("#000000"), "band still black"); ok(!(await page.isVisible("#themeWarn")), "no warning for readable colours");
+  eq(await css(page, "#appbar", "backgroundColor"), rgb("#000000"), "app bar still black"); ok(!(await page.isVisible("#themeWarn")), "no warning for readable colours");
   eq(await page.inputValue("#tc-accent"), "#ff5577", "colour picker follows the code");
   await page.fill("#tc-ink-hex", "#1A2A3E"); await page.waitForTimeout(200);
   ok(await page.isVisible("#themeWarn") && (await page.textContent("#themeWarn")).startsWith("Let op: de tekst"), "unreadable text gives a warning: " + (await page.textContent("#themeWarn")));

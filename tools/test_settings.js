@@ -90,11 +90,13 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   // ================= the tabs and the Settings tab (a profile that is set up)
   seed(HOME, { "pin.json": SKIP, "config.json": { folder: INV, poFolder: PO, welcomed: true } });
   ({ app, page, errs, pick } = await launch(HOME));
-  eq(await page.title(), "Valkyrys app", "window title"); eq(await page.textContent("header.band h1"), "APP".replace("APP", "App"), "header: Valkyrys + App");
+  eq(await page.title(), "Valkyrys app", "window title"); eq(await page.textContent("#appbar .brand-app"), "App", "app bar: Valkyrys logo + App");
+  eq(await page.$eval("#appbar .brand img", (i) => i.getAttribute("src")), "img/logo-white.png", "app bar: white logo");
+  eq(await page.textContent("#pageTitle"), "Statistieken", "page title: the selected tab");
   eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => [x.dataset.tab, x.textContent.trim(), x.getAttribute("aria-selected")])), [["stats", "Statistieken", "true"], ["inv", "Facturen", "false"], ["settings", "Instellingen", "false"]], "tabs: Statistieken (selected), Facturen, Instellingen");
   ok(await page.isVisible("#statsView") && !(await page.isVisible("#viewInv")) && !(await page.isVisible("#settingsView")), "the app opens on the statistics");
   eq(await page.textContent("#tagline"), "Je omzet en facturen in cijfers.", "its tagline");
-  ok(await page.$eval("header.band", (h) => !h.querySelector("#themeBtn, #lang, select, button")), "the header has no theme button or language list any more");
+  ok(await page.$eval("#appbar", (h) => !h.querySelector("#themeBtn, #lang, select, button:not([role=tab])")), "the app bar has no theme button or language list, only the tabs");
   ok(await page.evaluate(() => !document.querySelector("#srcPick, #srcOpen, #srcClear")), "the read-from line has no folder buttons any more");
   eq(await page.textContent("#srcSettings"), "Wijzigen bij Instellingen", "it links to Settings instead");
   ok(await page.isVisible("#srcPath") && (await page.textContent("#srcPath")) === INV, "and still says where the figures come from: " + (await page.textContent("#srcPath")));
@@ -105,7 +107,10 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   ok(await page.isVisible("#folderPanel") && !(await page.isVisible("#folderPick")) && !(await page.isVisible("#folderGoSet")), "folder list stays (what is in it), the choosing moved");
   await goTab(page, "settings"); await page.waitForTimeout(200);
   ok(await page.isVisible("#settingsView") && !(await page.isVisible("#viewInv")) && !(await page.isVisible("#statsView")), "Settings tab opens");
-  eq(await page.textContent("#tagline"), "Mappen, pincode en weergave.", "its tagline");
+  eq(await page.textContent("#tagline"), "Mappen, pincode en weergave.", "its tagline"); eq(await page.textContent("#pageTitle"), "Instellingen", "page title follows the tab");
+  // the pill (.seg-ind) slides under the selected tab
+  await page.waitForTimeout(300); { const [a, b] = [await page.locator("#tabs .seg-ind").boundingBox(), await page.locator("#tabSettings").boundingBox()];
+    ok(a && b && Math.abs(a.x - b.x) <= 2 && Math.abs(a.width - b.width) <= 2, "indicator sits under Instellingen", { ind: a, tab: b }); }
   for (const [sel, what] of [["#setFolders", "folders"], ["#pinPanel", "PIN"], ["#lookPanel", "appearance"], ["#themeBtn", "theme button"], ["#lang", "language list"], ["#folderPick", "invoice folder button"], ["#poFolderPick", "PO folder button"]]) ok(await page.isVisible(sel), "Settings has: " + what);
   eq(await page.textContent("#folderPath"), INV, "invoice folder shown"); eq(await page.textContent("#poFolderPath"), PO, "PO folder shown");
   eq(await page.$$eval("#setFolders .fsub", (e) => e.map((x) => x.textContent)), ["Map met facturen", "Map met inkooporders"], "both folders have their own block");
@@ -122,9 +127,10 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   // language and theme live here now
   await page.selectOption("#lang", "en"); await page.waitForTimeout(300);
   eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.textContent.trim())), ["Statistics", "Invoices", "Settings"], "language list in Settings switches the app (English)");
+  eq(await page.textContent("#pageTitle"), "Settings", "page title in English");
   eq(await page.textContent("#folderHelp"), "Choose a folder where your invoices are kept. New invoices are saved there automatically and the app shows everything that is already in it.", "English help text for the invoice folder");
   await page.selectOption("#lang", "pl"); await page.waitForTimeout(300);
-  eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.textContent.trim())), ["Statystyki", "Faktury", "Ustawienia"], "Polish");
+  eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.textContent.trim())), ["Statystyki", "Faktury", "Ustawienia"], "Polish"); eq(await page.textContent("#pageTitle"), "Ustawienia", "page title in Polish");
   eq(await page.textContent("#poFolderPick"), "Zmień folder…", "Polish button");
   await page.selectOption("#lang", "nl"); await page.waitForTimeout(300);
   await page.click("#themeBtn"); ok(await page.$eval("#themeDlg", (d) => d.open), "theme button opens the theme window"); await page.click("#themeClose");

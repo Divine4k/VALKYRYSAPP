@@ -23,7 +23,7 @@
   --ok: #67C892; --ok-bg: #12291C; --warn: #F2B347; --warn-bg: #2E230E; --err: #F28B82; --err-bg: #351816; --focus: #7AA7FF;
   color-scheme: dark; }
 
-body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.45; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.45; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 h1, h2, h3 { color: var(--ink); margin: 0; text-wrap: balance; }
@@ -37,7 +37,7 @@ h1, h2, h3 { color: var(--ink); margin: 0; text-wrap: balance; }
 .band h1 { color: var(--band-text); font-size: 15px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
 .band p { margin: 0; color: var(--band-muted); font-size: 13px; flex: 1 1 260px; }
 
-main { padding-block: 24px 48px; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+main { padding-block: 20px 48px; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
 @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); } }
 .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 
@@ -204,12 +204,25 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .files .t { overflow-wrap: anywhere; font-size: 14px; }
 .files .redo { grid-row: 1 / span 2; grid-column: 2; display: flex; gap: 6px; }
 .files button { min-height: 34px; padding: 6px 10px; font-size: 13px; }
-.tabsbar { background: var(--surface); border-bottom: 1px solid var(--line); }
-.tabsbar-in { max-width: 1140px; margin: 0 auto; padding-inline: max(8px, env(safe-area-inset-left, 0px)); display: flex; gap: 2px; }
-.tabsbar button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; min-height: 46px; padding: 8px 16px; color: var(--muted); font-size: 14px; }
-.tabsbar button:hover { color: var(--ink); border-color: transparent transparent var(--line); }
-.tabsbar button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
-.sv { max-width: 1140px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 16px; }
+.appbar { position: sticky; top: 0; z-index: 10; background: var(--band); color: var(--band-text); border-bottom: 1px solid rgba(255, 255, 255, .06); }
+.appbar-in { max-width: 1140px; margin: 0 auto; min-height: 60px; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
+.brand img { height: 22px; width: auto; display: block; }
+.brand-app { padding-left: 12px; border-left: 1px solid rgba(255, 255, 255, .18); color: var(--band-muted); font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; line-height: 18px; }
+.appbar .seg { position: relative; display: inline-flex; border: 0; overflow: visible; gap: 2px; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04); max-width: 100%; }
+.appbar .seg-ind { position: absolute; top: 4px; left: 0; bottom: 4px; width: 0; border-radius: 999px; background: var(--accent); box-shadow: 0 1px 3px rgba(0, 0, 0, .35); opacity: 0; transition: transform .2s ease, width .2s ease; pointer-events: none; }
+.appbar .seg-ind.on { opacity: 1; }
+.appbar .seg [role=tab] { position: relative; z-index: 1; border: 0; border-left: 0; background: transparent; min-height: 36px; padding: 0 16px; border-radius: 999px; color: var(--band-muted); font-size: 14px; font-weight: 700; gap: 8px; white-space: nowrap; transition: color .2s ease; }
+.appbar .seg [role=tab]:hover { color: var(--band-text); border-color: transparent; }
+.appbar .seg [role=tab][aria-selected="true"] { color: var(--accent-ink); }
+.appbar .seg [role=tab] svg { flex: 0 0 auto; display: block; }
+.appbar .seg [role=tab]:focus-visible { outline: 2px solid var(--band-text); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .appbar .seg-ind, .appbar .seg [role=tab] { transition: none; } }
+@media (max-width: 560px) { .appbar .seg { width: 100%; } .appbar .seg [role=tab] { flex: 1 1 0; padding: 0 10px; } }
+.pagehead-in { max-width: 1140px; margin: 0 auto; padding-top: 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.pagehead h1 { font-size: 26px; font-weight: 900; line-height: 1.2; color: var(--ink); letter-spacing: -.01em; }
+.pagehead p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.sv { max-width: 1140px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 16px; }
 .stats-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
 .stats-bar .push { margin-left: auto; }
 .stats-bar label.f { width: 150px; }
@@ -482,19 +495,18 @@ window.ValkTheme = (function () {
 })();
 </script>
 
-<header class="band">
-  <div class="band-in">
-    <img src="img/logo-white.png" alt="Valkyrys">
-    <h1 data-i18n="title">App</h1>
-    <p id="tagline" data-i18n="statsTagline">Je omzet en facturen in cijfers.</p>
+<header class="appbar" id="appbar">
+  <div class="appbar-in">
+    <div class="brand"><img src="img/logo-white.png" alt="Valkyrys"><span class="brand-app" data-i18n="title">App</span></div>
+    <nav class="seg" role="tablist" id="tabs" data-i18n-aria="tabsLabel" aria-label="Onderdelen">
+      <span class="seg-ind" aria-hidden="true"></span>
+      <button type="button" role="tab" id="tabStats" data-tab="stats" aria-selected="true" aria-controls="statsView"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-8"/><path d="M21 20H3"/></svg><span data-i18n="tabStats">Statistieken</span></button>
+      <button type="button" role="tab" id="tabInv" data-tab="inv" aria-selected="false" aria-controls="viewInv" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg><span data-i18n="tabInvoices">Facturen</span></button>
+      <button type="button" role="tab" id="tabSettings" data-tab="settings" aria-selected="false" aria-controls="settingsView" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span data-i18n="tabSettings">Instellingen</span></button>
+    </nav>
   </div>
 </header>
-
-<nav class="tabsbar"><div class="tabsbar-in" role="tablist" id="tabs">
-  <button type="button" role="tab" id="tabStats" data-tab="stats" aria-selected="true" aria-controls="statsView" data-i18n="tabStats">Statistieken</button>
-  <button type="button" role="tab" id="tabInv" data-tab="inv" aria-selected="false" aria-controls="viewInv" tabindex="-1" data-i18n="tabInvoices">Facturen</button>
-  <button type="button" role="tab" id="tabSettings" data-tab="settings" aria-selected="false" aria-controls="settingsView" tabindex="-1" data-i18n="tabSettings">Instellingen</button>
-</div></nav>
+<div class="pagehead"><div class="pagehead-in"><h1 id="pageTitle">Statistieken</h1><p id="tagline" data-i18n="statsTagline">Je omzet en facturen in cijfers.</p></div></div>
 
 <main id="viewInv" role="tabpanel" aria-labelledby="tabInv" hidden>
   <section class="col" aria-label="Inkooporders">
@@ -852,7 +864,7 @@ window.ValkTheme = (function () {
       saveAll: "Alles opslaan in de map", doneSaved: "✓ Opgeslagen als {0}",
       savedIn: "{0} opgeslagen in de map.", savedMany: "{0} facturen opgeslagen in de map.",
       numInFolder: "Factuurnummer {0} staat al in de map ({1}).", delToastKept: "{0} is uit de lijst gehaald. Het bestand staat nog in de map, dus het nummer blijft bezet.",
-      tabInvoices: "Facturen", tabStats: "Statistieken",
+      tabInvoices: "Facturen", tabStats: "Statistieken", tabsLabel: "Onderdelen",
       statsTagline: "Je omzet en facturen in cijfers.", statsEmpty: "Nog geen facturen om te tellen. Download of sla een factuur op, of kies bij Instellingen een map met je facturen: die worden dan ook meegeteld.",
       byMonth: "Per maand", byQuarter: "Per kwartaal",
       byYear: "Per jaar", statYear: "Jaar",
@@ -995,7 +1007,7 @@ window.ValkTheme = (function () {
       saveAll: "Save all to the folder", doneSaved: "✓ Saved as {0}",
       savedIn: "{0} saved to the folder.", savedMany: "{0} invoices saved to the folder.",
       numInFolder: "Invoice number {0} is already in the folder ({1}).", delToastKept: "{0} was removed from the list. The file is still in the folder, so the number stays taken.",
-      tabInvoices: "Invoices", tabStats: "Statistics",
+      tabInvoices: "Invoices", tabStats: "Statistics", tabsLabel: "Sections",
       statsTagline: "Your revenue and invoices in numbers.", statsEmpty: "No invoices to count yet. Download or save an invoice, or choose a folder with your invoices under Settings: those are counted too.",
       byMonth: "By month", byQuarter: "By quarter",
       byYear: "By year", statYear: "Year",
@@ -1138,7 +1150,7 @@ window.ValkTheme = (function () {
       saveAll: "Zapisz wszystko w folderze", doneSaved: "✓ Zapisano jako {0}",
       savedIn: "Zapisano {0} w folderze.", savedMany: "Zapisano faktur w folderze: {0}.",
       numInFolder: "Numer faktury {0} jest już w folderze ({1}).", delToastKept: "Usunięto {0} z listy. Plik nadal jest w folderze, więc numer pozostaje zajęty.",
-      tabInvoices: "Faktury", tabStats: "Statystyki",
+      tabInvoices: "Faktury", tabStats: "Statystyki", tabsLabel: "Sekcje",
       statsTagline: "Twoje przychody i faktury w liczbach.", statsEmpty: "Nie ma jeszcze faktur do policzenia. Pobierz lub zapisz fakturę albo wybierz w Ustawieniach folder z fakturami: one również zostaną policzone.",
       byMonth: "Miesięcznie", byQuarter: "Kwartalnie",
       byYear: "Rocznie", statYear: "Rok",
@@ -2340,11 +2352,23 @@ window.ValkTheme = (function () {
   }
 
   const TABS = ["stats", "inv", "settings"], TAGLINE = { stats: "statsTagline", inv: "tagline", settings: "settingsTagline" };
+  const TABKEY = { stats: "tabStats", inv: "tabInvoices", settings: "tabSettings" };
+  // Page title follows the selected tab; the pill (.seg-ind) slides under the selected button.
+  function syncTabHead() {
+    $("#pageTitle").textContent = tr(TABKEY[state.tab] || "tabStats");
+    const ind = document.querySelector("#tabs .seg-ind"), b = document.querySelector(`#tabs [data-tab="${state.tab}"]`);
+    if (!ind || !b || !b.offsetWidth) return;
+    ind.style.width = b.offsetWidth + "px"; ind.style.transform = `translateX(${b.offsetLeft}px)`;
+    if (!ind.classList.contains("on")) requestAnimationFrame(() => ind.classList.add("on"));
+  }
+  window.addEventListener("resize", syncTabHead);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncTabHead);
   function setTab(t) {
     state.tab = TABS.includes(t) ? t : "stats";
     document.querySelectorAll("#tabs [role=tab]").forEach((b) => { const on = b.dataset.tab === state.tab; b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; });
     $("#viewInv").hidden = state.tab !== "inv"; $("#statsView").hidden = state.tab !== "stats"; $("#settingsView").hidden = state.tab !== "settings";
     const tg = $("#tagline"); tg.dataset.i18n = TAGLINE[state.tab]; tg.textContent = tr(tg.dataset.i18n);
+    syncTabHead();
     if (state.tab === "stats") { renderStats(); if (desk) refreshPoFolder(); }
     window.scrollTo(0, 0);
   }
@@ -2509,7 +2533,7 @@ window.ValkTheme = (function () {
     updateFileHint();
     if ($("#dlg").open) $("#dlgTitle").textContent = tr("preview", $("#dlgTitle").dataset.nr || "");
     renderThemeUi(); renderPin(); renderTplUi(); if ($("#tplDlg").open) renderTplDlg(); window.ValkLockLang = state.lang; if (desk && $("#welcomeDlg").open) renderWelcome();
-    render();
+    render(); syncTabHead();
   }
   function saveLang() {
     try { localStorage.setItem("valkyrys-lang", state.lang); } catch (e) {}
