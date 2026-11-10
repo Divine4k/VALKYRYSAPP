@@ -1,0 +1,43 @@
+Attribute VB_Name = "Factuur"
+Option Explicit
+
+' Volgende factuur
+' Zet het factuurnummer een verder (61-2026 wordt 62-2026)
+' en zet de datum op vandaag.
+' In een nieuw jaar begint de teller opnieuw bij 1 (bijv. 1-2027).
+' Werkt in de Valkyrys-factuur: daar heten de velden "Factuurnummer" en "Datum".
+
+Sub VolgendeFactuur()
+    Dim cc As ContentControl
+    Dim delen() As String
+    Dim nummer As Long, jaar As Long, ditJaar As Long
+    Dim gevonden As Boolean
+
+    ditJaar = Year(Date)
+
+    For Each cc In ActiveDocument.SelectContentControlsByTag("Factuurnummer")
+        gevonden = True
+        delen = Split(Trim(cc.Range.Text), "-")
+        If UBound(delen) = 1 And IsNumeric(delen(0)) And IsNumeric(delen(1)) Then
+            nummer = CLng(delen(0))
+            jaar = CLng(delen(1))
+            If jaar < ditJaar Then
+                cc.Range.Text = "1-" & ditJaar
+            Else
+                cc.Range.Text = (nummer + 1) & "-" & jaar
+            End If
+        Else
+            MsgBox "Het factuurnummer moet er zo uitzien: 61-2026", vbExclamation, "Volgende factuur"
+            Exit Sub
+        End If
+    Next cc
+
+    If Not gevonden Then
+        MsgBox "Geen factuurnummer gevonden in dit document.", vbExclamation, "Volgende factuur"
+        Exit Sub
+    End If
+
+    For Each cc In ActiveDocument.SelectContentControlsByTag("Datum")
+        cc.Range.Text = Format(Date, "dd\/mm\/yyyy")
+    Next cc
+End Sub

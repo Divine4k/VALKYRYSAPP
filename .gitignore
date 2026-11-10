@@ -1,0 +1,10 @@
+logs/
+out/
+el/
+dl/
+node_modules/
+app/web/
+electron-app/web/
+installer/payload/
+index.before-*.html
+*.exe

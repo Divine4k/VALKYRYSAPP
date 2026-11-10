@@ -1,0 +1,26 @@
+{
+  "name": "valkyrys-app",
+  "version": "1.0.0",
+  "description": "Valkyrys app: make invoices from purchase orders",
+  "main": "main.js",
+  "author": "Valkyrys",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "node copy-fontkit.js && electron .",
+    "dist": "node copy-fontkit.js && electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "@pdf-lib/fontkit": "1.1.1",
+    "electron": "33.2.1",
+    "electron-builder": "25.1.9"
+  },
+  "build": {
+    "appId": "nl.valkyrys.app",
+    "productName": "Valkyrys app",
+    "files": ["main.js", "server.js", "web/**/*", "build/icon.png"],
+    "directories": { "output": "dist" },
+    "win": { "icon": "build/icon.ico", "target": ["portable", "nsis"], "artifactName": "Valkyrys-app-${version}-${target}.${ext}" },
+    "nsis": { "oneClick": true, "perMachine": false, "createDesktopShortcut": true, "createStartMenuShortcut": true }
+  }
+}
