@@ -44,10 +44,12 @@ Logs: `logs/<test>.log`. Tests need xvfb (the script uses `xvfb-run -a`). Do not
 ## Conventions
 - Text for the interface: add every key to all three languages in `I18N` (nl, en, pl). `tr("key", a, b)` fills `{0}`, `{1}`. Days word: `tr(plural(n))`.
 - `desk` is the desktop bridge (undefined in a plain browser). Folder-only UI is hidden without it.
-- Tabs: Statistieken (first, opens at start), Facturen, Instellingen. `setTab()` in index.html. Settings holds folders, PIN, theme + language, invoice details.
+- Tabs: Statistieken (first, opens at start), Facturen, Documenten, Instellingen. `setTab()` in index.html. Settings holds folders, PIN, theme + language, invoice details.
+- Documenten (`renderDocs`, `docSets`): one row per invoice number with its PDF/Word in the invoice folder, its PO (matched on the invoice's `po` or the file name via `poMentioned`) and invoices only in the app (drawn again). Built from what is already read (parse cache, `folderInvoices`, `invoices`, `poRecs`); redrawn from `renderNewPos`. "Sent" ticks in `settings/sent`, sort/filter in `settings/docsprefs`. Word files are previewed by `docxPage` (document.xml → simple HTML page; falls back to `noPrevWord`). Test: `tools/test_docs.js`.
 - Statistics: each PO line is a work day dated from the start of its Omschrijving; range "t/m" expands to Mon-Fri; hour lines are qty/8; one date is never more than 1 day across lines and POs. Duplicate days across POs (`poDupes`) and one PO number in several files (`state.poSame`) only inform (banner + list), they change no figure. Invoice source: `lineDays(rate, qty, desc)`, rate < 100 = hour rate.
 - Changing the PO reading? Bump `PARSER_VERSION` in index.html so cached reads are redone.
 - Tests seed their own fake AppData (`seedProfile`), so they skip the PIN and first-start questions. Fixture folders in /tmp are made again before every test by `dev.sh`.
+- Every user-visible change: add an item to the top entry of `tool/changelog.js` (nl/en/pl); on release start a new entry with the new version and bump electron-app/package.json. The "Nieuw" button in the app bar shows a dot until the latest version is opened (`settings/news.seen`); a fresh install marks it seen silently, nothing opens by itself.
 - When the UI moves, fix `tools/test_helpers.js` first (tab selectors) before touching single tests.
 
 ## Invoice designs (templates)
@@ -71,4 +73,5 @@ Logs: `logs/<test>.log`. Tests need xvfb (the script uses `xvfb-run -a`). Do not
 
 ## Known limits
 - A PO layout with prices vertically centred between two text lines is not read (listed as "unread").
-- Wrapped second rows of a PO line are ignored; word-only invoices can only be opened, not previewed.
+- Wrapped second rows of a PO line are ignored.
+- The Word preview is approximate: pictures behind the text (backgrounds) and EMF/WMF images are left out, positioned text boxes flow inline.

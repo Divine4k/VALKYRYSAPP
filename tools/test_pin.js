@@ -37,20 +37,21 @@ const unlockWith = async (page, pin) => { await page.fill("#lkPin1", pin); await
   ok(!(await locked(page)) && !(await page.evaluate(() => document.body.inert)), "app opens after the PIN is set");
   const pf = pinFile(); ok(pf && pf.hash && pf.salt && !JSON.stringify(pf).includes("1234"), "pin.json holds a salted hash, not the PIN", pf && Object.keys(pf));
   ok(await page.isVisible("#statsView") && !(await page.isVisible("#pinPanel")), "the app opens on Statistics, the PIN is in Settings"); await goTab(page, "settings"); ok(await page.isVisible("#pinPanel") && (await page.textContent("#pinNote")).startsWith("Pincode staat aan"), "settings panel says a PIN is on");
-  await page.waitForFunction(() => document.querySelector("#folderInfo").textContent.includes("Facturen in de map"), null, { timeout: 15000 }); ok(true, "invoice folder works after unlocking");
+  await goTab(page, "docs"); await page.waitForFunction(() => document.querySelector("#docsInfo").textContent.includes("Facturen in de map"), null, { timeout: 15000 }); ok(true, "invoice folder works after unlocking");
 
   // ---- every start: log in
   await app.close(); ({ app, page } = await launch()); page.on("pageerror", (e) => errs.push(e.message));
   ok(await locked(page) && !(await page.$("#lkPin2")), "next start asks for the PIN (one field)"); eq(await page.textContent("#lkTitle"), "Voer je pincode in", "login title");
   eq(await dbStatus(page), 401, "saved data is not served while locked");
-  ok(await page.evaluate(() => !document.querySelector("#folderInfo") || document.querySelector("#folderInfo").textContent === ""), "nothing from the folder is shown while locked");
+  ok(await page.evaluate(() => !document.querySelector("#docsList li") && !document.querySelector("#docsInfo").textContent), "nothing from the folder is shown while locked");
   await unlockWith(page, "0000"); await page.waitForTimeout(400);
   eq(await page.textContent("#lkErr"), "Onjuiste pincode. Nog 4 pogingen voordat je even moet wachten.", "wrong PIN: tries left"); eq(await page.inputValue("#lkPin1"), "", "field is cleared");
   ok(await locked(page), "still locked");
   await page.click("#lkForgotBtn"); ok((await page.textContent("#lkForgot")).includes("pin.json"), "'forgot' explains how to reset");
   await type(page, "#lkPin1", "1234"); await page.click('#lockScreen [data-act="go"]'); await page.waitForSelector("#statsView", { state: "visible" }); await page.waitForTimeout(800);
   eq(await dbStatus(page), 200, "saved data is served after unlocking"); eq(await page.textContent("#nextNr"), "62-2026", "the app loaded its numbering after unlocking");
-  ok((await page.textContent("#folderInfo")).includes("Facturen in de map"), "folder listing loads after unlocking");
+  await goTab(page, "docs"); await page.waitForFunction(() => document.querySelector("#docsInfo").textContent.includes("Facturen in de map"), null, { timeout: 15000 }).catch(() => {});
+  ok((await page.textContent("#docsInfo")).includes("Facturen in de map"), "folder listing loads after unlocking");
   ok(pinFile().fails === 0, "a good PIN resets the wrong-try counter");
 
   // ---- too many wrong tries

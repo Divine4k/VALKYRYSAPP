@@ -1,0 +1,51 @@
+// "What's new" in the app: one entry per release, newest first. Shown in the "Nieuw" window in the app bar.
+// Every user-visible change: add an item to the top entry (nl, en, pl). On release, start a new entry and bump electron-app/package.json.
+// type: "new" | "improved" | "fixed"
+window.VALK_CHANGELOG = [
+  {
+    version: "1.1.0", date: "2026-11-10",
+    items: [
+      { type: "new",
+        nl: "Tabblad Documenten: al je facturen als set (PDF, Word en de bijbehorende PO), met een voorbeeld van elk bestand. Sorteer op nummer, datum, klant, PO of bedrag, en zoek.",
+        en: "Documents tab: all your invoices as sets (PDF, Word and the matching PO), with a preview of each file. Sort by number, date, client, PO or amount, and search.",
+        pl: "Zakładka Dokumenty: wszystkie faktury w kompletach (PDF, Word i powiązane zamówienie PO) z podglądem każdego pliku. Sortowanie według numeru, daty, klienta, PO lub kwoty oraz wyszukiwanie." },
+      { type: "new",
+        nl: "Vink per factuur „Verstuurd” aan, zodat je weet wat al naar de klant is gegaan.",
+        en: "Tick “Sent” for each invoice, so you know what has already gone to the client.",
+        pl: "Zaznacz „Wysłano” przy każdej fakturze, aby wiedzieć, co już trafiło do klienta." },
+      { type: "new",
+        nl: "Word-facturen kun je nu in de app zelf bekijken.",
+        en: "Word invoices can now be previewed inside the app.",
+        pl: "Faktury w formacie Word można teraz przeglądać bezpośrednio w aplikacji." },
+      { type: "new",
+        nl: "Dit venster: zie wat er nieuw is na elke update.",
+        en: "This window: see what is new after every update.",
+        pl: "To okno: po każdej aktualizacji zobaczysz, co się zmieniło." },
+      { type: "improved",
+        nl: "Nieuwe, moderne balk bovenaan met tabbladen en een paginatitel.",
+        en: "New, modern top bar with tabs and page titles.",
+        pl: "Nowy, nowoczesny pasek u góry z zakładkami i tytułami stron." },
+      { type: "improved",
+        nl: "De mappenlijst is weg uit het tabblad Facturen; je vindt je bestanden nu onder Documenten.",
+        en: "The folder list is gone from the Invoices tab; your files are now under Documents.",
+        pl: "Lista folderów zniknęła z zakładki Faktury; pliki znajdziesz teraz w zakładce Dokumenty." },
+      { type: "fixed",
+        nl: "De logo-animatie bij het opstarten speelt weer, ook als animatie-effecten in Windows uit staan.",
+        en: "The logo animation at start-up plays again, also when animation effects are off in Windows.",
+        pl: "Animacja logo przy uruchamianiu znów działa, także gdy efekty animacji w systemie Windows są wyłączone." },
+    ],
+  },
+  {
+    version: "1.0.0", date: "2026-11-03",
+    items: [
+      { type: "new",
+        nl: "Eerste versie van Valkyrys app: facturen maken van inkooporders, statistieken met filters per tegel, en kiezen uit factuurontwerpen.",
+        en: "First version of Valkyrys app: invoices from purchase orders, statistics with a filter per tile, and a choice of invoice designs.",
+        pl: "Pierwsza wersja Valkyrys app: faktury z zamówień zakupu, statystyki z filtrem dla każdego kafelka i wybór wzorów faktur." },
+      { type: "new",
+        nl: "Opslaan als… (map of zip, met keuze uit PO's, PDF en Word) en je eigen Word-ontwerpen gebruiken.",
+        en: "Save as… (folder or zip, choosing POs, PDF and Word) and use your own Word designs.",
+        pl: "Zapisz jako… (folder lub zip, z wyborem PO, PDF i Word) oraz własne wzory w programie Word." },
+    ],
+  },
+];

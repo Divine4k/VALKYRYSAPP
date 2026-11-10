@@ -11,23 +11,25 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   await app.firstWindow(); let page; for (let i = 0; i < 100 && !page; i++) { page = app.windows().find((w) => !w.url().includes("splash")); if (!page) await new Promise((r) => setTimeout(r, 200)); }
   const errs = []; page.on("pageerror", (e) => errs.push(e.message));
   await page.waitForSelector("#pick", { state: "attached" }); await goTab(page, "inv"); await page.waitForTimeout(600);
-  ok(await page.isVisible("#folderPanel"), "folder panel visible in the desktop app");
+  ok(await page.isVisible("#tabDocs"), "Documents tab in the desktop app");
   ok((await page.textContent("#nextNr")) === "62-2026", "next number before folder = " + (await page.textContent("#nextNr")));
-  ok(await page.isVisible("#folderIntro") && await page.isVisible("#folderGoSet"), "Invoices tab says where to set the folder");
+  await goTab(page, "docs"); ok(await page.isVisible("#docsNoFolder") && await page.isVisible("#docsGoSet"), "Documents tab says where to set the folder");
   await goTab(page, "settings"); ok(await page.isVisible("#setFolders") && !(await page.isVisible("#folderOpen")) && !(await page.isVisible("#folderPath")), "Settings: folder not chosen yet, no path");
   ok((await page.textContent("#dlgTitle")) !== null, "page alive");
   await page.click("#folderPick"); await page.waitForTimeout(800);
   ok((await page.textContent("#folderPath")) === F, "path shown: " + (await page.textContent("#folderPath")));
   ok(await page.isVisible("#folderOpen") && await page.isVisible("#folderClear"), "open and disconnect buttons appear");
+  await goTab(page, "docs"); await page.waitForTimeout(400);
+  ok(!(await page.isVisible("#docsNoFolder")), "Documents tab: the folder card is gone once a folder is set");
+  const items = await page.$$eval("#docsList li", (li) => li.map((l) => ({ nr: l.dataset.nr, on: [...l.querySelectorAll("button[data-doc]")].map((b) => b.dataset.doc) })));
+  console.log(JSON.stringify(items));
+  ok(items.length === 2, "2 invoice numbers listed (date-named file, lock file and txt ignored): " + items.length);
+  ok(items.some((t) => t.nr === "64-2026" && t.on.includes("pdf") && t.on.includes("word")), "64-2026 has its PDF + Word");
+  ok(items.some((t) => t.nr === "10-2025" && t.on.includes("pdf")), "the file in a subfolder is listed too");
+  console.log("info:", await page.textContent("#docsInfo"));
+  ok((await page.textContent("#docsInfo")).includes("64-2026"), "highest number shown");
   await goTab(page, "inv");
-  const items = await page.$$eval("#files li", (li) => li.map((l) => l.innerText.replace(/\s+/g, " ")));
-  console.log(items);
-  ok(items.length === 3, "3 invoices listed (lock file and txt ignored): " + items.length);
-  ok(items.some((t) => t.includes("VALKYRYS 64-2026") && t.includes("PDF") && t.includes("Word")), "64-2026 has PDF + Word buttons");
-  ok(items.some((t) => t.includes("VALKYRYS 10-2025") && t.includes("2025")), "subfolder file listed with its folder");
   ok((await page.textContent("#nextNr")) === "65-2026", "next number skips the folder's 64: " + (await page.textContent("#nextNr")));
-  console.log("info:", await page.textContent("#folderInfo"));
-  ok((await page.textContent("#folderInfo")).includes("64-2026"), "highest number shown");
   ok((await page.textContent("#zipAll")) === "Alles opslaan in de map", "batch button relabelled");
   // add a PO, save
   await page.setInputFiles("#file", process.argv[3]); await page.waitForSelector("article.po h3");
@@ -39,7 +41,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   await page.click('article.po [data-act="download-docx"]'); await page.waitForTimeout(2500);
   ok(fs.existsSync(F + "/VALKYRYS 65-2026.docx"), "Word saved into the folder");
   ok(!fs.readdirSync(F).some((n) => n.endsWith(".part")), "no temp files left");
-  ok((await page.$$eval("#files li", (l) => l.length)) === 4, "list now has 4 invoices");
+  await goTab(page, "docs"); await page.waitForTimeout(300); ok((await page.$$eval("#docsList li", (l) => l.length)) === 3, "Documents now lists 3 invoices"); await goTab(page, "inv");
   ok((await page.textContent("#nextNr")) === "66-2026", "next number now " + (await page.textContent("#nextNr")));
   // redo from history overwrites, no (2) copy
   const before = fs.statSync(F + "/VALKYRYS 65-2026.pdf").mtimeMs; await page.waitForTimeout(50);
@@ -47,9 +49,10 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   ok(!fs.readdirSync(F).some((n) => n.includes("(2)")), "re-saving the same invoice replaces the file");
   ok(fs.statSync(F + "/VALKYRYS 65-2026.pdf").mtimeMs > before, "file was rewritten");
   // open a file from the list
-  await page.click('#files button[data-open="VALKYRYS 65-2026.pdf"]'); await page.waitForTimeout(300);
+  await goTab(page, "docs"); await page.click('#docsList button[data-doc="pdf"][data-nr="65-2026"]'); await page.waitForSelector("#poPages canvas", { timeout: 10000 });
+  await page.click("#poDlgOpen"); await page.waitForTimeout(300); await page.click("#poDlgClose"); await goTab(page, "inv");
   console.log("opened:", await app.evaluate(() => globalThis.__opened));
-  ok((await app.evaluate(() => globalThis.__opened)).includes(F + "/VALKYRYS 65-2026.pdf"), "clicking PDF opens the file");
+  ok((await app.evaluate(() => globalThis.__opened)).includes(F + "/VALKYRYS 65-2026.pdf"), "PDF from the Documents tab opens the file");
   await page.screenshot({ path: "/tmp/folder-shot.png", fullPage: true });
   // config persisted
   const cfg = JSON.parse(fs.readFileSync(path.join(dataHome, "Valkyrys app", "config.json"), "utf8")); ok(cfg.folder === F, "folder remembered in config.json");
@@ -61,7 +64,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   // disconnect (in Settings)
   await goTab(page, "settings"); await page.click("#folderClear"); await page.waitForTimeout(800);
   ok(!(await page.isVisible("#folderPath")), "disconnect: the path is gone in Settings");
-  await goTab(page, "inv"); ok(await page.isVisible("#folderIntro"), "disconnect returns to the intro on the Invoices tab");
+  await goTab(page, "docs"); ok(await page.isVisible("#docsNoFolder"), "disconnect returns to the folder card on the Documents tab"); await goTab(page, "inv");
   ok((await page.textContent("#zipAll")) === "Alles downloaden (.zip)", "batch button back to zip");
   ok((await page.textContent('article.po [data-act="download"]')).startsWith("Opnieuw downloaden") || (await page.textContent('article.po [data-act="download"]')).startsWith("Download"), "button back to download");
   // IPC from a foreign page is refused

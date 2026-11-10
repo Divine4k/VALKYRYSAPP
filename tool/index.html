@@ -166,7 +166,6 @@ button.themebtn:hover { border-color: #8E9096; }
 .fpath.bad { border-color: var(--err); color: var(--err); }
 .frow { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
 .frow button { min-height: 34px; padding: 6px 12px; font-size: 13px; }
-.files { max-height: 340px; overflow: auto; }
 .newpo { border-left: 4px solid var(--ink); }
 .newpo .np-note { margin: 0; }
 .np { margin-top: 6px; }
@@ -201,9 +200,6 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .det button { min-height: 28px; padding: 3px 9px; font-size: 12px; }
 .det-wrap { overflow-x: auto; }
 .det tfoot td { font-weight: 900; color: var(--ink); border-top: 2px solid var(--ink); }
-.files .t { overflow-wrap: anywhere; font-size: 14px; }
-.files .redo { grid-row: 1 / span 2; grid-column: 2; display: flex; gap: 6px; }
-.files button { min-height: 34px; padding: 6px 10px; font-size: 13px; }
 .appbar { position: sticky; top: 0; z-index: 10; background: var(--band); color: var(--band-text); border-bottom: 1px solid rgba(255, 255, 255, .06); }
 .appbar-in { max-width: 1140px; margin: 0 auto; min-height: 60px; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
@@ -218,7 +214,36 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .appbar .seg [role=tab] svg { flex: 0 0 auto; display: block; }
 .appbar .seg [role=tab]:focus-visible { outline: 2px solid var(--band-text); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .appbar .seg-ind, .appbar .seg [role=tab] { transition: none; } }
-@media (max-width: 560px) { .appbar .seg { width: 100%; } .appbar .seg [role=tab] { flex: 1 1 0; padding: 0 10px; } }
+@media (max-width: 640px) { .appbar .seg { width: 100%; } .appbar .seg [role=tab] { flex: 1 1 0; min-width: 0; flex-direction: column; gap: 2px; padding: 5px 4px; min-height: 48px; font-size: 11.5px; border-radius: 14px; } .appbar .seg-ind { border-radius: 14px; } .appbar .seg [role=tab] span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; } }
+/* "What's new" button: right after the tabs (the tabs take the free space so both sit on the right) */
+.appbar-in > #tabs { margin-left: auto; }
+.appbar .newsbtn { position: relative; flex: 0 0 auto; margin-left: -12px; display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 14px 0 11px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: transparent; color: var(--band-muted); font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: color .2s ease, border-color .2s ease, background-color .2s ease; }
+.appbar .newsbtn:hover { color: var(--band-text); border-color: rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .06); }
+.appbar .newsbtn:focus-visible { outline: 2px solid var(--band-text); outline-offset: 2px; }
+.appbar .newsbtn svg { flex: 0 0 auto; display: block; }
+.appbar .newsbtn.unseen { color: var(--band-text); }
+.newsdot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--band); }
+.newsdot[hidden] { display: none; }
+@media (max-width: 1000px) { .appbar .newsbtn { padding: 0; width: 36px; justify-content: center; } .appbar .newsbtn .nlabel { display: none; } }
+@media (max-width: 560px) { .appbar .newsbtn { order: 1; margin-left: auto; } .appbar-in > #tabs { order: 2; margin-left: 0; } }
+/* when the tabs no longer fit next to the logo (set by fitNewsBtn), the button stays up next to the logo and the tabs get their own row */
+.appbar-in.nb-wrap .newsbtn { order: 1; margin-left: auto; } .appbar-in.nb-wrap > #tabs { order: 2; margin-left: 0; }
+#newsDlg { width: min(600px, calc(100% - 24px)); }
+#newsDlg .dlg-body { background: var(--surface); padding: 6px 18px 4px; }
+.nrel { padding: 14px 0 12px; border-top: 1px solid var(--line); }
+.nrel:first-child { border-top: 0; }
+.nrel h3 { margin: 0 0 10px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 16px; font-weight: 900; color: var(--ink); }
+.nrel h3 .ndate { font-size: 13px; font-weight: 400; color: var(--muted); }
+.nrel h3 .nlatest { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); align-self: center; }
+.ngrp { margin: 0 0 10px; }
+.ngrp ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.ngrp li { position: relative; padding-left: 16px; font-size: 14px; line-height: 1.45; color: var(--text); }
+.ngrp li::before { content: ""; position: absolute; left: 3px; top: .62em; width: 5px; height: 5px; border-radius: 50%; background: var(--muted); }
+.ntag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border-radius: 6px; }
+.ntag.new { background: var(--ok-bg); color: var(--ok); }
+.ntag.improved { background: var(--warn-bg); color: var(--warn); }
+.ntag.fixed { background: var(--sunken); color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
+.nfoot { padding: 10px 18px 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 10px; }
 .pagehead-in { max-width: 1140px; margin: 0 auto; padding-top: 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .pagehead h1 { font-size: 26px; font-weight: 900; line-height: 1.2; color: var(--ink); letter-spacing: -.01em; }
 .pagehead p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
@@ -330,6 +355,81 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .stbl tfoot td { font-weight: 900; color: var(--ink); border-top: 2px solid var(--ink); }
 .stbl tr.now td:first-child { font-weight: 900; color: var(--ink); }
 .hint { font-weight: 400; font-size: 12px; color: var(--muted); }
+/* documents tab: one row per invoice number with its PDF, Word file and purchase order */
+.dbar { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; padding: 12px 14px; }
+.dsearch { position: relative; flex: 1 1 220px; min-width: 0; }
+.dsearch svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.dsearch input { padding-left: 34px; min-height: 38px; }
+.dbar .seg button { min-height: 38px; padding: 6px 12px; white-space: nowrap; }
+.dbar .seg button .n { font-weight: 400; opacity: .75; margin-left: 2px; }
+.dsort { display: flex; gap: 6px; align-items: center; }
+.dsort select { width: auto; min-height: 38px; font-size: 14px; }
+.dsort button { min-height: 38px; width: 38px; padding: 0; }
+.dprog { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); white-space: nowrap; margin-left: auto; }
+.dprog b { color: var(--ink); }
+.dprog .pb { width: 88px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.dprog .pb i { display: block; height: 100%; border-radius: 3px; background: var(--ok); transition: width .3s ease; }
+.dinfo { margin: 0; font-size: 13px; color: var(--muted); }
+.dtable { padding: 0; }
+.dhead, .drow { display: grid; grid-template-columns: minmax(80px, .8fr) minmax(120px, 1.6fr) 92px minmax(92px, 1fr) 104px 178px 122px 36px; gap: 12px; align-items: center; padding: 0 16px; }
+.dhead { position: sticky; top: var(--bar-h, 60px); z-index: 2; min-height: 40px; background: var(--sunken); border-bottom: 1px solid var(--line); border-radius: var(--r) var(--r) 0 0; }
+.dhead button, .dhead span { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.dhead button { background: none; border: 0; padding: 0; min-height: 40px; justify-content: flex-start; gap: 4px; border-radius: 0; }
+.dhead button:hover, .dhead button[aria-sort] { color: var(--ink); border: 0; }
+.dhead button i { font-style: normal; font-size: 10px; }
+.dhead .r { justify-content: flex-end; text-align: right; }
+.dlist { list-style: none; margin: 0; padding: 0; }
+.drow { min-height: 58px; padding-block: 8px; border-top: 1px solid var(--line); transition: background .12s; }
+.dlist > li:first-child { border-top: 0; }
+.drow:hover { background: var(--sunken); }
+.drow:last-child { border-radius: 0 0 var(--r) var(--r); }
+.c-nr { font-weight: 900; color: var(--ink); font-size: 15px; display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.c-nr small { font-weight: 700; font-size: 11px; color: var(--muted); letter-spacing: .02em; }
+.c-cl { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.c-dt, .c-po { font-size: 13.5px; font-variant-numeric: tabular-nums; min-width: 0; overflow-wrap: anywhere; }
+.c-po.none, .c-cl.none { color: var(--muted); }
+.c-amt { text-align: right; font-weight: 700; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.c-docs { display: flex; gap: 6px; flex-wrap: wrap; }
+button.dchip { --k: var(--muted); min-height: 28px; padding: 3px 9px 3px 8px; font-size: 12px; border-radius: 6px; gap: 6px; }
+button.dchip::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--k); flex: 0 0 auto; }
+button.dchip.k-pdf { --k: #D9443B; } button.dchip.k-word { --k: #2F6BD8; } button.dchip.k-po { --k: var(--accent); }
+button.dchip:hover:not(:disabled) { border-color: var(--k); }
+button.dchip.gen { border-style: dashed; }
+button.dchip:disabled { opacity: 1; color: var(--muted); border-style: dashed; background: transparent; cursor: default; opacity: .6; }
+button.dchip:disabled::before { background: var(--line); }
+.sentbox { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; color: var(--muted); cursor: pointer; padding: 4px 11px 4px 6px; border-radius: 999px; border: 1px solid var(--line); min-height: 30px; user-select: none; white-space: nowrap; justify-self: start; }
+.sentbox:hover { border-color: var(--muted); }
+.sentbox input { appearance: none; -webkit-appearance: none; width: 18px; height: 18px; min-height: 0; margin: 0; padding: 0; border: 1.5px solid var(--muted); border-radius: 50%; display: grid; place-items: center; background: transparent; cursor: pointer; flex: 0 0 auto; }
+.sentbox input::after { content: ""; width: 8px; height: 4px; border-left: 2px solid transparent; border-bottom: 2px solid transparent; transform: translateY(-1px) rotate(-45deg); }
+.sentbox input:checked { background: var(--ok); border-color: var(--ok); }
+.sentbox input:checked::after { border-color: var(--surface); }
+.sentbox input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sentbox:has(input:checked) { color: var(--ok); background: var(--ok-bg); border-color: transparent; }
+.drow.sent .c-nr, .drow.sent .c-cl, .drow.sent .c-amt { color: var(--muted); }
+.c-act button { min-height: 32px; width: 32px; padding: 0; border-color: transparent; background: transparent; color: var(--muted); }
+.c-act button:hover { color: var(--ink); border-color: var(--line); }
+.dempty { padding: 34px 18px; text-align: center; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.dempty h2 { font-size: 17px; font-weight: 900; }
+.dempty p { margin: 0; max-width: 52ch; }
+@media (max-width: 1000px) {
+  .dhead { display: none; }
+  .drow { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "nr cl cl amt" "dt po po sent" "docs docs docs act"; gap: 6px 12px; padding: 12px 14px; }
+  .c-nr { grid-area: nr; } .c-cl { grid-area: cl; align-self: center; } .c-amt { grid-area: amt; } .c-dt { grid-area: dt; color: var(--muted); } .c-po { grid-area: po; color: var(--muted); } .c-docs { grid-area: docs; } .c-sent { grid-area: sent; justify-self: end; } .c-act { grid-area: act; justify-self: end; }
+  .dprog { margin-left: 0; }
+}
+/* a Word file shown as a page */
+.wpage { background: #fff; color: #111; max-width: 794px; min-width: 0; width: 100%; margin: 0 auto; padding: 56px 60px; box-shadow: 0 1px 6px rgba(0, 0, 0, .25); font-family: "Carlito", Calibri, "Lato", sans-serif; font-size: 11pt; line-height: 1.3; overflow-wrap: anywhere; color-scheme: light; }
+.wpage .wp { margin: 0 0 4pt; min-height: 1.1em; }
+.wpage table { border-collapse: collapse; width: 100%; margin: 4pt 0 8pt; table-layout: fixed; }
+.wpage td { padding: 3pt 5pt; vertical-align: top; }
+.wpage table.bd td { border: 1px solid #b9bcc2; }
+.wpage img { max-width: 100%; height: auto; vertical-align: middle; }
+.wpage .wtab { display: inline-block; width: 2.5em; }
+.wpage .wbox { margin: 4pt 0; }
+.wpage .whf { color: #444; font-size: 9pt; }
+.wpage .whf.h { margin-bottom: 16pt; }
+.wpage .whf.f { margin-top: 24pt; padding-top: 8pt; border-top: 1px solid #ddd; }
+@media (max-width: 640px) { .wpage { padding: 24px 18px; } }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -502,8 +602,10 @@ window.ValkTheme = (function () {
       <span class="seg-ind" aria-hidden="true"></span>
       <button type="button" role="tab" id="tabStats" data-tab="stats" aria-selected="true" aria-controls="statsView"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-8"/><path d="M21 20H3"/></svg><span data-i18n="tabStats">Statistieken</span></button>
       <button type="button" role="tab" id="tabInv" data-tab="inv" aria-selected="false" aria-controls="viewInv" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg><span data-i18n="tabInvoices">Facturen</span></button>
+      <button type="button" role="tab" id="tabDocs" data-tab="docs" aria-selected="false" aria-controls="docsView" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 13h8"/></svg><span data-i18n="tabDocs">Documenten</span></button>
       <button type="button" role="tab" id="tabSettings" data-tab="settings" aria-selected="false" aria-controls="settingsView" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span data-i18n="tabSettings">Instellingen</span></button>
     </nav>
+    <button type="button" class="newsbtn" id="newsBtn" aria-haspopup="dialog" aria-controls="newsDlg" data-i18n-aria="newsBtnAria" aria-label="Nieuw in deze versie"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/><path d="M5 2.5l.6 1.4L7 4.5l-1.4.6L5 6.5l-.6-1.4L3 4.5l1.4-.6z"/></svg><span class="nlabel" data-i18n="newsBtn">Nieuw</span><span class="newsdot" id="newsDot" hidden></span></button>
   </div>
 </header>
 <div class="pagehead"><div class="pagehead-in"><h1 id="pageTitle">Statistieken</h1><p id="tagline" data-i18n="statsTagline">Je omzet en facturen in cijfers.</p></div></div>
@@ -548,13 +650,6 @@ window.ValkTheme = (function () {
       <p class="eyebrow" data-i18n="next">Volgende factuur</p>
       <div class="next"><b id="nextNr" class="num">…</b><span class="small" id="nextNote"></span></div>
       <p class="small" id="storeNote"></p>
-    </div>
-    <div class="panel" id="folderPanel" hidden>
-      <p class="eyebrow" data-i18n="folder">Map met facturen</p>
-      <p class="small" id="folderIntro" data-i18n="folderIntroInv">Stel bij Instellingen de map in waar je facturen bewaard worden.</p>
-      <div class="frow"><button type="button" class="primary" id="folderGoSet" data-i18n="openSettings" hidden>Naar instellingen</button></div>
-      <p class="small" id="folderInfo"></p>
-      <ul class="hist files" id="files"></ul>
     </div>
     <div class="panel">
       <p class="eyebrow" data-i18n="history">Gemaakte facturen</p>
@@ -635,6 +730,39 @@ window.ValkTheme = (function () {
     </div>
   </section>
 </main>
+
+<section class="sv" id="docsView" role="tabpanel" aria-labelledby="tabDocs" hidden>
+  <div class="panel dempty" id="docsNoFolder" hidden>
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 11v5"/><path d="M9.5 13.5h5"/></svg>
+    <h2 data-i18n="docsNoFolder">Nog geen map met facturen</h2>
+    <p data-i18n="folderIntroInv">Stel bij Instellingen de map in waar je facturen bewaard worden.</p>
+    <button type="button" class="primary" id="docsGoSet" data-i18n="openSettings">Naar instellingen</button>
+  </div>
+  <div class="panel dbar" id="docsBar">
+    <label class="dsearch" for="docsSearch"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="sr" data-i18n="docsSearch">Zoeken op nummer, klant of inkooporder</span><input id="docsSearch" type="search" autocomplete="off" spellcheck="false"></label>
+    <div class="seg" role="group" id="docsFilter" data-i18n-aria="docsFilter" aria-label="Tonen">
+      <button type="button" data-f="all" aria-pressed="true"><span data-i18n="docsAll">Alle</span><span class="n num" data-n="all"></span></button>
+      <button type="button" data-f="open" aria-pressed="false"><span data-i18n="docsNotSent">Niet verzonden</span><span class="n num" data-n="open"></span></button>
+      <button type="button" data-f="sent" aria-pressed="false"><span data-i18n="docsSent">Verzonden</span><span class="n num" data-n="sent"></span></button>
+    </div>
+    <div class="dsort">
+      <select id="docsSort" data-i18n-aria="docsSortBy" aria-label="Sorteren op">
+        <option value="nr" data-i18n="docsByNr">Nummer</option><option value="date" data-i18n="docsByDate">Datum</option><option value="client" data-i18n="docsByClient">Klant</option><option value="po" data-i18n="docsByPo">Inkooporder</option><option value="amount" data-i18n="docsByAmount">Bedrag</option>
+      </select>
+      <button type="button" id="docsDir"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16"/><path d="m3 16 4 4 4-4"/><path d="M17 20V4"/><path d="m13 8 4-4 4 4"/></svg></button>
+    </div>
+    <div class="dprog" id="docsProg"><span class="pb" aria-hidden="true"><i></i></span><span id="docsCount"></span></div>
+  </div>
+  <p class="dinfo" id="docsInfo" role="status"></p>
+  <div class="panel dtable" id="docsTable">
+    <div class="dhead" id="docsHead"></div>
+    <ul class="dlist" id="docsList"></ul>
+  </div>
+  <div class="panel dempty" id="docsEmpty" hidden>
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+    <h2 id="docsEmptyT"></h2><p id="docsEmptyP"></p>
+  </div>
+</section>
 
 <div class="sv" id="statsView" role="tabpanel" aria-labelledby="tabStats">
   <div class="stats-bar" id="statsBar">
@@ -725,6 +853,11 @@ window.ValkTheme = (function () {
     </div>
   </div>
 </dialog>
+<dialog id="newsDlg" aria-labelledby="newsTitle">
+  <div class="dlg-head"><strong id="newsTitle" data-i18n="newsTitle">Nieuw in Valkyrys app</strong><button type="button" id="newsClose" data-i18n="close">Sluiten</button></div>
+  <div class="dlg-body" id="newsList"></div>
+  <div class="nfoot"><span id="newsVer"></span><span data-i18n="newsFoot"></span></div>
+</dialog>
 <template id="detTpl">
   <label class="f" for="{p}name"><span data-i18n="dName">Bedrijfsnaam</span><input id="{p}name" type="text" autocomplete="off"></label>
   <label class="f" for="{p}person"><span data-i18n="dPerson">Naam onder de factuur</span><input id="{p}person" type="text" autocomplete="off"></label>
@@ -784,6 +917,7 @@ window.ValkTheme = (function () {
 <script src="invoice-core.js"></script>
 <script src="invoice-docx.js"></script>
 <script src="invoice-templates.js"></script>
+<script src="changelog.js"></script>
 <script>
 (function () {
   "use strict";
@@ -857,14 +991,20 @@ window.ValkTheme = (function () {
       folderDialog: "Kies de map voor je facturen", folderSet: "Map ingesteld. Nieuwe facturen worden hier opgeslagen.",
       folderCleared: "Map losgekoppeld. Je kiest voortaan zelf waar een factuur wordt opgeslagen.", folderClearedPo: "Map losgekoppeld. De inkooporders uit die map worden niet meer gelezen.", folderMissing: "Deze map is niet gevonden. Is de schijf aangesloten? Kies de map opnieuw.",
       folderEmpty: "Nog geen facturen (PDF of Word) in deze map.", folderCount: "Facturen in de map: {0}",
-      folderHighest: "Hoogste nummer dit jaar: {0}", folderMore: "nieuwste {0} getoond",
-      openAria: "Open {0}", openFail: "Het bestand kon niet worden geopend.",
+      folderHighest: "Hoogste nummer dit jaar: {0}",
+      openFail: "Het bestand kon niet worden geopend.",
       folderWriteFail: "Opslaan in de map lukte niet. Staat het bestand open in Word of een PDF-lezer?", savePdf: "Opslaan als PDF",
       saveWord: "Opslaan als Word", saveAgain: "Opnieuw opslaan (PDF)",
       saveAll: "Alles opslaan in de map", doneSaved: "✓ Opgeslagen als {0}",
       savedIn: "{0} opgeslagen in de map.", savedMany: "{0} facturen opgeslagen in de map.",
       numInFolder: "Factuurnummer {0} staat al in de map ({1}).", delToastKept: "{0} is uit de lijst gehaald. Het bestand staat nog in de map, dus het nummer blijft bezet.",
       tabInvoices: "Facturen", tabStats: "Statistieken", tabsLabel: "Onderdelen",
+      tabDocs: "Documenten", docsTagline: "Al je facturen met hun PDF, Word-bestand en inkooporder bij elkaar.", docsNoFolder: "Nog geen map met facturen", docsSearch: "Zoeken op nummer, klant of inkooporder", docsFilter: "Tonen",
+      docsAll: "Alle", docsNotSent: "Niet verzonden", docsSent: "Verzonden", docsSortBy: "Sorteren op", docsByNr: "Nummer", docsByDate: "Datum", docsByClient: "Klant", docsByPo: "Inkooporder", docsByAmount: "Bedrag",
+      docsAsc: "Oplopend", docsDesc: "Aflopend", docsColDocs: "Documenten", docsCount: "{0} van {1} verzonden", docsSentAria: "Factuur {0} is verzonden", docsOnlyApp: "alleen in de app",
+      docsGen: "Niet als bestand opgeslagen: het voorbeeld wordt opnieuw gemaakt", docsMissing: "Geen {0}", docsViewAria: "{0} van factuur {1} bekijken", docsRevealAria: "Factuur {0} tonen in de map",
+      docsEmptyT: "Nog geen facturen", docsEmptyP: "Facturen die je maakt of in je map zet, verschijnen hier met hun PDF, Word-bestand en inkooporder.", docsNoMatch: "Niets gevonden", docsNoMatchP: "Pas je zoekopdracht of filter aan.",
+      docsWithPo: "met inkooporder: {0}", wordOpen: "Openen in Word", wordPrevTitle: "Factuur {0} (Word)",
       statsTagline: "Je omzet en facturen in cijfers.", statsEmpty: "Nog geen facturen om te tellen. Download of sla een factuur op, of kies bij Instellingen een map met je facturen: die worden dan ook meegeteld.",
       byMonth: "Per maand", byQuarter: "Per kwartaal",
       byYear: "Per jaar", statYear: "Jaar",
@@ -893,6 +1033,7 @@ window.ValkTheme = (function () {
       npAdd: "Toevoegen", npAddAll: "Alles toevoegen ({0})", npSkip: "Overslaan", npSkipTitle: "Niet meer in deze lijst tonen", npSkipAll: "Alles overslaan", npRestore: "Terugzetten",
       npSkipped: "{0} overgeslagen.", npMore: "Toon alle {0}", npLess: "Toon minder", npOrdered: "besteld {0}", npAdded: "{0} toegevoegd aan de lijst hieronder.", npFail: "Deze inkooporder kon niet worden geladen.",
       npUnread: "{0} PDF’s in de map zijn niet als inkooporder gelezen: {1}", npOpen: "Open map",
+      newsBtn: "Nieuw", newsBtnAria: "Wat is er nieuw", newsUnseen: "Wat is er nieuw (nieuwe wijzigingen)", newsTitle: "Wat is er nieuw", newsNew: "Nieuw", newsImproved: "Verbeterd", newsFixed: "Opgelost", newsVersion: "Versie {0}", newsLatest: "Deze versie", newsFoot: "Na elke update zie je hier wat er veranderd is.",
       themeBtn: "Thema", themeTitle: "Thema", themeIntro: "Kies hoe de app eruitziet. Het Valkyrys-logo en de zwarte balk bovenaan blijven altijd zoals ze zijn.",
       tAuto: "Automatisch", tLight: "Licht", tDark: "Donker", tMidnight: "Middernacht", tPaper: "Papier", tForest: "Bos", tContrast: "Hoog contrast", tCustom: "Eigen thema",
       tcTitle: "Eigen kleuren", tcBg: "Achtergrond", tcSurface: "Kaarten en vlakken", tcInk: "Tekst", tcAccent: "Accent (knoppen, grafiek)", tcHex: "{0}, kleurcode", tcBase: "Beginnen met de kleuren van", tcBasePh: "Kies een thema…",
@@ -1000,14 +1141,20 @@ window.ValkTheme = (function () {
       folderDialog: "Choose the folder for your invoices", folderSet: "Folder set. New invoices are saved here.",
       folderCleared: "Folder disconnected. From now on you choose where each invoice is saved.", folderClearedPo: "Folder disconnected. The purchase orders in that folder are no longer read.", folderMissing: "This folder could not be found. Is the drive connected? Choose the folder again.",
       folderEmpty: "No invoices (PDF or Word) in this folder yet.", folderCount: "Invoices in the folder: {0}",
-      folderHighest: "Highest number this year: {0}", folderMore: "newest {0} shown",
-      openAria: "Open {0}", openFail: "The file could not be opened.",
+      folderHighest: "Highest number this year: {0}",
+      openFail: "The file could not be opened.",
       folderWriteFail: "Saving to the folder failed. Is the file open in Word or a PDF reader?", savePdf: "Save as PDF",
       saveWord: "Save as Word", saveAgain: "Save again (PDF)",
       saveAll: "Save all to the folder", doneSaved: "✓ Saved as {0}",
       savedIn: "{0} saved to the folder.", savedMany: "{0} invoices saved to the folder.",
       numInFolder: "Invoice number {0} is already in the folder ({1}).", delToastKept: "{0} was removed from the list. The file is still in the folder, so the number stays taken.",
       tabInvoices: "Invoices", tabStats: "Statistics", tabsLabel: "Sections",
+      tabDocs: "Documents", docsTagline: "All your invoices with their PDF, Word file and purchase order together.", docsNoFolder: "No invoice folder yet", docsSearch: "Search by number, client or purchase order", docsFilter: "Show",
+      docsAll: "All", docsNotSent: "Not sent", docsSent: "Sent", docsSortBy: "Sort by", docsByNr: "Number", docsByDate: "Date", docsByClient: "Client", docsByPo: "Purchase order", docsByAmount: "Amount",
+      docsAsc: "Ascending", docsDesc: "Descending", docsColDocs: "Documents", docsCount: "{0} of {1} sent", docsSentAria: "Invoice {0} has been sent", docsOnlyApp: "only in the app",
+      docsGen: "Not saved as a file: the preview is drawn again", docsMissing: "No {0}", docsViewAria: "View the {0} of invoice {1}", docsRevealAria: "Show invoice {0} in the folder",
+      docsEmptyT: "No invoices yet", docsEmptyP: "Invoices you make or put in your folder show up here with their PDF, Word file and purchase order.", docsNoMatch: "Nothing found", docsNoMatchP: "Change your search or filter.",
+      docsWithPo: "with purchase order: {0}", wordOpen: "Open in Word", wordPrevTitle: "Invoice {0} (Word)",
       statsTagline: "Your revenue and invoices in numbers.", statsEmpty: "No invoices to count yet. Download or save an invoice, or choose a folder with your invoices under Settings: those are counted too.",
       byMonth: "By month", byQuarter: "By quarter",
       byYear: "By year", statYear: "Year",
@@ -1036,6 +1183,7 @@ window.ValkTheme = (function () {
       npAdd: "Add", npAddAll: "Add all ({0})", npSkip: "Skip", npSkipTitle: "Stop showing this one in the list", npSkipAll: "Skip all", npRestore: "Restore",
       npSkipped: "{0} skipped.", npMore: "Show all {0}", npLess: "Show fewer", npOrdered: "ordered {0}", npAdded: "{0} added to the list below.", npFail: "This purchase order could not be loaded.",
       npUnread: "{0} PDFs in the folder were not read as purchase orders: {1}", npOpen: "Open folder",
+      newsBtn: "What's new", newsBtnAria: "What's new", newsUnseen: "What's new (new changes)", newsTitle: "What's new", newsNew: "New", newsImproved: "Improved", newsFixed: "Fixed", newsVersion: "Version {0}", newsLatest: "This version", newsFoot: "After every update you can see here what has changed.",
       themeBtn: "Theme", themeTitle: "Theme", themeIntro: "Choose how the app looks. The Valkyrys logo and the black bar at the top always stay as they are.",
       tAuto: "Automatic", tLight: "Light", tDark: "Dark", tMidnight: "Midnight", tPaper: "Paper", tForest: "Forest", tContrast: "High contrast", tCustom: "Custom",
       tcTitle: "Your own colours", tcBg: "Background", tcSurface: "Cards and panels", tcInk: "Text", tcAccent: "Accent (buttons, chart)", tcHex: "{0}, colour code", tcBase: "Start from the colours of", tcBasePh: "Choose a theme…",
@@ -1143,14 +1291,20 @@ window.ValkTheme = (function () {
       folderDialog: "Wybierz folder na faktury", folderSet: "Folder ustawiony. Nowe faktury będą zapisywane tutaj.",
       folderCleared: "Folder odłączony. Odtąd sam wybierasz, gdzie zapisać każdą fakturę.", folderClearedPo: "Folder odłączony. Zamówienia zakupu z tego folderu nie są już odczytywane.", folderMissing: "Nie znaleziono tego folderu. Czy dysk jest podłączony? Wybierz folder ponownie.",
       folderEmpty: "W tym folderze nie ma jeszcze faktur (PDF ani Word).", folderCount: "Faktury w folderze: {0}",
-      folderHighest: "Najwyższy numer w tym roku: {0}", folderMore: "pokazano najnowsze {0}",
-      openAria: "Otwórz {0}", openFail: "Nie udało się otworzyć pliku.",
+      folderHighest: "Najwyższy numer w tym roku: {0}",
+      openFail: "Nie udało się otworzyć pliku.",
       folderWriteFail: "Zapis w folderze nie powiódł się. Czy plik jest otwarty w Wordzie lub czytniku PDF?", savePdf: "Zapisz jako PDF",
       saveWord: "Zapisz jako Word", saveAgain: "Zapisz ponownie (PDF)",
       saveAll: "Zapisz wszystko w folderze", doneSaved: "✓ Zapisano jako {0}",
       savedIn: "Zapisano {0} w folderze.", savedMany: "Zapisano faktur w folderze: {0}.",
       numInFolder: "Numer faktury {0} jest już w folderze ({1}).", delToastKept: "Usunięto {0} z listy. Plik nadal jest w folderze, więc numer pozostaje zajęty.",
       tabInvoices: "Faktury", tabStats: "Statystyki", tabsLabel: "Sekcje",
+      tabDocs: "Dokumenty", docsTagline: "Wszystkie faktury razem z PDF, plikiem Word i zamówieniem.", docsNoFolder: "Brak folderu z fakturami", docsSearch: "Szukaj po numerze, kliencie lub zamówieniu", docsFilter: "Pokaż",
+      docsAll: "Wszystkie", docsNotSent: "Niewysłane", docsSent: "Wysłane", docsSortBy: "Sortuj według", docsByNr: "Numer", docsByDate: "Data", docsByClient: "Klient", docsByPo: "Zamówienie", docsByAmount: "Kwota",
+      docsAsc: "Rosnąco", docsDesc: "Malejąco", docsColDocs: "Dokumenty", docsCount: "Wysłane: {0} z {1}", docsSentAria: "Faktura {0} została wysłana", docsOnlyApp: "tylko w aplikacji",
+      docsGen: "Nie zapisano jako plik: podgląd jest tworzony ponownie", docsMissing: "Brak: {0}", docsViewAria: "Podgląd: {0} faktury {1}", docsRevealAria: "Pokaż fakturę {0} w folderze",
+      docsEmptyT: "Brak faktur", docsEmptyP: "Faktury, które tworzysz lub umieszczasz w folderze, pojawią się tutaj razem z PDF, plikiem Word i zamówieniem.", docsNoMatch: "Nic nie znaleziono", docsNoMatchP: "Zmień wyszukiwanie lub filtr.",
+      docsWithPo: "z zamówieniem: {0}", wordOpen: "Otwórz w Wordzie", wordPrevTitle: "Faktura {0} (Word)",
       statsTagline: "Twoje przychody i faktury w liczbach.", statsEmpty: "Nie ma jeszcze faktur do policzenia. Pobierz lub zapisz fakturę albo wybierz w Ustawieniach folder z fakturami: one również zostaną policzone.",
       byMonth: "Miesięcznie", byQuarter: "Kwartalnie",
       byYear: "Rocznie", statYear: "Rok",
@@ -1179,6 +1333,7 @@ window.ValkTheme = (function () {
       npAdd: "Dodaj", npAddAll: "Dodaj wszystkie ({0})", npSkip: "Pomiń", npSkipTitle: "Nie pokazuj już tego na liście", npSkipAll: "Pomiń wszystkie", npRestore: "Przywróć",
       npSkipped: "Pominięte: {0}.", npMore: "Pokaż wszystkie ({0})", npLess: "Pokaż mniej", npOrdered: "zamówiono {0}", npAdded: "Dodano do listy poniżej: {0}.", npFail: "Nie udało się wczytać tego zamówienia.",
       npUnread: "Pliki PDF w folderze nieodczytane jako zamówienia: {0}: {1}", npOpen: "Otwórz folder",
+      newsBtn: "Co nowego", newsBtnAria: "Co nowego", newsUnseen: "Co nowego (nowe zmiany)", newsTitle: "Co nowego", newsNew: "Nowość", newsImproved: "Ulepszenie", newsFixed: "Poprawka", newsVersion: "Wersja {0}", newsLatest: "Ta wersja", newsFoot: "Po każdej aktualizacji zobaczysz tu, co się zmieniło.",
       themeBtn: "Motyw", themeTitle: "Motyw", themeIntro: "Wybierz wygląd aplikacji. Logo Valkyrys i czarny pasek u góry zawsze pozostają bez zmian.",
       tAuto: "Automatyczny", tLight: "Jasny", tDark: "Ciemny", tMidnight: "Północ", tPaper: "Papier", tForest: "Las", tContrast: "Wysoki kontrast", tCustom: "Własny",
       tcTitle: "Własne kolory", tcBg: "Tło", tcSurface: "Karty i panele", tcInk: "Tekst", tcAccent: "Akcent (przyciski, wykres)", tcHex: "{0}, kod koloru", tcBase: "Zacznij od kolorów motywu", tcBasePh: "Wybierz motyw…",
@@ -1716,46 +1871,20 @@ window.ValkTheme = (function () {
     rebuildFileNums(); renumber(); render();
   }
   function renderFolder() {
-    if (!desk) { $("#folderPanel").hidden = true; $("#setFolders").hidden = true; return; }
+    if (!desk) { $("#setFolders").hidden = true; return; }
     $("#setFolders").hidden = false;
     const f = state.folder, pick = $("#folderPick");
     const pk = f ? "folderChange" : "folderPick"; pick.dataset.i18n = pk; pick.textContent = tr(pk); pick.classList.toggle("primary", !f);
     const pathEl = $("#folderPath"); pathEl.hidden = !f;
     if (f) { pathEl.textContent = f.path; pathEl.title = f.path; pathEl.classList.toggle("bad", !f.exists); }
     $("#folderOpen").hidden = !(f && f.exists); $("#folderClear").hidden = !f;
-    const panel = $("#folderPanel"); panel.hidden = false; // Invoices tab: what is in the folder, or where to set it
-    $("#folderIntro").hidden = !!f; $("#folderGoSet").hidden = !!f;
-    const groups = new Map();
-    for (const x of state.files) {
-      const key = x.rel.replace(/\.(pdf|docx)$/i, "");
-      const g = groups.get(key) || { key, title: x.name.replace(/\.(pdf|docx)$/i, ""), dir: x.rel.includes("/") ? x.rel.slice(0, x.rel.lastIndexOf("/")) : "", mtime: 0, files: {} };
-      g.files[x.ext] = x; g.mtime = Math.max(g.mtime, x.mtime); groups.set(key, g);
-    }
-    const all = [...groups.values()].sort((a, b) => b.mtime - a.mtime), shown = all.slice(0, 60);
-    const infoEl = $("#folderInfo");
-    if (f && !f.exists) infoEl.textContent = tr("folderMissing");
-    else if (f && !all.length) infoEl.textContent = tr("folderEmpty");
-    else if (f) {
-      const year = new Date().getFullYear(), nums = inFolder(year);
-      const parts = [tr("folderCount", all.length), nums.length && tr("folderHighest", `${Math.max(...nums)}-${year}`), all.length > shown.length && tr("folderMore", shown.length)].filter(Boolean);
-      infoEl.innerHTML = parts.map((x) => `<span class="nw">${esc(x)}</span>`).join(" · "); // keep each fact on one line
-    } else infoEl.textContent = "";
-    $("#files").innerHTML = shown.map((g) => {
-      const btn = (ext, label) => (g.files[ext] ? `<button type="button" data-open="${esc(g.files[ext].rel)}" aria-label="${esc(tr("openAria", g.files[ext].name))}" title="${esc(g.files[ext].name)}">${label}</button>` : "");
-      return `<li><span class="t">${esc(g.title)}</span><span class="s">${esc([fmtDate(g.mtime), g.dir].filter(Boolean).join(" · "))}</span><span class="redo">${btn("pdf", "PDF")}${btn("docx", "Word")}</span></li>`;
-    }).join("");
-  }
+  } // what is in the folder is shown on the Documents tab (renderDocs)
   if (desk) {
     $("#folderPick").addEventListener("click", async () => {
       try { const r = await desk.pickFolder(tr("folderDialog")); if (r && !r.canceled) { await refreshFolder(); toast(tr("folderSet")); } } catch (e) {}
     });
-    $("#folderGoSet").addEventListener("click", () => setTab("settings"));
     $("#folderClear").addEventListener("click", async () => { try { await desk.clearFolder(); await refreshFolder(); toast(tr("folderCleared")); } catch (e) {} });
     $("#folderOpen").addEventListener("click", () => { desk.openFolder().catch(() => {}); });
-    $("#files").addEventListener("click", async (e) => {
-      const b = e.target.closest("button[data-open]"); if (!b) return;
-      try { const r = await desk.openFile(b.dataset.open); if (r && r.error) toast(tr("openFail")); } catch (err) { toast(tr("openFail")); }
-    });
     window.addEventListener("focus", () => refreshFolder());
     refreshFolder();
   }
@@ -2008,6 +2137,7 @@ window.ValkTheme = (function () {
   }
   const NP_ROWS = 6;
   function renderNewPos() {
+    renderDocs(); // the Documents tab follows the same updates (folders read, invoices changed, purchase orders read)
     const panel = $("#newPo"); panel.hidden = !desk || !state.poChecked; if (panel.hidden) return;
     const note = $("#npNote"), list = $("#npList"), on = (id, v) => { $(id).hidden = !v; };
     ["#npAll", "#npMore", "#npSkipAll", "#npPick", "#npRestore"].forEach((i) => on(i, false));
@@ -2064,16 +2194,21 @@ window.ValkTheme = (function () {
 
   // ---- looking at the original PDF of a purchase order or an invoice (from the new-orders list and from the list behind a period of the statistics)
   let poPrevSeq = 0;
-  async function previewDoc({ title, load, open, addPo, nopreview }) {
+  async function previewDoc({ title, load, open, addPo, nopreview, word }) {
     const dlg = $("#poDlg"), pages = $("#poPages"), err = $("#poDlgErr"), id = ++poPrevSeq;
     $("#poDlgTitle").textContent = title; dlg.dataset.rel = open ? open.rel : ""; dlg.dataset.kind = open && open.kind ? open.kind : "";
     pages.innerHTML = ""; err.hidden = true; err.className = "chip error";
     const add = $("#poDlgAdd"); add.hidden = !addPo; add.textContent = tr("npAdd"); add.dataset.po = addPo || ""; // only a PO that still has to be added
-    $("#poDlgOpen").hidden = !(desk && open);
+    const ob = $("#poDlgOpen"), ok = word ? "wordOpen" : "poOpenExt"; ob.dataset.i18n = ok; ob.textContent = tr(ok); ob.hidden = !(desk && open);
     if (!dlg.open) dlg.showModal();
     if (nopreview) { err.className = "chip warn"; err.textContent = tr(nopreview); err.hidden = false; return; }
     try {
       const raw = await load(); if (!raw) throw new Error("unreadable");
+      if (word) { // a Word file: drawn as a simple page; if that fails, the old "open it in Word" message
+        try { const el = await docxPage(new Uint8Array(raw)); if (id === poPrevSeq) pages.appendChild(el); }
+        catch (e) { if (id === poPrevSeq) { err.className = "chip warn"; err.textContent = tr("noPrevWord"); err.hidden = false; } }
+        return;
+      }
       const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(raw) }).promise;
       for (let p = 1; p <= Math.min(pdf.numPages, 6); p++) {
         if (id !== poPrevSeq) return;
@@ -2092,8 +2227,263 @@ window.ValkTheme = (function () {
       return previewDoc({ title, load: () => buildPdf(data) });
     }
     const rel = x.i && x.i.file; if (!rel || !desk) return previewDoc({ title, nopreview: "poPrevFail" });
-    return /\.pdf$/i.test(rel) ? previewDoc({ title, load: () => desk.readFile(rel), open: { rel } }) : previewDoc({ title, nopreview: "noPrevWord", open: { rel } });
+    return /\.pdf$/i.test(rel) ? previewDoc({ title, load: () => desk.readFile(rel), open: { rel } }) : previewDoc({ title: tr("wordPrevTitle", nrTxt), load: () => desk.readFile(rel), open: { rel }, word: true });
   }
+
+  // ---- a Word file (.docx) drawn as a simple white page: paragraphs, bold/italic/underline, sizes and colours, tables, line breaks, pictures, header and footer
+  async function docxPage(bytes) {
+    const zip = await JSZip.loadAsync(bytes);
+    const xml = async (p) => { const f = zip.file(p); if (!f) return null; const d = new DOMParser().parseFromString(await f.async("string"), "application/xml"); return d.getElementsByTagName("parsererror").length ? null : d; };
+    const doc = await xml("word/document.xml"); const body = doc && [...doc.documentElement.children].find((c) => c.localName === "body");
+    if (!body) throw new Error("no document.xml");
+    const kids = (el) => (el ? [...el.children] : []), child = (el, n) => kids(el).find((c) => c.localName === n) || null;
+    const attr = (el, n) => (el ? el.getAttribute("w:" + n) ?? el.getAttribute(n) : null), val = (el, n) => attr(child(el, n), "val");
+    const tw = (v) => (v == null || isNaN(+v) ? null : +v / 15); // twips -> CSS px
+    const relsOf = async (part) => { const m = new Map(), x = await xml(part.replace(/([^/]+)$/, "_rels/$1.rels")); if (x) for (const r of x.getElementsByTagName("Relationship")) m.set(r.getAttribute("Id"), r.getAttribute("Target") || ""); return m; };
+    const IMG = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", bmp: "image/bmp", webp: "image/webp", svg: "image/svg+xml" };
+    const imgSrc = async (target) => { // relative to word/; emf/wmf cannot be shown by a browser and are left out
+      const parts = []; for (const p of ("word/" + target.replace(/^\//, "../")).split("/")) { if (p === "..") parts.pop(); else if (p && p !== ".") parts.push(p); }
+      const f = zip.file(parts.join("/")), mime = IMG[parts.join("/").split(".").pop().toLowerCase()];
+      return f && mime ? `data:${mime};base64,${await f.async("base64")}` : "";
+    };
+    // styles: run look of each style (with the styles it is based on) and the document defaults
+    const sx = await xml("word/styles.xml"), styles = new Map(); let defRun = null, defPara = "";
+    if (sx) for (const s of kids(sx.documentElement)) {
+      if (s.localName === "docDefaults") defRun = child(child(s, "rPrDefault"), "rPr");
+      if (s.localName !== "style") continue;
+      styles.set(attr(s, "styleId"), { basedOn: val(s, "basedOn"), rPr: child(s, "rPr"), pPr: child(s, "pPr") });
+      if (attr(s, "type") === "paragraph" && /^(1|true)$/.test(attr(s, "default") || "")) defPara = attr(s, "styleId");
+    }
+    const flag = (pr, n) => { const c = child(pr, n); if (!c) return undefined; const v = attr(c, "val"); return v == null || !/^(0|false|none|off)$/i.test(v); };
+    const look = (pr, base) => {
+      const o = { ...base }; if (!pr) return o;
+      for (const k of ["b", "i", "caps", "strike", "vanish"]) { const f = flag(pr, k); if (f !== undefined) o[k] = f; }
+      const u = val(pr, "u"); if (u) o.u = u !== "none";
+      const sz = val(pr, "sz"); if (sz && +sz) o.sz = +sz / 2;
+      const col = val(pr, "color"); if (col && /^[0-9a-f]{6}$/i.test(col)) o.color = "#" + col;
+      const va = val(pr, "vertAlign"); if (va) o.va = va;
+      const fnt = attr(child(pr, "rFonts"), "ascii"); if (fnt) o.font = fnt;
+      const sh = attr(child(pr, "shd"), "fill"); if (sh && /^[0-9a-f]{6}$/i.test(sh)) o.bg = "#" + sh;
+      return o;
+    };
+    const memo = new Map(), base0 = look(defRun, {});
+    const styleLook = (id, depth = 0) => { if (!id || depth > 12 || !styles.has(id)) return base0; if (memo.has(id)) return memo.get(id); const s = styles.get(id), o = look(s.rPr, styleLook(s.basedOn, depth + 1)); memo.set(id, o); return o; };
+    const stylePPr = (id, n, depth = 0) => { const s = id && styles.get(id); if (!s || depth > 12) return null; return child(s.pPr, n) || stylePPr(s.basedOn, n, depth + 1); };
+    const css = (o) => [o.b && "font-weight:700", o.i && "font-style:italic", (o.u || o.strike) && `text-decoration:${[o.u && "underline", o.strike && "line-through"].filter(Boolean).join(" ")}`,
+      o.sz && `font-size:${o.sz}pt`, o.color && `color:${o.color}`, o.caps && "text-transform:uppercase", o.bg && `background:${o.bg}`,
+      o.va === "superscript" && "vertical-align:super;font-size:smaller", o.va === "subscript" && "vertical-align:sub;font-size:smaller",
+      o.font && `font-family:'${o.font.replace(/['";<>]/g, "")}',Carlito,Calibri,sans-serif`].filter(Boolean).join(";");
+    async function drawing(d, rels) {
+      const anchor = d.getElementsByTagNameNS("*", "anchor")[0];
+      if (anchor && anchor.getAttribute("behindDoc") === "1") return ""; // backgrounds and watermarks behind the text are left out
+      let h = "";
+      const blip = d.getElementsByTagNameNS("*", "blip")[0] || d.getElementsByTagNameNS("*", "imagedata")[0];
+      const rid = blip && (blip.getAttribute("r:embed") || blip.getAttribute("r:id"));
+      const src = rid && rels.has(rid) ? await imgSrc(rels.get(rid)) : "";
+      if (src) { const ext = d.getElementsByTagNameNS("*", "extent")[0], w = ext ? Math.round(+ext.getAttribute("cx") / 9525) : 0; h += `<img src="${src}" alt=""${w > 0 ? ` style="width:${w}px"` : ""}>`; }
+      for (const tb of d.getElementsByTagNameNS("*", "txbxContent")) h += `<div class="wbox">${await blocks(tb, rels)}</div>`;
+      return h;
+    }
+    async function runKids(list, o, rels) {
+      let h = "";
+      for (const c of list) {
+        const n = c.localName;
+        if (n === "t") h += esc(c.textContent);
+        else if (n === "tab" || n === "ptab") h += '<span class="wtab"></span>';
+        else if (n === "br" || n === "cr") h += "<br>";
+        else if (n === "noBreakHyphen") h += "‑";
+        else if (n === "drawing" || n === "pict" || n === "object") h += await drawing(c, rels);
+        else if (n === "AlternateContent") h += await runKids(kids(child(c, "Choice") || child(c, "Fallback")), o, rels);
+      }
+      return h;
+    }
+    async function inline(el, pLook, rels) { // the runs of a paragraph, also inside links, fields and content controls
+      let h = "";
+      for (const c of kids(el)) {
+        const n = c.localName;
+        if (n === "r") {
+          const pr = child(c, "rPr"), cs = styles.get(val(pr, "rStyle")), o = look(pr, cs ? look(cs.rPr, pLook) : pLook); // character style, then the run's own look
+          if (o.vanish) continue;
+          const t = await runKids(kids(c), o, rels), st = css(o);
+          if (t) h += st ? `<span style="${st}">${t}</span>` : t;
+        } else if (["hyperlink", "smartTag", "ins", "fldSimple", "customXml"].includes(n)) h += await inline(c, pLook, rels);
+        else if (n === "sdt") h += await inline(child(c, "sdtContent"), pLook, rels);
+        else if (n === "AlternateContent") h += await inline(child(c, "Choice") || child(c, "Fallback"), pLook, rels);
+      }
+      return h;
+    }
+    async function para(p, rels) {
+      const pPr = child(p, "pPr"), sid = val(pPr, "pStyle") || defPara;
+      const pLook = styleLook(sid); // (the paragraph mark's own rPr does not apply to its text)
+      const pp = (n) => child(pPr, n) || stylePPr(sid, n);
+      const jc = attr(pp("jc"), "val"), sp = pp("spacing"), ind = pp("ind");
+      const st = [jc && `text-align:${{ center: "center", right: "right", end: "right", both: "justify", distribute: "justify" }[jc] || "left"}`,
+        sp && attr(sp, "before") && `margin-top:${+attr(sp, "before") / 20}pt`, sp && attr(sp, "after") != null && `margin-bottom:${+attr(sp, "after") / 20}pt`,
+        ind && tw(attr(ind, "left") ?? attr(ind, "start")) && `padding-left:${tw(attr(ind, "left") ?? attr(ind, "start"))}px`, pLook.sz && `font-size:${pLook.sz}pt`].filter(Boolean).join(";");
+      const bullet = pp("numPr") ? "• " : "";
+      return `<div class="wp"${st ? ` style="${st}"` : ""}>${bullet}${await inline(p, pLook, rels)}</div>`;
+    }
+    async function table(t, rels) {
+      const pr = child(t, "tblPr"), bd = child(pr, "tblBorders"), sid = val(pr, "tblStyle") || "";
+      const lined = (bd && kids(bd).some((b) => !/^(none|nil)$/i.test(attr(b, "val") || "none"))) || /grid/i.test(sid);
+      const tblW = child(pr, "tblW"), width = tblW && attr(tblW, "type") === "dxa" && tw(attr(tblW, "w")) ? `width:${tw(attr(tblW, "w"))}px;max-width:100%` : "";
+      const cols = kids(child(t, "tblGrid")).map((g) => tw(attr(g, "w")));
+      const rows = [], open = [];
+      for (const tr of kids(t).filter((x) => x.localName === "tr")) {
+        const row = []; let col = 0;
+        for (const tc of kids(tr).filter((x) => x.localName === "tc")) {
+          const cp = child(tc, "tcPr"), span = +val(cp, "gridSpan") || 1, vm = child(cp, "vMerge");
+          if (vm && attr(vm, "val") !== "restart" && open[col]) { open[col].rows++; col += span; continue; } // merged with the cell above
+          const fill = attr(child(cp, "shd"), "fill"), cell = { span, rows: 1, fill: fill && /^[0-9a-f]{6}$/i.test(fill) ? "#" + fill : "", html: await blocks(tc, rels) };
+          open[col] = vm ? cell : null; row.push(cell); col += span;
+        }
+        rows.push(row);
+      }
+      const sum = cols.reduce((a, w) => a + (w || 0), 0); // column widths as parts of the whole, so the table always fits the page
+      const cg = cols.length && cols.every(Boolean) ? `<colgroup>${cols.map((w) => `<col style="width:${(w / sum * 100).toFixed(2)}%">`).join("")}</colgroup>` : "";
+      return `<table class="${lined ? "bd" : ""}"${width ? ` style="${width}"` : ""}>${cg}<tbody>${rows.map((r) => `<tr>${r.map((c) => `<td${c.span > 1 ? ` colspan="${c.span}"` : ""}${c.rows > 1 ? ` rowspan="${c.rows}"` : ""}${c.fill ? ` style="background:${c.fill}"` : ""}>${c.html}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+    }
+    async function blocks(el, rels) {
+      let h = "";
+      for (const c of kids(el)) {
+        const n = c.localName;
+        if (n === "p") h += await para(c, rels);
+        else if (n === "tbl") h += await table(c, rels);
+        else if (n === "sdt") h += await blocks(child(c, "sdtContent"), rels);
+        else if (n === "customXml") h += await blocks(c, rels);
+        else if (n === "AlternateContent") h += await blocks(child(c, "Choice") || child(c, "Fallback"), rels);
+      }
+      return h;
+    }
+    const docRels = await relsOf("word/document.xml"), sect = [...body.children].reverse().find((c) => c.localName === "sectPr");
+    const part = async (kind) => { // the default header or footer of the (last) section
+      const ref = kids(sect).find((c) => c.localName === kind + "Reference" && (attr(c, "type") || "default") === "default"), target = ref && docRels.get(ref.getAttribute("r:id"));
+      if (!target) return ""; const p = "word/" + target.replace(/^\//, ""), x = await xml(p); if (!x) return "";
+      const h = await blocks(x.documentElement, await relsOf(p));
+      return h.replace(/<[^>]+>/g, "").trim() || /<img/.test(h) ? h : ""; // an empty header adds nothing
+    };
+    const head = await part("header"), main = await blocks(body, docRels), foot = await part("footer");
+    const page = document.createElement("div"); page.className = "wpage"; page.setAttribute("role", "document");
+    const pgW = tw(attr(child(sect, "pgSz"), "w")), mar = child(sect, "pgMar"), ml = tw(attr(mar, "left")), mr = tw(attr(mar, "right"));
+    if (pgW) page.style.maxWidth = `min(${Math.round(pgW)}px, 100%)`;
+    if (ml != null && mr != null && window.innerWidth > 640) { page.style.paddingLeft = Math.round(Math.min(ml, 110)) + "px"; page.style.paddingRight = Math.round(Math.min(mr, 110)) + "px"; }
+    page.innerHTML = (head ? `<div class="whf h">${head}</div>` : "") + main + (foot ? `<div class="whf f">${foot}</div>` : "");
+    for (const el of page.querySelectorAll("span[style]")) { // very light text sat on a picture behind it, which is left out: it turns dark, unless a shaded cell is behind it
+      const m = /rgb\((\d+), (\d+), (\d+)\)/.exec(el.style.color); if (!m || 0.299 * m[1] + 0.587 * m[2] + 0.114 * m[3] <= 200) continue;
+      let p = el, shaded = false; while (p && p !== page && !shaded) { shaded = !!(p.style && p.style.backgroundColor); p = p.parentElement; }
+      if (!shaded) el.style.color = "";
+    }
+    if (!page.textContent.trim() && !page.querySelector("img")) throw new Error("empty");
+    return page;
+  }
+
+  // ------------------------------------------------------------ documents tab: one row per invoice number, with its PDF and Word file in the invoice folder and its purchase order
+  const DOC_SORTS = ["nr", "date", "client", "po", "amount"], DOC_FILTERS = ["all", "open", "sent"];
+  state.sent = new Set(); state.docs = { sort: "nr", dir: "desc", filter: "all", q: "" };
+  const saveSent = () => { if (state.db) { try { state.db.doc("settings/sent").set({ list: [...state.sent] }); } catch (e) {} } };
+  const saveDocsPrefs = () => { if (state.db) { try { state.db.doc("settings/docsprefs").set({ sort: state.docs.sort, dir: state.docs.dir, filter: state.docs.filter }); } catch (e) {} } };
+  const applyDocsPrefs = (v) => { if (!v) return; if (DOC_SORTS.includes(v.sort)) state.docs.sort = v.sort; if (v.dir === "asc" || v.dir === "desc") state.docs.dir = v.dir; if (DOC_FILTERS.includes(v.filter)) state.docs.filter = v.filter; };
+  const nlDateKey = (t) => { const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(t || "")); return m ? +m[3] * 10000 + +m[2] * 100 + +m[1] : 0; };
+  /** the invoice sets, from what is already read: the folder files (state.files + the parse cache), the folder invoices, the invoices made here, the purchase orders */
+  function docSets() {
+    const sets = new Map(), byBase = new Map();
+    const get = (nr) => { let s = sets.get(nr); if (!s) { const [n, y] = nr.split("-").map(Number); sets.set(nr, (s = { nr, n, y, pdf: null, docx: null, inv: null, fi: null })); } return s; };
+    const better = (a, b) => !a || b.name.length < a.name.length || (b.name.length === a.name.length && b.mtime > a.mtime); // "VALKYRYS 5-2025.pdf" wins over its "(kopie)"
+    const files = desk && state.folder && state.folder.exists ? state.files.filter((f) => f.ext === "pdf" || f.ext === "docx") : [], later = [];
+    for (const f of files) {
+      const e = state.parseCache.get(f.rel), cached = e && e.mt === f.mtime && e.sz === f.size && isInvoiceRec(e.r) && /^\d+-\d{4}$/.test(e.r.nr || "") ? e.r.nr : "";
+      const m = NUM_IN_NAME.exec(f.name.replace(/\.[^.]+$/, "")), nr = cached || (m ? `${+m[1]}-${m[2]}` : "");
+      if (!nr) { later.push(f); continue; }
+      const s = get(nr); if (better(s[f.ext], f)) s[f.ext] = f; byBase.set(f.rel.replace(/\.(pdf|docx)$/i, ""), s);
+    }
+    for (const f of later) { const s = byBase.get(f.rel.replace(/\.(pdf|docx)$/i, "")); if (s && !s[f.ext]) s[f.ext] = f; } // a Word file next to its PDF, same name without a number
+    for (const fi of files.length ? state.folderInvoices : []) get(fi.factuurnr).fi = fi;
+    for (const i of state.invoices.values()) if (/^\d+-\d{4}$/.test(i.factuurnr || "")) get(i.factuurnr).inv = i;
+    return [...sets.values()].map((s) => {
+      const i = s.inv, fi = s.fi, poText = (i && i.po) || (fi && fi.po) || "", names = [s.pdf, s.docx].filter(Boolean).map((f) => f.name).join(" ");
+      const poRec = (desk && (state.poRecs.find((x) => poMentioned(poText, x.r.po)) || (names && state.poRecs.find((x) => poMentioned(names, x.r.po))))) || null;
+      let total = null;
+      if (i && i.lines && i.lines.length) total = core.totals(i.lines, i.btw || "verlegd").total; else if (i && +i.totaal) total = +i.totaal; else if (fi && fi.amounts && isFinite(fi.amounts.total)) total = fi.amounts.total;
+      const datum = (i && i.datum) || (fi && fi.datum) || "", client = ((i && i.client && i.client.name) || (fi && fi.client && fi.client.name) || "").trim();
+      return { ...s, po: poRec ? poRec.r.po : poText, poRec, total, datum, dkey: nlDateKey(datum), client, sent: state.sent.has(s.nr), gen: !s.pdf && !!(i && i.lines && i.lines.length) };
+    });
+  }
+  function sortDocs(list) {
+    const { sort, dir } = state.docs, k = dir === "asc" ? 1 : -1, byNr = (a, b) => a.y - b.y || a.n - b.n;
+    const cmp = { nr: byNr, date: (a, b) => a.dkey - b.dkey, client: (a, b) => a.client.localeCompare(b.client, state.lang, { sensitivity: "base", numeric: true }), po: (a, b) => natPo(a.po, b.po), amount: (a, b) => a.total - b.total }[sort] || byNr;
+    const empty = (x) => (sort === "client" ? !x.client : sort === "po" ? !x.po : sort === "date" ? !x.dkey : sort === "amount" ? x.total == null : false);
+    return list.sort((a, b) => (empty(a) - empty(b)) || k * cmp(a, b) || byNr(b, a)); // empty values last, then newest number first
+  }
+  const ICON_FOLDER = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+  const ICON_DIR = { asc: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m6 11 6-6 6 6"/></svg>',
+    desc: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m6 13 6 6 6-6"/></svg>' };
+  function renderDocs() {
+    if (state.tab !== "docs") return;
+    const D = state.docs, all = docSets(), f = desk ? state.folder : null;
+    const q = D.q.trim().toLowerCase(), match = (s) => !q || [s.nr, s.client, s.po].some((v) => String(v || "").toLowerCase().includes(q));
+    const found = all.filter(match), shown = sortDocs(found.filter((s) => D.filter === "all" || (D.filter === "sent") === s.sent)), nSent = all.filter((s) => s.sent).length;
+    $("#docsNoFolder").hidden = !(desk && !f);
+    $("#docsBar").hidden = !all.length;
+    const counts = { all: found.length, open: found.filter((s) => !s.sent).length, sent: found.filter((s) => s.sent).length };
+    $("#docsFilter").querySelectorAll("button[data-f]").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.f === D.filter)); b.querySelector(".n").textContent = ` ${counts[b.dataset.f]}`; });
+    $("#docsSort").value = D.sort;
+    const dirB = $("#docsDir"), dk = D.dir === "asc" ? "docsAsc" : "docsDesc"; dirB.innerHTML = ICON_DIR[D.dir]; dirB.setAttribute("aria-label", tr(dk)); dirB.title = tr(dk);
+    const sIn = $("#docsSearch"); sIn.placeholder = tr("docsSearch"); if (sIn.value !== D.q) sIn.value = D.q;
+    $("#docsCount").textContent = tr("docsCount", nSent, all.length); $("#docsProg .pb i").style.width = (all.length ? Math.round(nSent / all.length * 100) : 0) + "%";
+    // one line about the folder and what is still being read
+    const year = new Date().getFullYear(), nums = inFolder(year), withFile = all.filter((s) => s.pdf || s.docx).length, withPo = all.filter((s) => s.poRec).length;
+    const info = f && !f.exists ? [tr("folderMissing")] : [f && (withFile || state.scan ? tr("folderCount", withFile) : tr("folderEmpty")), f && nums.length && tr("folderHighest", `${Math.max(...nums)}-${year}`), withPo && tr("docsWithPo", withPo),
+      state.scan && tr("scanning", state.scan.done, state.scan.total), state.poScan && tr("npReading", state.poScan.done, state.poScan.total)].filter(Boolean);
+    $("#docsInfo").innerHTML = info.map((x) => `<span class="nw">${esc(x)}</span>`).join(" · "); $("#docsInfo").hidden = !info.length;
+    // the column heads sort too
+    const cols = [["nr", "docsByNr"], ["client", "docsByClient"], ["date", "docsByDate"], ["po", "docsByPo"], ["amount", "docsByAmount", "r"]];
+    $("#docsHead").innerHTML = cols.map(([k, key, cls]) => `<button type="button" data-sort="${k}"${cls ? ` class="${cls}"` : ""}${D.sort === k ? ` aria-sort="${D.dir === "asc" ? "ascending" : "descending"}"` : ""}>${esc(tr(key))}${D.sort === k ? `<i aria-hidden="true">${D.dir === "asc" ? "▲" : "▼"}</i>` : ""}</button>`).join("")
+      + `<span>${esc(tr("docsColDocs"))}</span><span>${esc(tr("docsSent"))}</span><span></span>`;
+    // keep the focus on the same control when the list is drawn again
+    const a = document.activeElement, keep = a && $("#docsList").contains(a) ? (a.dataset.sent ? `[data-sent="${a.dataset.sent}"]` : a.dataset.doc ? `[data-doc="${a.dataset.doc}"][data-nr="${a.dataset.nr}"]` : "") : "";
+    const showApp = !!(f && f.exists);
+    $("#docsList").innerHTML = shown.map((s) => {
+      const chip = (kind, label, on, extra) => on ? `<button type="button" class="dchip k-${kind}${extra || ""}" data-doc="${kind}" data-nr="${esc(s.nr)}" aria-label="${esc(tr("docsViewAria", label, s.nr))}" title="${esc(on)}">${label}</button>`
+        : `<button type="button" class="dchip k-${kind}" disabled title="${esc(tr("docsMissing", label))}">${label}</button>`;
+      const pdfOn = s.pdf ? s.pdf.name : s.gen ? tr("docsGen") : "", rel = (s.pdf || s.docx || {}).rel;
+      return `<li class="drow${s.sent ? " sent" : ""}" data-nr="${esc(s.nr)}">
+        <span class="c-nr num">${esc(s.nr)}${showApp && !s.pdf && !s.docx ? `<small>${esc(tr("docsOnlyApp"))}</small>` : ""}</span>
+        <span class="c-cl${s.client ? "" : " none"}" title="${esc(s.client)}">${esc(s.client || tr("noClient"))}</span>
+        <span class="c-dt">${esc(s.datum || "–")}</span>
+        <span class="c-po${s.po ? "" : " none"}">${esc(s.po || "–")}</span>
+        <span class="c-amt">${s.total == null ? "–" : esc(core.eur(s.total))}</span>
+        <span class="c-docs">${chip("pdf", "PDF", pdfOn, s.pdf ? "" : " gen")}${chip("word", "Word", s.docx ? s.docx.name : "")}${chip("po", "PO", s.poRec ? s.poRec.f.name : "")}</span>
+        <span class="c-sent"><label class="sentbox"><input type="checkbox" data-sent="${esc(s.nr)}"${s.sent ? " checked" : ""} aria-label="${esc(tr("docsSentAria", s.nr))}"><span aria-hidden="true">${esc(tr("docsSent"))}</span></label></span>
+        <span class="c-act">${rel ? `<button type="button" data-reveal="${esc(rel)}" aria-label="${esc(tr("docsRevealAria", s.nr))}" title="${esc(tr("dupShow"))}">${ICON_FOLDER}</button>` : ""}</span>
+      </li>`;
+    }).join("");
+    if (keep) { const el = $("#docsList").querySelector(keep); if (el) el.focus(); }
+    $("#docsTable").hidden = !shown.length;
+    const em = $("#docsEmpty"); em.hidden = !!shown.length || (!all.length && desk && !f); // no folder: the folder card says it already
+    $("#docsEmptyT").textContent = tr(all.length ? "docsNoMatch" : "docsEmptyT"); $("#docsEmptyP").textContent = tr(all.length ? "docsNoMatchP" : "docsEmptyP");
+  }
+  const docOf = (nr) => docSets().find((s) => s.nr === nr);
+  $("#docsList").addEventListener("click", async (e) => {
+    const c = e.target.closest("button[data-doc]"), r = e.target.closest("button[data-reveal]");
+    if (r && desk) { try { const x = await desk.revealFile(r.dataset.reveal); if (x && x.error) toast(tr("dupShowFail")); } catch (err) { toast(tr("dupShowFail")); } return; }
+    const s = c && docOf(c.dataset.nr); if (!s) return;
+    if (c.dataset.doc === "pdf") { if (s.pdf && desk) previewDoc({ title: tr("invPrevTitle", s.nr), load: () => desk.readFile(s.pdf.rel), open: { rel: s.pdf.rel } }); else previewInvoice({ key: s.nr, i: {} }); }
+    else if (c.dataset.doc === "word" && s.docx && desk) previewDoc({ title: tr("wordPrevTitle", s.nr), load: () => desk.readFile(s.docx.rel), open: { rel: s.docx.rel }, word: true });
+    else if (c.dataset.doc === "po" && s.poRec && desk) previewPo(s.poRec.f.rel, s.poRec.r.po);
+  });
+  $("#docsList").addEventListener("change", (e) => {
+    const b = e.target.closest("input[data-sent]"); if (!b) return;
+    if (b.checked) state.sent.add(b.dataset.sent); else state.sent.delete(b.dataset.sent);
+    saveSent(); renderDocs();
+  });
+  /** a new sort key starts names A-Z and the rest newest/highest first; the same column head again turns the order round */
+  const sortBy = (k, toggle) => { const D = state.docs; if (D.sort === k) { if (toggle) D.dir = D.dir === "asc" ? "desc" : "asc"; } else { D.sort = k; D.dir = k === "client" || k === "po" ? "asc" : "desc"; } saveDocsPrefs(); renderDocs(); };
+  $("#docsHead").addEventListener("click", (e) => { const b = e.target.closest("button[data-sort]"); if (b) { sortBy(b.dataset.sort, true); const n = $(`#docsHead [data-sort="${b.dataset.sort}"]`); if (n) n.focus(); } });
+  $("#docsSort").addEventListener("change", (e) => { if (DOC_SORTS.includes(e.target.value)) sortBy(e.target.value); });
+  $("#docsDir").addEventListener("click", () => { state.docs.dir = state.docs.dir === "asc" ? "desc" : "asc"; saveDocsPrefs(); renderDocs(); });
+  $("#docsFilter").addEventListener("click", (e) => { const b = e.target.closest("button[data-f]"); if (b) { state.docs.filter = b.dataset.f; saveDocsPrefs(); renderDocs(); } });
+  $("#docsSearch").addEventListener("input", (e) => { state.docs.q = e.target.value; renderDocs(); });
+  $("#docsGoSet").addEventListener("click", () => setTab("settings"));
   const FLAG_TEXT = { dup: "fDup", unit: "fUnit", hours: "fHours", nodate: "fNoDate" };
   /** the documents behind one row of the statistics table (a period, or all of it): one line per purchase order or invoice with what it adds to the period, and under it the work days it was counted for */
   function openPeriod(i) {
@@ -2351,31 +2741,34 @@ window.ValkTheme = (function () {
     if (await save(nm, blob, { plain: true })) toast(tr("downloaded", nm));
   }
 
-  const TABS = ["stats", "inv", "settings"], TAGLINE = { stats: "statsTagline", inv: "tagline", settings: "settingsTagline" };
-  const TABKEY = { stats: "tabStats", inv: "tabInvoices", settings: "tabSettings" };
+  const TABS = ["stats", "inv", "docs", "settings"], TAGLINE = { stats: "statsTagline", inv: "tagline", docs: "docsTagline", settings: "settingsTagline" };
+  const TABKEY = { stats: "tabStats", inv: "tabInvoices", docs: "tabDocs", settings: "tabSettings" };
   // Page title follows the selected tab; the pill (.seg-ind) slides under the selected button.
   function syncTabHead() {
     $("#pageTitle").textContent = tr(TABKEY[state.tab] || "tabStats");
+    document.documentElement.style.setProperty("--bar-h", ($("#appbar").offsetHeight || 60) + "px"); // sticky heads sit right under the app bar
     const ind = document.querySelector("#tabs .seg-ind"), b = document.querySelector(`#tabs [data-tab="${state.tab}"]`);
     if (!ind || !b || !b.offsetWidth) return;
     ind.style.width = b.offsetWidth + "px"; ind.style.transform = `translateX(${b.offsetLeft}px)`;
     if (!ind.classList.contains("on")) requestAnimationFrame(() => ind.classList.add("on"));
   }
   window.addEventListener("resize", syncTabHead);
+  if (window.ResizeObserver) new ResizeObserver(() => syncTabHead()).observe($("#tabs")); // the tabs also change size without a window resize (a scroll bar appears, the bar wraps)
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncTabHead);
   function setTab(t) {
     state.tab = TABS.includes(t) ? t : "stats";
     document.querySelectorAll("#tabs [role=tab]").forEach((b) => { const on = b.dataset.tab === state.tab; b.setAttribute("aria-selected", String(on)); b.tabIndex = on ? 0 : -1; });
-    $("#viewInv").hidden = state.tab !== "inv"; $("#statsView").hidden = state.tab !== "stats"; $("#settingsView").hidden = state.tab !== "settings";
+    $("#viewInv").hidden = state.tab !== "inv"; $("#statsView").hidden = state.tab !== "stats"; $("#settingsView").hidden = state.tab !== "settings"; $("#docsView").hidden = state.tab !== "docs";
     const tg = $("#tagline"); tg.dataset.i18n = TAGLINE[state.tab]; tg.textContent = tr(tg.dataset.i18n);
     syncTabHead();
     if (state.tab === "stats") { renderStats(); if (desk) refreshPoFolder(); }
+    if (state.tab === "docs") { renderDocs(); if (desk) refreshPoFolder(); } // the purchase orders are read if that has not happened yet
     window.scrollTo(0, 0);
   }
   $("#tabs").addEventListener("click", (e) => { const b = e.target.closest("[role=tab]"); if (b) setTab(b.dataset.tab); });
   $("#tabs").addEventListener("keydown", (e) => {
-    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-    const next = TABS[(TABS.indexOf(state.tab) + (e.key === "ArrowLeft" ? -1 : 1) + TABS.length) % TABS.length];
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+    const next = e.key === "Home" ? TABS[0] : e.key === "End" ? TABS[TABS.length - 1] : TABS[(TABS.indexOf(state.tab) + (e.key === "ArrowLeft" ? -1 : 1) + TABS.length) % TABS.length];
     setTab(next); document.querySelector(`#tabs [data-tab="${next}"]`).focus(); e.preventDefault();
   });
   $("#srcSettings").addEventListener("click", () => setTab("settings"));
@@ -2458,6 +2851,41 @@ window.ValkTheme = (function () {
   $("#themeBtn").addEventListener("click", () => { renderThemeUi(); const d = $("#themeDlg"); if (!d.open) d.showModal(); });
   $("#themeClose").addEventListener("click", () => $("#themeDlg").close());
   $("#themeDlg").addEventListener("click", (e) => { if (e.target === $("#themeDlg")) $("#themeDlg").close(); });
+
+  // ------------------------------------------------------------ what's new (tool/changelog.js; last seen version in settings/news, localStorage as fallback)
+  const NEWS = Array.isArray(window.VALK_CHANGELOG) ? window.VALK_CHANGELOG : [];
+  const NEWS_LATEST = NEWS.length ? NEWS[0].version : "";
+  let newsSeen = null;
+  try { newsSeen = localStorage.getItem("valkyrys-news-seen"); } catch (e) {}
+  function renderNewsDot() {
+    const un = !!NEWS_LATEST && newsSeen !== NEWS_LATEST;
+    $("#newsDot").hidden = !un; $("#newsBtn").classList.toggle("unseen", un); $("#newsBtn").setAttribute("aria-label", tr(un ? "newsUnseen" : "newsBtnAria"));
+  }
+  /** the latest notes count as read: dot off, remembered in the browser and in the saved data */
+  function markNewsSeen() {
+    if (!NEWS_LATEST || newsSeen === NEWS_LATEST) return;
+    newsSeen = NEWS_LATEST;
+    try { localStorage.setItem("valkyrys-news-seen", NEWS_LATEST); } catch (e) {}
+    if (state.db) { try { state.db.doc("settings/news").set({ seen: NEWS_LATEST }); } catch (e) {} }
+    renderNewsDot();
+  }
+  const NEWS_TYPES = [["new", "newsNew"], ["improved", "newsImproved"], ["fixed", "newsFixed"]];
+  function newsDate(d) { try { return new Date(d + "T12:00:00").toLocaleDateString({ nl: "nl-NL", en: "en-GB", pl: "pl-PL" }[state.lang] || "nl-NL", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return d; } }
+  function renderNews() {
+    const L = state.lang;
+    $("#newsList").innerHTML = NEWS.map((rel, i) => `<section class="nrel" data-version="${esc(rel.version)}"><h3>${esc(tr("newsVersion", rel.version))}<span class="ndate">${esc(newsDate(rel.date))}</span>${i === 0 ? `<span class="nlatest">${esc(tr("newsLatest"))}</span>` : ""}</h3>` +
+      NEWS_TYPES.map(([type, key]) => { const its = (rel.items || []).filter((it) => it.type === type); return its.length ? `<div class="ngrp" data-type="${type}"><span class="ntag ${type}">${esc(tr(key))}</span><ul>${its.map((it) => `<li>${esc(it[L] || it.nl || it.en || "")}</li>`).join("")}</ul></div>` : ""; }).join("") + `</section>`).join("");
+    $("#newsVer").textContent = NEWS_LATEST ? tr("newsVersion", NEWS_LATEST) : "";
+  }
+  $("#newsBtn").addEventListener("click", () => { renderNews(); const d = $("#newsDlg"); if (!d.open) d.showModal(); $("#newsList").scrollTop = 0; markNewsSeen(); });
+  $("#newsClose").addEventListener("click", () => $("#newsDlg").close());
+  $("#newsDlg").addEventListener("click", (e) => { if (e.target === $("#newsDlg")) $("#newsDlg").close(); });
+  function fitNewsBtn() {
+    const bar = $("#appbar .appbar-in"); if (!bar) return; bar.classList.remove("nb-wrap");
+    const top = (s) => bar.querySelector(s).getBoundingClientRect().top, b = top(".brand");
+    if (top("#newsBtn") > b + 20 || top("#tabs") > b + 20) bar.classList.add("nb-wrap");
+  }
+  if (window.ResizeObserver) { const ro = new ResizeObserver(() => requestAnimationFrame(fitNewsBtn)); ro.observe($("#appbar")); ro.observe($("#tabs")); }
   $("#themeGrid").addEventListener("click", (e) => {
     const b = e.target.closest("[data-theme-id]"); if (!b) return;
     const id = b.dataset.themeId;
@@ -2532,7 +2960,7 @@ window.ValkTheme = (function () {
     if (storeKey) $("#storeNote").textContent = tr(storeKey);
     updateFileHint();
     if ($("#dlg").open) $("#dlgTitle").textContent = tr("preview", $("#dlgTitle").dataset.nr || "");
-    renderThemeUi(); renderPin(); renderTplUi(); if ($("#tplDlg").open) renderTplDlg(); window.ValkLockLang = state.lang; if (desk && $("#welcomeDlg").open) renderWelcome();
+    renderThemeUi(); renderPin(); renderTplUi(); if ($("#tplDlg").open) renderTplDlg(); renderNewsDot(); if ($("#newsDlg").open) renderNews(); window.ValkLockLang = state.lang; if (desk && $("#welcomeDlg").open) renderWelcome();
     render(); syncTabHead();
   }
   function saveLang() {
@@ -2818,6 +3246,7 @@ window.ValkTheme = (function () {
   /** first start: the design is chosen (and the details filled in) before the folders are asked for */
   async function firstRun() {
     if (state.firstRunDone) return; state.firstRunDone = true;
+    if (state.db && !state.settings.template) markNewsSeen(); // a fresh install: everything is new, no "what's new" dot
     if (state.db && !state.settings.template) await new Promise((res) => { $("#tplDlg").addEventListener("close", res, { once: true }); openTpl("first"); });
     maybeWelcome();
   }
@@ -2839,6 +3268,11 @@ window.ValkTheme = (function () {
       if (c.exists && !themeTouched) { const n = TH.sanitize(c.data()); if (n && JSON.stringify(n) !== JSON.stringify(themeState)) { themeState = n; TH.save(n); TH.apply(n); renderThemeUi(); } }
       else if (!c.exists && themeState.id !== "auto") themeSaveDb(); } catch (e) {} }
     if (db) { try { const c = await db.doc("settings/poskip").get(); if (c.exists && Array.isArray(c.data().list)) state.poSkip = new Set(c.data().list); } catch (e) {} }
+    if (db) { try { const c = await db.doc("settings/sent").get(); if (c.exists && Array.isArray(c.data().list)) state.sent = new Set(c.data().list.map(String)); } catch (e) {} }
+    if (db) { try { const c = await db.doc("settings/docsprefs").get(); if (c.exists) applyDocsPrefs(c.data()); } catch (e) {} renderDocs(); }
+    if (db) { try { const c = await db.doc("settings/news").get(); const s = c.exists && c.data().seen; // seen in either place counts
+      if (s && newsSeen !== NEWS_LATEST) { newsSeen = s; try { localStorage.setItem("valkyrys-news-seen", s); } catch (e) {} }
+      else if (!s && newsSeen) db.doc("settings/news").set({ seen: newsSeen }); renderNewsDot(); } catch (e) {} }
     if (db) { try { const c = await db.doc("settings/statprefs").get(); if (c.exists) { applyStatPrefs(c.data()); if (state.tab === "stats") renderStats(); if (desk) refreshPoFolder(); } } catch (e) {} }
     state.dbResolve();
     storeKey = db ? "stored" : "notStored"; $("#storeNote").textContent = tr(storeKey);

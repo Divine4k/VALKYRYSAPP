@@ -21,7 +21,7 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
   await page.setViewportSize({ width: 1280, height: 1000 }).catch(() => {});
   await page.waitForSelector("#hist li", { state: "attached" }); await page.waitForTimeout(500);
   console.log("today:", new Date().toISOString().slice(0, 10));
-  ok(await page.isVisible("#statsView") && !(await page.isVisible("#viewInv")), "starts on the statistics tab"); eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.dataset.tab)), ["stats", "inv", "settings"], "tabs: statistics, invoices, settings");
+  ok(await page.isVisible("#statsView") && !(await page.isVisible("#viewInv")), "starts on the statistics tab"); eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.dataset.tab)), ["stats", "inv", "docs", "settings"], "tabs: statistics, invoices, documents, settings");
   await goTab(page, "stats"); await page.waitForTimeout(300);
   ok(await page.isVisible("#statsView") && !(await page.isVisible("#viewInv")), "statistics tab opens");
   eq(await page.textContent("#tagline"), "Je omzet en facturen in cijfers.", "tagline follows the tab"); eq(await page.textContent("#pageTitle"), "Statistieken", "page title follows the tab");
@@ -73,12 +73,12 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
     eq(lines.length, 5, "CSV: header + 4 invoices of 2025"); eq(lines[2], '"6-2025";"05/11/2025";"PO-6-2025";"Piguillet BV";2000,00;0,00;2000,00;5', "CSV row for 6-2025"); }
   // language
   await setLang(page, "en"); await page.waitForTimeout(300);
-  eq(await page.textContent("#tabStats"), "Statistics", "tab label in English");
+  eq(await page.textContent("#tabStats"), "Statistics", "tab label in English"); eq(await page.textContent("#tabDocs"), "Documents", "Documents tab in English");
   eq(await page.textContent("#kpis .kpi .eyebrow"), "Revenue (excl. VAT)", "tile label in English");
   eq(await page.$$eval("#statMode button", (b) => b.map((x) => x.textContent)), ["By week", "By month", "By quarter", "By year"], "segment labels in English");
   eq(await page.textContent("#tagline"), "Your revenue and invoices in numbers.", "tagline in English"); eq(await page.textContent("#pageTitle"), "Statistics", "page title in English");
   await setLang(page, "pl"); await page.waitForTimeout(300);
-  eq(await page.textContent("#tabStats"), "Statystyki", "tab label in Polish");
+  eq(await page.textContent("#tabStats"), "Statystyki", "tab label in Polish"); eq(await page.textContent("#tabDocs"), "Dokumenty", "Documents tab in Polish");
   eq(await page.$$eval("#stTable tbody tr td:first-child", (t) => t.slice(0, 3).map((x) => x.textContent)), ["Styczeń", "Luty", "Marzec"], "Polish month names");
   await setLang(page, "nl"); await page.waitForTimeout(200);
   // back to invoices tab

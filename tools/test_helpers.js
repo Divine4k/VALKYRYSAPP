@@ -3,8 +3,8 @@ const fs = require("fs"), path = require("path");
 
 const APP_DIR = "Valkyrys app"; // the data folder of the app inside the (fake) AppData folder of a test
 
-const TABS = { stats: "#tabStats", inv: "#tabInv", settings: "#tabSettings" };
-/** open a tab of the app: "stats" (statistics), "inv" (invoices) or "settings" */
+const TABS = { stats: "#tabStats", inv: "#tabInv", docs: "#tabDocs", settings: "#tabSettings" };
+/** open a tab of the app: "stats" (statistics), "inv" (invoices), "docs" (documents) or "settings" */
 const goTab = (page, name) => page.click(TABS[name]);
 
 /** switch the interface language ("nl", "en", "pl") whichever tab is open (the list itself lives in Settings) */
