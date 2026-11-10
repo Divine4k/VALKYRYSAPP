@@ -46,7 +46,8 @@ const foot = async (page) => page.$$eval("#stTable tfoot td", (t) => t.map((x) =
   eq(await page.textContent("#poDlgTitle"), "Factuur 10-2026", "preview of an invoice PDF from the folder"); ok(await page.isVisible("#poDlgOpen"), "it can be opened in the PDF viewer too"); ok(!(await page.isVisible("#poDlgAdd")), "no add button for an invoice");
   await page.keyboard.press("Escape"); await page.waitForFunction(() => !document.querySelector("#poDlg").open);
   await page.click('#perDlg button[data-prev="inv"][data-key="11-2026"]'); await page.waitForSelector("#poDlg[open]#poDlg", { timeout: 10000 }); await page.waitForTimeout(300);
-  ok(/Word-bestand/.test(await page.textContent("#poDlgErr")) && (await page.isVisible("#poDlgErr")) && !(await page.$("#poPages canvas")), "a Word-only invoice says so instead of a picture"); ok(await page.isVisible("#poDlgOpen"), "and can be opened in Word");
+  await page.waitForSelector("#poPages .wpage", { timeout: 15000 }).catch(() => {});
+  ok(await page.isVisible("#poPages .wpage") && !(await page.isVisible("#poDlgErr")), "a Word-only invoice is shown as a Word preview page"); ok(await page.isVisible("#poDlgOpen"), "and can be opened in Word");
   await page.keyboard.press("Escape"); await page.waitForFunction(() => !document.querySelector("#poDlg").open); await page.click("#perDlgClose");
   await page.screenshot({ path: "/tmp/import-month.png", fullPage: true });
   // cache is stored and the next start shows the same numbers
