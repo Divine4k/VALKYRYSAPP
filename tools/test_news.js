@@ -20,7 +20,7 @@ const items = (page) => page.$$eval("#newsList .nrel:first-child li", (l) => l.m
   let { app, page } = await launch(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
   await page.emulateMedia({ colorScheme: "light" });
   ok(await page.isVisible("#appbar #newsBtn"), "button in the app bar");
-  eq(await page.$eval("#appbar .appbar-in", (h) => [...h.children].map((c) => c.id || c.className)), ["brand", "tabs", "newsBtn"], "button comes after the tabs");
+  eq(await page.$eval("#appbar .appbar-in", (h) => [...h.children].map((c) => c.id || c.className)), ["brand", "tabs", "newsBtn", "tabSettings"], "button comes after the tabs, the Settings gear after it");
   const r = await page.evaluate(() => { const t = document.querySelector("#tabs").getBoundingClientRect(), b = document.querySelector("#newsBtn").getBoundingClientRect(); return { sameRow: Math.abs((t.top + t.bottom) / 2 - (b.top + b.bottom) / 2) < 2, gap: Math.round(b.left - t.right) }; });
   ok(r.sameRow && r.gap > 0 && r.gap < 20, "button sits right next to the tabs", r);
   eq(await page.textContent("#newsBtn .nlabel"), "Nieuw", "Dutch label");

@@ -44,7 +44,7 @@ Logs: `logs/<test>.log`. Tests need xvfb (the script uses `xvfb-run -a`). Do not
 ## Conventions
 - Text for the interface: add every key to all three languages in `I18N` (nl, en, pl). `tr("key", a, b)` fills `{0}`, `{1}`. Days word: `tr(plural(n))`.
 - `desk` is the desktop bridge (undefined in a plain browser). Folder-only UI is hidden without it.
-- Tabs: Statistieken (first, opens at start), Facturen, Documenten, Instellingen. `setTab()` in index.html. Settings holds folders, PIN, theme + language, invoice details.
+- Tabs: Statistieken (first, opens at start), Facturen, Documenten; Instellingen is the gear button `#tabSettings` next to "Nieuw" in the app bar (not in the tab pill). `setTab()` in index.html. Settings holds folders, PIN, theme + language, invoice details.
 - Documenten (`renderDocs`, `docSets`): one row per invoice number with its PDF/Word in the invoice folder, its PO (matched on the invoice's `po` or the file name via `poMentioned`) and invoices only in the app (drawn again). Built from what is already read (parse cache, `folderInvoices`, `invoices`, `poRecs`); redrawn from `renderNewPos`. "Sent" ticks in `settings/sent`, sort/filter in `settings/docsprefs`. Word files are previewed by `docxPage` (document.xml → simple HTML page; falls back to `noPrevWord`). Test: `tools/test_docs.js`.
 - Statistics: each PO line is a work day dated from the start of its Omschrijving; range "t/m" expands to Mon-Fri; hour lines are qty/8; one date is never more than 1 day across lines and POs. Duplicate days across POs (`poDupes`) and one PO number in several files (`state.poSame`) only inform (banner + list), they change no figure. Invoice source: `lineDays(rate, qty, desc)`, rate < 100 = hour rate.
 - Changing the PO reading? Bump `PARSER_VERSION` in index.html so cached reads are redone.
@@ -53,6 +53,8 @@ Logs: `logs/<test>.log`. Tests need xvfb (the script uses `xvfb-run -a`). Do not
 - When the UI moves, fix `tools/test_helpers.js` first (tab selectors) before touching single tests.
 
 ## Invoice designs (templates)
+- Fresh installs: `settings/main.builtins: false` (written by server.js when there is no data.json) hides the built-in designs; the person adds their own .docx. Absent = older install, built-ins stay. `designSkipped` = first-start design step skipped. First start asks whether to set a PIN (`#lkAskYes`/`#lkAskNo`).
+- Client presets: `settings/clients` = {list:[{id,name,fields:{client,betaaltermijn,btw}}], active}; the active client is copied into settings/main; cards can pick another client when 2+ exist. Test: test_clients.
 - Settings `template` (`valkyrys` | `extreme`) and `sender` (the person's details: name, person, street, city, phone, email, iban, btw, kvk) live in `settings/main`. Only what the person typed is in `sender`; the rest comes from the design's defaults. Missing required details block invoices (banner on Invoices, warning in Settings).
 - First start: design picker, then the details form, then the folder question (`firstRun()` in index.html). Installs from before designs existed get `template: "valkyrys"` from `electron-app/server.js`; a fresh install has none, so the picker shows. Tests that need a ready profile use `seedProfile` (design chosen).
 - Each saved invoice stores its `template` and `sender`, so an old invoice is drawn again in the design and with the details it was made with (`recordLook`).

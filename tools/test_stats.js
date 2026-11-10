@@ -24,7 +24,7 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
   await loaded(); await page.waitForTimeout(500);
   ok(!(await page.$("#hist")), "no 'Gemaakte facturen' list on the Invoices tab");
   console.log("today:", new Date().toISOString().slice(0, 10));
-  ok(await page.isVisible("#statsView") && !(await page.isVisible("#viewInv")), "starts on the statistics tab"); eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.dataset.tab)), ["stats", "inv", "docs", "settings"], "tabs: statistics, invoices, documents, settings");
+  ok(await page.isVisible("#statsView") && !(await page.isVisible("#viewInv")), "starts on the statistics tab"); eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.dataset.tab)), ["stats", "inv", "docs"], "tabs: statistics, invoices, documents (Settings is the gear button)");
   await goTab(page, "stats"); await page.waitForTimeout(300);
   ok(await page.isVisible("#statsView") && !(await page.isVisible("#viewInv")), "statistics tab opens");
   eq(await page.textContent("#tagline"), "Je omzet en facturen in cijfers.", "tagline follows the tab"); eq(await page.textContent("#pageTitle"), "Statistieken", "page title follows the tab");

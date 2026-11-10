@@ -23,11 +23,19 @@ const pinFile = () => { try { return JSON.parse(fs.readFileSync(PINF, "utf8")); 
   fs.writeFileSync(path.join(D, "data.json"), JSON.stringify({ "settings/main": { ...require("../electron-app/server.js").DEFAULT_SETTINGS, template: "valkyrys" } })); // the design is chosen already: only the PIN is asked
   let { app, page } = await launch(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
 
-  // ---- first start: choose a PIN in two steps
-  ok(await locked(page), "first start shows the PIN screen");
-  eq(await page.textContent("#lkTitle"), "Kies een pincode", "setup step 1 title (Dutch)");
+  // ---- first start: first the question (a PIN or not), then choose a PIN in two steps
+  ok(await locked(page), "first start shows the lock screen");
+  eq(await page.textContent("#lkTitle"), "Wil je de app beveiligen met een pincode?", "first start asks whether you want a PIN (Dutch)");
+  ok(await page.isVisible("#lkAskYes") && await page.isVisible("#lkAskNo") && !(await page.isVisible("#lkDots")) && !(await page.isVisible('#lockScreen [data-d="1"]')), "two choices, no keypad yet");
+  const bw = await page.$$eval("#lkAskYes, #lkAskNo", (a) => a.map((b) => Math.round(b.getBoundingClientRect().width)));
+  ok(bw[0] === bw[1] && bw[0] > 200, "both choices are equally big", bw);
   ok(await page.evaluate(() => document.body.inert), "the app behind it cannot be reached (inert)");
   ok(await page.isVisible("#lockScreen .band img"), "logo on the card");
+  await page.keyboard.type("12"); ok(pinFile() === null && await page.isVisible("#lkAskYes"), "typing digits on the question does nothing");
+  await page.screenshot({ path: "/tmp/fr_pinq.png" });
+  await page.click("#lkAskYes");
+  eq(await page.textContent("#lkTitle"), "Kies een pincode", "'Pincode instellen' goes to setup step 1");
+  await page.click("#lkBack"); ok(await page.isVisible("#lkAskNo"), "'Terug' goes back to the question"); await page.click("#lkAskYes");
   ok(await page.evaluate(() => [...document.querySelectorAll("#lockScreen input")].every((i) => getComputedStyle(i).opacity === "0")), "no visible input boxes");
   ok(await page.evaluate(() => document.activeElement.id === "lkIn"), "keyboard focus is ready at once");
   eq(await dots(page), { n: 8, on: 0, opt: 4 }, "step 1: dots for 4 to 8 digits");
@@ -104,7 +112,9 @@ const pinFile = () => { try { return JSON.parse(fs.readFileSync(PINF, "utf8")); 
 
   // ---- skip at first start, set later
   await app.close(); fs.rmSync(PINF); ({ app, page } = await launch()); ok(await locked(page), "setup prompt again (pin.json removed)");
-  await page.click("#lkLater"); await page.waitForSelector("#statsView", { state: "visible" }); ok(!(await locked(page)), "'Nu niet' opens the app");
+  eq(await page.textContent("#lkTitle"), "Wil je de app beveiligen met een pincode?", "the question again");
+  await page.click("#lkAskNo"); await page.waitForSelector("#statsView", { state: "visible" }); ok(!(await locked(page)), "'Nee, zonder pincode' opens the app");
+  eq(pinFile(), { v: 1, skipped: true }, "the choice is remembered in pin.json");
   await app.close(); ({ app, page } = await launch()); ok(!(await locked(page)), "and it does not ask again"); await page.waitForSelector("#pick", { state: "attached" }); await goTab(page, "inv"); await page.waitForTimeout(500);
   await goTab(page, "settings"); await page.click("#pinSetBtn"); ok(!(await page.isVisible("#pinCurWrap")), "set dialog has no current-PIN field");
   await page.fill("#pinNew", "2468"); await page.fill("#pinRep", "2468"); await page.click("#pinSave"); await page.waitForTimeout(500);

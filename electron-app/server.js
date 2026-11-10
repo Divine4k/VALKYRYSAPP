@@ -9,7 +9,7 @@ const DEFAULT_SETTINGS = { startNumber: 62, startYear: 2026, betaaltermijn: "14 
 
 function createServer(webDir, dataFile, isUnlocked = () => true) {
   let docs = {}, existed = false;
-  try { docs = JSON.parse(fs.readFileSync(dataFile, "utf8")); existed = true; } catch (e) { docs = { "settings/main": DEFAULT_SETTINGS }; }
+  try { docs = JSON.parse(fs.readFileSync(dataFile, "utf8")); existed = true; } catch (e) { docs = { "settings/main": { ...DEFAULT_SETTINGS, builtins: false } }; } // a fresh install: no built-in designs, the person adds their own
 
   function save() {
     try {
@@ -20,8 +20,9 @@ function createServer(webDir, dataFile, isUnlocked = () => true) {
     } catch (e) { console.error("save failed", e); }
   }
 
-  // data from before the invoice designs existed: those invoices use the Valkyrys design (a fresh install has no template yet, so the app asks)
-  if (existed && docs && typeof docs === "object" && !(docs["settings/main"] && docs["settings/main"].template)) { docs["settings/main"] = { ...(docs["settings/main"] || {}), template: "valkyrys" }; save(); }
+  // data from before the invoice designs existed: those invoices use the Valkyrys design (a fresh install has no template yet, so the app asks;
+  // builtins: false marks an install made since designs are the person's own, which may stay without a design)
+  if (existed && docs && typeof docs === "object" && !(docs["settings/main"] && (docs["settings/main"].template || docs["settings/main"].builtins === false))) { docs["settings/main"] = { ...(docs["settings/main"] || {}), template: "valkyrys" }; save(); }
 
   const server = http.createServer((req, res) => {
     // only requests addressed to this exact address are answered (blocks other web pages from reaching the app through a changed host name)

@@ -1,4 +1,4 @@
-// Invoice designs: the choice on first start (before the folders are asked), the person's own details, changing the design in Settings,
+// Invoice designs: a new install starts without designs (add your own Word design, or later; invoices wait), the person's own details, changing the design in Settings,
 // an installation from before the designs existed (it stays on the Valkyrys design), and that old invoices keep the design they were made in.
 const { goTab, setLang, seedProfile, chooseDesign } = require("./test_helpers");
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path"), { execFileSync } = require("child_process");
@@ -24,40 +24,67 @@ const dl = async (page, word) => { await page.click("button[data-act=download]")
 const fillWz = async (page, p) => { for (const [k, v] of Object.entries(D1)) await page.fill("#" + p + k, v); };
 
 (async () => {
-  // ---------------------------------------------------------------- 1. a fresh start: design first, then details, then the folders
-  fs.rmSync(HOME, { recursive: true, force: true }); seedProfile(HOME, { welcomed: false }, { template: null });
+  // ---------------------------------------------------------------- 1. a fresh install: no built-in designs; the person adds their own Word design (or later)
+  const JSZip = require("/opt/npm-tools/node_modules/jszip"), { OWN, makeCustomDocx } = require("./make_custom_docx.js");
+  const FIX = "/tmp/tpl-fixture/Bouw ontwerp.docx"; fs.mkdirSync(path.dirname(FIX), { recursive: true });
+  fs.writeFileSync(FIX, await makeCustomDocx(JSZip, fs.readFileSync(path.join(__dirname, "../tool/templates/extreme.docx"))));
+  const mockOpen = (app) => app.evaluate(({ dialog }, F) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [F] }); }, FIX);
+  const year = new Date().getFullYear(), PO = process.argv[3];
+  const file = (n, ext) => path.join(INV, `VALKYRYS ${n}-${year}.${ext}`);
+  const isOpen = (page, sel) => page.evaluate((s) => document.querySelector(s).open, sel);
+
+  // 1a. "add later": invoices wait until a design is added
+  fs.rmSync(HOME, { recursive: true, force: true }); fs.rmSync(INV, { recursive: true, force: true }); fs.mkdirSync(INV, { recursive: true });
+  seedProfile(HOME, { folder: INV }, { fresh: true });
   let { app, page, errs } = await launch();
   await page.waitForSelector("#tplDlg[open]");
-  ok(await page.evaluate(() => !document.querySelector("#welcomeDlg").open), "the folder question waits for the design choice");
-  ok(await page.isHidden("#tplDlgClose"), "the first choice has no close button");
-  await page.keyboard.press("Escape"); await page.waitForTimeout(300);
-  ok(await page.evaluate(() => document.querySelector("#tplDlg").open), "Escape does not skip the first choice");
-  eq(await page.$$eval("#tplGrid [data-tpl]", (b) => b.map((x) => x.dataset.tpl)), ["valkyrys", "extreme"], "two designs to choose from");
-  ok(await page.isDisabled("#tplNext"), "Next waits for a choice");
-  await chooseDesign(page, "extreme");
-  await page.waitForSelector("#tplStep2", { state: "visible" });
-  eq([await page.inputValue("#wzname"), await page.inputValue("#wzstart"), await page.inputValue("#wziban")], ["Extreme Building", "1", ""], "the company name of the design is filled in, the rest is empty");
-  await page.click("#tplDone");
-  ok(await page.isVisible("#wzWarn") && (await page.textContent("#wzWarn")).includes("IBAN"), "empty details are refused: " + (await page.textContent("#wzWarn")));
-  ok(await page.evaluate(() => document.querySelector("#tplDlg").open), "the dialog stays open until the details are in");
-  await fillWz(page, "wz"); await page.fill("#wzstart", "17");
-  await page.click("#tplDone");
-  await page.waitForSelector("#welcomeDlg[open]");
-  ok(await page.evaluate(() => !document.querySelector("#tplDlg").open), "after the design comes the folder question");
+  eq(await page.$$eval("#tplGrid [data-tpl]", (b) => b.length), 0, "a new install offers no built-in designs");
+  const empty = await page.textContent("#tplEmpty").catch(() => "");
+  ok(empty.includes("Nog geen factuurontwerp. Voeg je eigen Word-ontwerp toe.") && empty.includes("[IBAN]"), "empty list: says so, with a hint about [fields]: " + empty);
+  ok(await page.isVisible("#tplAdd") && await page.isVisible("#tplSkip") && await page.isDisabled("#tplNext"), "the choices: add a design, or add it later");
+  ok(await page.isHidden("#tplDlgClose"), "no close button at the first start");
+  await page.keyboard.press("Escape"); await page.waitForTimeout(300); ok(await isOpen(page, "#tplDlg"), "Escape does not close it");
+  await page.screenshot({ path: "/tmp/fr_design_empty.png" });
+  await page.click("#tplSkip"); await page.waitForFunction(() => !document.querySelector("#tplDlg").open);
+  const s0 = data()["settings/main"]; eq([s0.builtins, !!s0.template, s0.designSkipped], [false, false, true], "'add later': no design, and that is remembered");
+  await goTab(page, "settings");
+  eq([await page.textContent("#tplCurName"), await page.textContent("#tplChange"), await page.inputValue("#sdname"), await page.inputValue("#sdiban")], ["Nog geen factuurontwerp", "Ontwerp toevoegen…", "", ""], "Settings: no design, no details of someone else");
+  await goTab(page, "inv");
+  ok(await page.isVisible("#detBar") && (await page.textContent("#detBarText")).includes("Voeg eerst een factuurontwerp toe"), "the invoices page says a design is needed: " + (await page.textContent("#detBarText")));
+  await page.setInputFiles("#file", PO); await page.waitForSelector("article.po h3");
+  await dl(page, false); await page.waitForTimeout(1500);
+  ok(!fs.existsSync(file(62, "pdf")), "no invoice is made without a design");
+  ok((await page.textContent("#toast")).includes("Voeg eerst een factuurontwerp toe") && await page.isVisible("#settingsView"), "it says why and opens Settings");
+  ok(errs.length === 0, "no page errors in part 1a: " + errs.join(" | ")); await app.close();
+  ({ app, page, errs } = await launch()); await page.waitForTimeout(1500);
+  ok(!(await isOpen(page, "#tplDlg")), "the next start does not ask again");
+  await mockOpen(app);
+  await goTab(page, "inv"); await page.waitForSelector("#detBar", { state: "visible" }); await page.click("#detBarGo");
+  await page.waitForSelector("#tplDlg[open]"); ok(await page.isVisible("#tplEmpty") && await page.isVisible("#tplDlgClose"), "the banner button opens the (empty) design list");
+  await page.click("#tplAdd"); await page.waitForSelector("#tplGrid [data-tpl^=c]");
+  eq(await page.$$eval("#tplGrid [data-tpl]", (b) => b.length), 1, "only the own design is listed"); ok(!(await page.$("#tplEmpty")), "the empty note is gone");
+  await page.click("#tplNext"); await page.waitForFunction(() => !document.querySelector("#tplDlg").open);
+  eq([await page.textContent("#tplCurName"), await page.inputValue("#sdiban")], ["Bouw ontwerp", OWN.iban], "Settings shows the own design and its details");
+  await goTab(page, "inv"); ok(await page.isHidden("#detBar"), "the warning is gone");
+  await page.setInputFiles("#file", PO); await page.waitForSelector("article.po h3");
+  await dl(page, true); ok(await wait(() => fs.existsSync(file(62, "pdf")) && fs.existsSync(file(62, "docx"))), "now an invoice is made");
+  ok(pdfText(file(62, "pdf")).includes(OWN.iban), "with the details of the own design");
+  ok(errs.length === 0, "no page errors in part 1a (2): " + errs.join(" | ")); await app.close();
+
+  // 1b. adding the design in the first-start dialog: then the details, then the folders
+  fs.rmSync(HOME, { recursive: true, force: true }); seedProfile(HOME, { welcomed: false }, { fresh: true });
+  ({ app, page, errs } = await launch()); await mockOpen(app);
+  await page.waitForSelector("#tplDlg[open]");
+  ok(!(await isOpen(page, "#welcomeDlg")), "the folder question waits for the design");
+  await page.click("#tplAdd"); await page.waitForSelector("#tplGrid [data-tpl^=c]");
+  ok(!(await page.isDisabled("#tplNext")), "the added design is chosen");
+  await page.click("#tplNext"); await page.waitForSelector("#tplStep2", { state: "visible" });
+  eq([await page.inputValue("#wzname"), await page.inputValue("#wziban")], [OWN.name, OWN.iban], "the details step has the details from the Word file");
+  await page.click("#tplDone"); await page.waitForSelector("#welcomeDlg[open]"); ok(true, "after the design come the folders");
   await page.click("#wsLater");
   const s1 = data()["settings/main"];
-  eq([s1.template, s1.startNumber, s1.fileTemplate, s1.sender.iban, s1.sender.person], ["extreme", 17, "EXTREME BUILDING {nummer}", D1.iban, D1.person], "design, numbering, file name and details are saved");
-  await goTab(page, "settings");
-  eq([await page.textContent("#tplCurName"), await page.inputValue("#sdperson"), await page.inputValue("#sStart")], ["Extreme Building", "J. Jansen", "17"], "Settings shows the design and the details");
-  await setLang(page, "en");
-  eq(await page.textContent("#tplPanel .eyebrow"), "Invoice design", "the new panels are translated");
-  await setLang(page, "pl");
-  eq(await page.textContent("#detPanel .eyebrow"), "Twoje dane", "also in Polish");
-  await setLang(page, "nl");
-  ok(errs.length === 0, "no page errors in part 1: " + errs.join(" | ")); await app.close();
-  ({ app, page, errs } = await launch()); await page.waitForTimeout(1500);
-  ok(await page.evaluate(() => !document.querySelector("#tplDlg").open && !document.querySelector("#welcomeDlg").open), "a second start asks nothing again");
-  await app.close();
+  ok(/^c/.test(s1.template || "") && s1.builtins === false && s1.sender.iban === OWN.iban, "the own design and details are saved", s1.template);
+  ok(errs.length === 0, "no page errors in part 1b: " + errs.join(" | ")); await app.close();
 
   // ---------------------------------------------------------------- 2. an installation from before the designs: Valkyrys, nothing is asked
   fs.rmSync(HOME, { recursive: true, force: true }); fs.rmSync(INV, { recursive: true, force: true }); fs.mkdirSync(INV, { recursive: true });
@@ -71,8 +98,6 @@ const fillWz = async (page, p) => { for (const [k, v] of Object.entries(D1)) awa
   eq([await page.textContent("#tplCurName"), await page.inputValue("#sdname"), await page.inputValue("#sdiban")], ["Valkyrys", "Valkyrys", "NL42 INGB 0103 2069 73"], "its details are the Valkyrys ones");
   ok(await page.isHidden("#detBar"), "no warning about missing details");
 
-  const year = new Date().getFullYear(), PO = process.argv[3];
-  const file = (n, ext) => path.join(INV, `VALKYRYS ${n}-${year}.${ext}`);
   await goTab(page, "inv"); await page.setInputFiles("#file", PO); await page.waitForSelector("article.po h3");
   await dl(page, true); ok(await wait(() => fs.existsSync(file(62, "pdf")) && fs.existsSync(file(62, "docx"))), "an invoice is saved as PDF and Word");
   let t = pdfText(file(62, "pdf"));
@@ -82,6 +107,7 @@ const fillWz = async (page, p) => { for (const [k, v] of Object.entries(D1)) awa
   // change the design: the details of the other design are empty, so nothing can be made until they are filled in
   await page.click("button[data-act=remove]"); await goTab(page, "settings");
   await page.click("#tplChange"); await page.waitForSelector("#tplDlg[open]");
+  eq(await page.$$eval("#tplGrid [data-tpl]", (b) => b.map((x) => x.dataset.tpl)), ["valkyrys", "extreme"], "an older installation still has the built-in designs");
   ok(await page.isVisible("#tplDlgClose"), "changing the design can be cancelled");
   eq(await page.getAttribute("#tplGrid [data-tpl=valkyrys]", "aria-checked"), "true", "the current design is marked");
   await page.click("#tplGrid [data-tpl=extreme]"); await page.click("#tplNext");
@@ -121,9 +147,6 @@ const fillWz = async (page, p) => { for (const [k, v] of Object.entries(D1)) awa
   await app.close();
 
   // ---------------------------------------------------------------- 3. an own design: a Word file in the Extreme style with the person's details typed in
-  const JSZip = require("/opt/npm-tools/node_modules/jszip"), { OWN, makeCustomDocx } = require("./make_custom_docx.js");
-  const FIX = "/tmp/tpl-fixture/Bouw ontwerp.docx"; fs.mkdirSync(path.dirname(FIX), { recursive: true });
-  fs.writeFileSync(FIX, await makeCustomDocx(JSZip, fs.readFileSync(path.join(__dirname, "../tool/templates/extreme.docx"))));
   fs.rmSync(HOME, { recursive: true, force: true }); fs.rmSync(INV, { recursive: true, force: true }); fs.mkdirSync(INV, { recursive: true });
   seedProfile(HOME, { folder: INV });
   ({ app, page, errs } = await launch());

@@ -11,14 +11,15 @@ const goTab = (page, name) => page.click(TABS[name]);
 const setLang = (page, lang) => page.evaluate((v) => { const s = document.querySelector("#lang"); s.value = v; s.dispatchEvent(new Event("change", { bubbles: true })); }, lang);
 
 /** a profile that is set up: no PIN question, the first-start folder question already answered, and an invoice design chosen (the Valkyrys one unless opts.template says otherwise).
- *  `config` adds to config.json (folder, poFolder). opts.template === null writes no data.json at all, so the app shows its first-start design picker. Returns the data folder. */
+ *  `config` adds to config.json (folder, poFolder). opts.fresh (or opts.template === null) writes no data.json at all: a new install, which has no
+ *  invoice designs until one is added (the first-start picker shows an empty list). Returns the data folder. */
 function seedProfile(home, config = {}, opts = {}) {
   const dir = path.join(home, APP_DIR);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, "pin.json"), '{"v":1,"skipped":true}');
   fs.writeFileSync(path.join(dir, "config.json"), JSON.stringify({ welcomed: true, ...config }));
   const data = path.join(dir, "data.json");
-  if (opts.template !== null && !fs.existsSync(data)) {
+  if (opts.template !== null && !opts.fresh && !fs.existsSync(data)) {
     const { DEFAULT_SETTINGS } = require("../electron-app/server.js");
     fs.writeFileSync(data, JSON.stringify({ "settings/main": { ...DEFAULT_SETTINGS, template: opts.template === undefined ? "valkyrys" : opts.template } }));
   }

@@ -13,7 +13,7 @@ set -u
 SP=$(cd "$(dirname "$0")/.." && pwd); cd "$SP"
 EXE="$SP/el/linux/electron"
 LOGS="$SP/logs"; mkdir -p "$LOGS"
-ELECTRON_TESTS="newpo po stats import folder pin theme podetail realpo dups settings templates electron sequence splash saveas docs news delete"
+ELECTRON_TESTS="newpo po stats import folder pin theme podetail realpo dups settings templates electron sequence splash saveas docs news delete clients"
 
 toolchain() { { [ -x "$EXE" ] && [ -f dl/win.zip ]; } || bash tools/get_toolchain.sh; }   # Electron zips come from the "toolchain" branch when missing
 build() { toolchain && python3 -I tools/build_app.py && bash tools/sync_linux.sh; }

@@ -40,6 +40,7 @@ const choose = async (page, id) => { await page.click(`#themeGrid [data-theme-id
     await choose(page, id);
     eq([await css(page, "body", "backgroundColor"), await v(page, "--accent"), await css(page, "#appbar", "backgroundColor")], [rgb(bg), accent, rgb(band)], `${id}: page, accent and the app bar`);
     eq([await css(page, "#tabs .seg-ind", "backgroundColor"), await page.$eval("#appbar .brand img", (i) => i.getAttribute("src"))], [rgb(accent), logoSrc], `${id}: tab pill in the accent, logo untouched`);
+    await page.waitForTimeout(250); eq(await css(page, "#tabSettings", "backgroundColor"), rgb(accent), `${id}: the Settings gear (open) is filled with the accent`);
   }
   await choose(page, "midnight"); eq(await css(page, "button.primary, #npPick, #folderPick", "backgroundColor"), rgb("#6C9CFF"), "primary buttons use the theme accent");
 

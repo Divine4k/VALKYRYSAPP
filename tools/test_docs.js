@@ -54,7 +54,7 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
 
   let { app, page, errs } = await launch();
   const allErrs = () => errs;
-  eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.dataset.tab)), ["stats", "inv", "docs", "settings"], "four tabs, Documents third");
+  eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.dataset.tab)), ["stats", "inv", "docs"], "three work tabs, Documents third (Settings is the gear button)");
   await goTab(page, "docs");
   ok(await page.isVisible("#docsView") && !(await page.isVisible("#statsView")) && !(await page.isVisible("#viewInv")), "Documents tab opens");
   eq([await page.textContent("#pageTitle"), await page.textContent("#tagline")], ["Documenten", "Al je facturen met hun PDF, Word-bestand en inkooporder bij elkaar."], "page title and tagline");
@@ -198,7 +198,7 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
   for (const w of [900, 700, 390]) {
     await page.setViewportSize({ width: w, height: 900 }); await page.waitForTimeout(300);
     ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `fits a ${w}px window`);
-    ok(await page.evaluate(() => { const t = [...document.querySelectorAll("#tabs [role=tab]")]; return t.every((b) => b.scrollWidth <= b.clientWidth + 1 && b.getBoundingClientRect().right <= window.innerWidth); }), `all four tabs fit at ${w}px`);
+    ok(await page.evaluate(() => { const t = [...document.querySelectorAll("#tabs [role=tab], #tabSettings")]; return t.every((b) => b.scrollWidth <= b.clientWidth + 1 && b.getBoundingClientRect().right <= window.innerWidth); }), `all three tabs and the gear button fit at ${w}px`);
   }
   await page.waitForTimeout(300); { const [a, b] = [await page.locator("#tabs .seg-ind").boundingBox(), await page.locator("#tabDocs").boundingBox()]; ok(a && b && Math.abs(a.x - b.x) <= 2 && Math.abs(a.width - b.width) <= 2, "indicator under Documenten on a phone", { a, b }); }
   await page.screenshot({ path: "/tmp/docs_phone.png", fullPage: true });
