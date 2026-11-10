@@ -59,6 +59,13 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 .batch { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .batch p { margin: 0; color: var(--muted); }
+.saveopt { border: 1px solid var(--line); border-radius: var(--r); padding: 10px 14px 12px; margin: 0; display: flex; flex-direction: column; gap: 8px; background: var(--surface); }
+.saveopt legend { font-weight: 700; padding: 0 4px; font-size: 14px; }
+.saveopt label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; }
+.saveopt input { width: 18px; height: 18px; margin: 0; flex: 0 0 auto; accent-color: var(--ink); }
+.saveopt label.off { opacity: .55; cursor: default; }
+.saveopt small { color: var(--muted); }
+#saveDlg { width: min(520px, calc(100% - 24px)); }
 
 .po { display: flex; flex-direction: column; gap: 14px; }
 .po-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
@@ -215,6 +222,19 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .kpi .v { font-size: 28px; font-weight: 900; color: var(--ink); line-height: 1.1; margin-top: 4px; overflow-wrap: anywhere; }
 .kpi .s { font-size: 13px; color: var(--muted); margin-top: 6px; }
 .kpi .up { color: var(--ok); font-weight: 700; } .kpi .down { color: var(--warn); font-weight: 700; }
+.kpihead { display: flex; justify-content: flex-end; position: relative; margin-bottom: -8px; }
+.kpifbtn { min-height: 32px; padding: 4px 10px; font-size: 13px; color: var(--muted); background: transparent; }
+.kpifbtn:hover, .kpifbtn[aria-expanded="true"] { color: var(--ink); border-color: var(--accent); }
+.kpifbtn.custom svg { color: var(--accent); }
+.kpimenu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: min(330px, calc(100vw - 32px)); max-height: min(70vh, 560px); overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: 0 12px 32px rgba(0, 0, 0, .28); padding: 8px; }
+.kpimenu .kmt { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .04em; margin: 4px 8px 6px; }
+.kpimenu label { display: flex; gap: 10px; align-items: flex-start; padding: 7px 8px; border-radius: 6px; font-size: 14px; color: var(--ink); cursor: pointer; }
+.kpimenu label:hover { background: var(--sunken); }
+.kpimenu label.na { color: var(--muted); cursor: default; }
+.kpimenu label small { display: block; font-size: 12px; color: var(--muted); }
+.kpimenu input[type="checkbox"] { width: auto; min-height: 0; margin: 2px 0 0; accent-color: var(--accent); flex: 0 0 auto; }
+.kpimenu .kfoot { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 8px; display: flex; justify-content: flex-end; }
+.kpimenu .kfoot button { min-height: 32px; padding: 4px 10px; font-size: 13px; }
 .chart { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; margin-top: 10px; }
 .bc { display: flex; flex-direction: column; align-items: stretch; min-width: 0; text-align: center; }
 .bz { height: 232px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; border-bottom: 1px solid var(--line); }
@@ -251,6 +271,10 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .tplcur .small { margin: 0 0 10px; }
 .wact { margin-top: 16px; }
 #tplStep2 { display: flex; flex-direction: column; gap: 10px; }
+.tplitem { position: relative; display: flex; } .tplitem > .tplopt { flex: 1 1 auto; }
+.tplopt.tpladd { border-style: dashed; justify-content: center; align-items: center; text-align: center; min-height: 180px; }
+.tplopt .tplplus { font-size: 40px; line-height: 1; font-weight: 300; color: var(--muted); }
+.tplitem .tdel { position: absolute; top: 6px; right: 6px; min-height: 0; padding: 2px 9px; font-size: 16px; line-height: 1.2; background: var(--bg, #fff); }
 .look button.themebtn:hover { border-color: var(--muted); }
 /* duplicate days */
 .dupbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 18px; background: var(--warn-bg); border-color: transparent; }
@@ -499,6 +523,7 @@ window.ValkTheme = (function () {
       <p id="batchText"></p>
       <div class="actions">
         <button class="ghost" id="clear" type="button" data-i18n="clear">Lijst leegmaken</button>
+        <button id="saveAs" type="button" data-i18n="saveAs">Opslaan als…</button>
         <button class="primary" id="zipAll" type="button" data-i18n="zipAll">Alles downloaden (.zip)</button>
       </div>
     </div>
@@ -578,6 +603,7 @@ window.ValkTheme = (function () {
       <p class="small" style="margin:0" data-i18n="detIntro"></p>
       <form id="detForm" class="stack" novalidate>
         <div id="detFields" class="stack" style="margin:0"></div>
+        <p class="chip ok" id="detFromTpl" hidden data-i18n="detFromTpl"></p>
         <p class="chip warn" id="detWarn" hidden role="alert"></p>
         <button class="primary" type="submit" data-i18n="detSave">Gegevens opslaan</button>
       </form>
@@ -626,6 +652,10 @@ window.ValkTheme = (function () {
   <p class="empty" id="statsEmpty" hidden></p>
   <p class="small" id="scanNote" role="status" hidden></p>
   <div id="statsBody" class="col">
+    <div class="kpihead">
+      <button type="button" class="kpifbtn" id="kpiFilter" aria-haspopup="true" aria-expanded="false" aria-controls="kpiMenu"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M3 5h18l-7 8v5l-4 2v-7z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span data-i18n="kpiFilter">Tegels kiezen</span></button>
+      <div class="kpimenu" id="kpiMenu" role="group" hidden></div>
+    </div>
     <div class="kpis" id="kpis"></div>
     <div class="panel"><p class="eyebrow" id="chartTitle"></p><div class="chart" id="chart" role="img"></div></div>
     <div class="panel"><div class="tablewrap"><table class="stbl" id="stTable"></table></div></div>
@@ -700,15 +730,36 @@ window.ValkTheme = (function () {
     <div id="tplStep1">
       <p class="small" style="margin:0" id="tplIntro"></p>
       <div class="tplgrid" id="tplGrid" role="radiogroup" aria-labelledby="tplDlgTitle"></div>
+      <input type="file" id="tplFile" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+      <p class="chip warn" id="tplAddWarn" hidden role="alert"></p>
       <div class="frow wact"><button type="button" class="primary" id="tplNext" disabled></button></div>
     </div>
     <form id="tplStep2" hidden novalidate>
       <p class="small" style="margin:0" data-i18n="detIntroFirst"></p>
       <div id="wzFields" class="stack" style="margin:0"></div>
       <label class="f" for="wzstart"><span data-i18n="detStart">Begin bij factuurnummer (dit jaar)</span><input id="wzstart" type="number" min="1" step="1" inputmode="numeric"><small class="hint" data-i18n="detStartHint"></small></label>
+      <p class="chip ok" id="wzFromTpl" hidden data-i18n="detFromTpl"></p>
       <p class="chip warn" id="wzWarn" hidden role="alert"></p>
       <div class="frow wact"><button type="button" class="ghost" id="tplBack" data-i18n="tplBack">Terug</button><button type="submit" class="primary" id="tplDone" data-i18n="welcomeDone">Klaar</button><button type="button" class="ghost" id="tplLater" data-i18n="welcomeLater">Later</button></div>
     </form>
+  </div>
+</dialog>
+<dialog id="saveDlg" aria-labelledby="saveDlgTitle">
+  <div class="dlg-head"><strong id="saveDlgTitle" data-i18n="saveAsTitle">Opslaan als…</strong><button type="button" id="saveDlgClose" data-i18n="close">Sluiten</button></div>
+  <div class="dlg-body stack" style="margin:0">
+    <p class="small" style="margin:0" id="saveDlgIntro"></p>
+    <fieldset class="saveopt" id="saveModeSet">
+      <legend data-i18n="saveAsHow">Hoe opslaan?</legend>
+      <label id="saveModeDirWrap"><input type="radio" name="saveMode" id="saveModeDir" value="dir"><span data-i18n="saveAsDir">Losse bestanden in een map die ik kies</span></label>
+      <label><input type="radio" name="saveMode" id="saveModeZip" value="zip" checked><span data-i18n="saveAsZip">Eén .zip-bestand</span></label>
+    </fieldset>
+    <fieldset class="saveopt" id="saveWhat">
+      <legend data-i18n="saveAsWhat">Wat moet erin?</legend>
+      <label id="saveInPoWrap"><input type="checkbox" id="saveInPo"><span><span data-i18n="saveAsPo">Inkooporders (PDF's van de klant)</span> <small id="saveInPoNote"></small></span></label>
+      <label><input type="checkbox" id="saveInPdf" checked><span data-i18n="saveAsPdf">Facturen als PDF</span></label>
+      <label><input type="checkbox" id="saveInDocx" checked><span data-i18n="saveAsDocx">Facturen als Word (.docx)</span></label>
+    </fieldset>
+    <div class="frow wact" style="margin-top:4px"><button type="button" class="primary" id="saveGo" data-i18n="saveAsGo">Opslaan…</button></div>
   </div>
 </dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
@@ -756,6 +807,13 @@ window.ValkTheme = (function () {
       dropTitle: "Sleep inkooporders (PDF) hierheen",
       dropText: "Per PO wordt een factuur gemaakt: het ordernummer als omschrijving, de dagprijs als tarief en het aantal dagen als aantal.",
       pick: "Kies PDF-bestanden", clear: "Lijst leegmaken", zipAll: "Alles downloaden (.zip)",
+      saveAs: "Opslaan als…", saveAsTitle: "Opslaan als…", saveAsIntro: "{0} facturen: {1}. Kies waar en wat je wilt opslaan.", saveAsHow: "Hoe opslaan?",
+      saveAsDir: "Losse bestanden in een map die ik kies", saveAsZip: "Eén .zip-bestand", saveAsWhat: "Wat moet erin?",
+      saveAsPo: "Inkooporders (PO-PDF's)", saveAsPdf: "Facturen als PDF", saveAsDocx: "Facturen als Word (.docx)", saveAsGo: "Opslaan…",
+      saveAsPoNone: "(niet beschikbaar)", saveAsPoSome: "({0} van {1} beschikbaar)", saveAsZipName: "facturen-{0}.zip",
+      saveAsDirPick: "Kies een map om de bestanden in op te slaan", saveAsZipPick: "Opslaan als .zip",
+      saveAsDoneDir: "{0} bestanden opgeslagen in {1}.", saveAsDoneZip: "Opgeslagen als {0}.", saveAsNoPo: " Inkooporder niet beschikbaar voor: {0}.",
+      saveAsFail: "Opslaan lukte niet. Bestaat de map nog en heb je er schrijfrechten?", saveAsNothing: "Er was niets om op te slaan.",
       noCards: "Nog geen inkooporders toegevoegd. Je kunt er meerdere tegelijk in slepen; ze krijgen opeenvolgende factuurnummers.",
       next: "Volgende factuur", nextNote: "na de facturen hiernaast", settings: "Instellingen",
       sStart: "Begin bij factuurnummer (dit jaar)", sFile: "Bestandsnaam van facturen", sFileHint: "Gebruik {nummer}, {po}, {datum} en {klant}. Voorbeeld: {0}", sTerm: "Betaaltermijn", sBtw: "Standaard BTW",
@@ -847,6 +905,19 @@ window.ValkTheme = (function () {
       unitMonth: "per maand", unitQuarter: "per kwartaal",
       unitYear: "per jaar", kAvgWeek: "Gemiddeld per week",
       kBestWeek: "Beste week: {0} ({1})", tOrders: "Inkooporders",
+      kpiFilter: "Tegels kiezen", kpiMenuTitle: "Welke cijfers wil je zien?", kpiReset: "Standaard herstellen",
+      kpiOnlyInv: "alleen bij bron Facturen", kpiOnlyPoWork: "alleen bij inkooporders op werkdatum", kpiOnlyDesk: "alleen in de app",
+      kpiN_rev: "Omzet / orderwaarde", kpiN_count: "Aantal facturen / orders", kpiN_days: "Gewerkte dagen", kpiN_avg: "Gemiddeld per week of maand",
+      kpiN_inc: "Incl. BTW en BTW-bedrag", kpiN_best: "Beste maand of week", kpiN_perInv: "Gemiddeld per factuur / order", kpiN_rate: "Gemiddeld dagtarief",
+      kpiN_hours: "Gewerkte uren", kpiN_weeks: "Weken gewerkt", kpiN_weekday: "Drukste weekdag", kpiN_month: "Deze maand t.o.v. vorige maand",
+      kpiN_clients: "Klanten", kpiN_open: "Nog te factureren",
+      kInc: "Omzet (incl. BTW)", kIncSub: "waarvan BTW {0}", kBestMonthT: "Beste maand", kBestWeekT: "Beste week",
+      kPerInv: "Gemiddeld per factuur", kPerOrder: "Gemiddeld per inkooporder", kMaxOne: "hoogste {0}",
+      kRate: "Gemiddeld dagtarief", kRateHour: "≈ {0} per uur", kHours: "Gewerkte uren", kHoursSub: "gerekend met 8 uur per dag",
+      kWeeks: "Weken gewerkt", kWeeksSub: "gem. {0} dagen per gewerkte week", kWeekday: "Drukste weekdag", kWeekdaySub: "{0} dagen op deze dag",
+      kMonthNow: "Deze maand", kVsMonth: "{0} t.o.v. {1}", kPrevMonth: "{0}: {1}",
+      kClients: "Klanten", kClientsTop: "grootste: {0} ({1})",
+      kOpen: "Nog te factureren", kOpenSub: "{0} inkooporders zonder factuur", kOpenNone: "alles is gefactureerd", kOpenWait: "inkooporders worden nog gelezen…", kOpenNoFolder: "geen map met inkooporders gekozen",
       tValue: "Waarde (excl. BTW)", statsNotePo: "Gebaseerd op {0} inkooporders uit je map. Bedragen zijn zonder BTW.",
       poSplitNote: "Elke regel telt op de werkdatum uit de omschrijving van de PO. Een werkdag telt nooit als meer dan één dag.", unreadPo: "{0} bestanden in de map zijn niet als inkooporder gelezen",
       csvPo: "PO", csvOrderDate: "Orderdatum",
@@ -855,6 +926,9 @@ window.ValkTheme = (function () {
       tplTitle: "Factuurontwerp", tplCurHint: "Het ontwerp bepaalt de opmaak van je PDF en Word-bestand.", tplChange: "Ontwerp wijzigen…", tplDlgTitle: "Kies je factuurontwerp",
       tplIntroFirst: "Kies hoe je facturen eruitzien. Je kunt dit later altijd wijzigen bij Instellingen.", tplIntroChange: "Nieuwe facturen krijgen de nieuwe opmaak. Facturen die je al hebt gemaakt blijven zoals ze zijn.",
       tplNext: "Volgende", tplUse: "Dit ontwerp gebruiken", tplBack: "Terug", tplDesc_valkyrys: "Zwarte zijbalk met geel accent", tplDesc_extreme: "Zwarte kop en voet met goud",
+      tplAdd: "Nieuw ontwerp toevoegen…", tplAddHint: "Een Word-bestand (.docx) met [velden], zoals het Extreme-ontwerp", tplDesc_custom: "Eigen Word-ontwerp. Het Word-bestand volgt jouw ontwerp; de PDF krijgt de Valkyrys-opmaak met je logo en gegevens.",
+      tplAdded: "Ontwerp toegevoegd: {0}", tplAddFail: "Dit bestand kan niet als ontwerp worden gebruikt. Kies een Word-bestand (.docx).", tplRemove: "Ontwerp verwijderen",
+      tplRemoveAsk: "Ontwerp “{0}” verwijderen? Facturen die je al hebt gemaakt blijven zoals ze zijn.", detFromTpl: "Gegevens ingevuld uit het ontwerp. Controleer ze even.",
       detTitle: "Jouw gegevens", detIntro: "Deze gegevens staan op elke factuur.", detIntroFirst: "Vul je eigen gegevens in. Ze komen op elke factuur te staan en je kunt ze later wijzigen bij Instellingen.",
       dName: "Bedrijfsnaam", dPerson: "Naam onder de factuur", dStreet: "Straat en huisnummer", dCity: "Postcode en plaats", dPhone: "Telefoonnummer", dEmail: "E-mailadres", dIban: "IBAN", dBtw: "BTW-nummer", dKvk: "KVK-nummer",
       detSave: "Gegevens opslaan", detSaved: "Gegevens opgeslagen.", detStart: "Begin bij factuurnummer (dit jaar)", detStartHint: "Het eerstvolgende factuurnummer. Staan er al facturen in je map, dan telt de app door vanaf het hoogste nummer.",
@@ -876,6 +950,13 @@ window.ValkTheme = (function () {
       dropTitle: "Drop purchase orders (PDF) here",
       dropText: "One invoice is made per PO: the order number as description, the day rate as rate and the number of days as quantity.",
       pick: "Choose PDF files", clear: "Clear list", zipAll: "Download all (.zip)",
+      saveAs: "Save as…", saveAsTitle: "Save as…", saveAsIntro: "{0} invoices: {1}. Choose where and what to save.", saveAsHow: "How to save?",
+      saveAsDir: "Separate files into a folder I choose", saveAsZip: "One .zip file", saveAsWhat: "What goes in?",
+      saveAsPo: "Purchase orders (PO PDFs)", saveAsPdf: "Invoices PDF", saveAsDocx: "Invoices Word (.docx)", saveAsGo: "Save…",
+      saveAsPoNone: "(not available)", saveAsPoSome: "({0} of {1} available)", saveAsZipName: "invoices-{0}.zip",
+      saveAsDirPick: "Choose a folder to save the files in", saveAsZipPick: "Save as .zip",
+      saveAsDoneDir: "{0} files saved in {1}.", saveAsDoneZip: "Saved as {0}.", saveAsNoPo: " Purchase order not available for: {0}.",
+      saveAsFail: "Saving failed. Does the folder still exist and may you write to it?", saveAsNothing: "There was nothing to save.",
       noCards: "No purchase orders added yet. You can drop several at once; they get consecutive invoice numbers.",
       next: "Next invoice", nextNote: "after the invoices shown", settings: "Settings",
       sStart: "Start at invoice number (this year)", sFile: "Invoice file name", sFileHint: "Use {nummer} (number), {po}, {datum} (date) and {klant} (client). Example: {0}", sTerm: "Payment term", sBtw: "Default VAT",
@@ -967,6 +1048,19 @@ window.ValkTheme = (function () {
       unitMonth: "per month", unitQuarter: "per quarter",
       unitYear: "per year", kAvgWeek: "Average per week",
       kBestWeek: "Best week: {0} ({1})", tOrders: "Purchase orders",
+      kpiFilter: "Choose tiles", kpiMenuTitle: "Which figures do you want to see?", kpiReset: "Reset to default",
+      kpiOnlyInv: "only with source Invoices", kpiOnlyPoWork: "only for purchase orders by work date", kpiOnlyDesk: "only in the app",
+      kpiN_rev: "Revenue / order value", kpiN_count: "Number of invoices / orders", kpiN_days: "Days worked", kpiN_avg: "Average per week or month",
+      kpiN_inc: "Incl. VAT and VAT amount", kpiN_best: "Best month or week", kpiN_perInv: "Average per invoice / order", kpiN_rate: "Average day rate",
+      kpiN_hours: "Hours worked", kpiN_weeks: "Weeks worked", kpiN_weekday: "Busiest weekday", kpiN_month: "This month vs last month",
+      kpiN_clients: "Clients", kpiN_open: "Still to invoice",
+      kInc: "Revenue (incl. VAT)", kIncSub: "of which VAT {0}", kBestMonthT: "Best month", kBestWeekT: "Best week",
+      kPerInv: "Average per invoice", kPerOrder: "Average per purchase order", kMaxOne: "highest {0}",
+      kRate: "Average day rate", kRateHour: "≈ {0} per hour", kHours: "Hours worked", kHoursSub: "counted as 8 hours a day",
+      kWeeks: "Weeks worked", kWeeksSub: "avg. {0} days per week worked", kWeekday: "Busiest weekday", kWeekdaySub: "{0} days on this day",
+      kMonthNow: "This month", kVsMonth: "{0} vs {1}", kPrevMonth: "{0}: {1}",
+      kClients: "Clients", kClientsTop: "largest: {0} ({1})",
+      kOpen: "Still to invoice", kOpenSub: "{0} purchase orders without an invoice", kOpenNone: "everything is invoiced", kOpenWait: "still reading purchase orders…", kOpenNoFolder: "no purchase order folder chosen",
       tValue: "Value (excl. VAT)", statsNotePo: "Based on {0} purchase orders from your folder. Amounts exclude VAT.",
       poSplitNote: "Each line counts on the work date in its description. One work day never counts as more than one day.", unreadPo: "{0} files in the folder were not read as purchase orders",
       csvPo: "PO", csvOrderDate: "Order date",
@@ -975,6 +1069,9 @@ window.ValkTheme = (function () {
       tplTitle: "Invoice design", tplCurHint: "The design sets the layout of your PDF and Word file.", tplChange: "Change design…", tplDlgTitle: "Choose your invoice design",
       tplIntroFirst: "Choose how your invoices look. You can change this any time under Settings.", tplIntroChange: "New invoices get the new layout. Invoices you already made stay as they are.",
       tplNext: "Next", tplUse: "Use this design", tplBack: "Back", tplDesc_valkyrys: "Black sidebar with a yellow accent", tplDesc_extreme: "Black header and footer with gold",
+      tplAdd: "Add new design…", tplAddHint: "A Word file (.docx) with [fields], like the Extreme design", tplDesc_custom: "Your own Word design. The Word file follows your design; the PDF uses the Valkyrys layout with your logo and details.",
+      tplAdded: "Design added: {0}", tplAddFail: "This file can’t be used as a design. Choose a Word file (.docx).", tplRemove: "Remove design",
+      tplRemoveAsk: "Remove design “{0}”? Invoices you already made stay as they are.", detFromTpl: "Details filled in from the design. Please check them.",
       detTitle: "Your details", detIntro: "These details are printed on every invoice.", detIntroFirst: "Enter your own details. They are printed on every invoice and you can change them later under Settings.",
       dName: "Company name", dPerson: "Name under the invoice", dStreet: "Street and number", dCity: "Postcode and city", dPhone: "Phone number", dEmail: "E-mail address", dIban: "IBAN", dBtw: "VAT number", dKvk: "KVK number (Chamber of Commerce)",
       detSave: "Save details", detSaved: "Details saved.", detStart: "Start at invoice number (this year)", detStartHint: "The next invoice number. If your folder already has invoices, the app continues from the highest number.",
@@ -996,6 +1093,13 @@ window.ValkTheme = (function () {
       dropTitle: "Przeciągnij tutaj zamówienia zakupu (PDF)",
       dropText: "Dla każdego zamówienia powstaje jedna faktura: numer zamówienia jako opis, stawka dzienna jako stawka, a liczba dni jako ilość.",
       pick: "Wybierz pliki PDF", clear: "Wyczyść listę", zipAll: "Pobierz wszystko (.zip)",
+      saveAs: "Zapisz jako…", saveAsTitle: "Zapisz jako…", saveAsIntro: "Faktury ({0}): {1}. Wybierz, gdzie i co zapisać.", saveAsHow: "Jak zapisać?",
+      saveAsDir: "Osobne pliki w wybranym folderze", saveAsZip: "Jeden plik .zip", saveAsWhat: "Co ma się znaleźć w środku?",
+      saveAsPo: "Zamówienia zakupu (PDF-y PO)", saveAsPdf: "Faktury PDF", saveAsDocx: "Faktury Word (.docx)", saveAsGo: "Zapisz…",
+      saveAsPoNone: "(niedostępne)", saveAsPoSome: "(dostępne: {0} z {1})", saveAsZipName: "faktury-{0}.zip",
+      saveAsDirPick: "Wybierz folder do zapisania plików", saveAsZipPick: "Zapisz jako .zip",
+      saveAsDoneDir: "Zapisano plików: {0} w {1}.", saveAsDoneZip: "Zapisano jako {0}.", saveAsNoPo: " Brak zamówienia zakupu dla: {0}.",
+      saveAsFail: "Zapis nie powiódł się. Czy folder nadal istnieje i masz do niego prawa zapisu?", saveAsNothing: "Nie było nic do zapisania.",
       noCards: "Nie dodano jeszcze zamówień. Możesz przeciągnąć kilka naraz; dostaną kolejne numery faktur.",
       next: "Następna faktura", nextNote: "po pokazanych fakturach", settings: "Ustawienia",
       sStart: "Zacznij od numeru faktury (w tym roku)", sFile: "Nazwa pliku faktury", sFileHint: "Użyj {nummer} (numer), {po}, {datum} (data) i {klant} (klient). Przykład: {0}", sTerm: "Termin płatności", sBtw: "Domyślny VAT",
@@ -1087,6 +1191,19 @@ window.ValkTheme = (function () {
       unitMonth: "miesięcznie", unitQuarter: "kwartalnie",
       unitYear: "rocznie", kAvgWeek: "Średnio na tydzień",
       kBestWeek: "Najlepszy tydzień: {0} ({1})", tOrders: "Zamówienia zakupu",
+      kpiFilter: "Wybierz kafelki", kpiMenuTitle: "Które dane chcesz widzieć?", kpiReset: "Przywróć domyślne",
+      kpiOnlyInv: "tylko przy źródle Faktury", kpiOnlyPoWork: "tylko dla zamówień wg daty pracy", kpiOnlyDesk: "tylko w aplikacji",
+      kpiN_rev: "Przychód / wartość zamówień", kpiN_count: "Liczba faktur / zamówień", kpiN_days: "Przepracowane dni", kpiN_avg: "Średnio na tydzień lub miesiąc",
+      kpiN_inc: "Z VAT i kwota VAT", kpiN_best: "Najlepszy miesiąc lub tydzień", kpiN_perInv: "Średnio na fakturę / zamówienie", kpiN_rate: "Średnia stawka dzienna",
+      kpiN_hours: "Przepracowane godziny", kpiN_weeks: "Przepracowane tygodnie", kpiN_weekday: "Najbardziej pracowity dzień tygodnia", kpiN_month: "Ten miesiąc a poprzedni",
+      kpiN_clients: "Klienci", kpiN_open: "Do zafakturowania",
+      kInc: "Przychód (z VAT)", kIncSub: "w tym VAT {0}", kBestMonthT: "Najlepszy miesiąc", kBestWeekT: "Najlepszy tydzień",
+      kPerInv: "Średnio na fakturę", kPerOrder: "Średnio na zamówienie", kMaxOne: "najwyższa {0}",
+      kRate: "Średnia stawka dzienna", kRateHour: "≈ {0} za godzinę", kHours: "Przepracowane godziny", kHoursSub: "licząc 8 godzin dziennie",
+      kWeeks: "Przepracowane tygodnie", kWeeksSub: "śr. {0} dni na przepracowany tydzień", kWeekday: "Najbardziej pracowity dzień", kWeekdaySub: "{0} dni w ten dzień",
+      kMonthNow: "Ten miesiąc", kVsMonth: "{0} wobec {1}", kPrevMonth: "{0}: {1}",
+      kClients: "Klienci", kClientsTop: "największy: {0} ({1})",
+      kOpen: "Do zafakturowania", kOpenSub: "Zamówienia bez faktury: {0}", kOpenNone: "wszystko zafakturowane", kOpenWait: "zamówienia są jeszcze czytane…", kOpenNoFolder: "nie wybrano folderu z zamówieniami",
       tValue: "Wartość (bez VAT)", statsNotePo: "Na podstawie {0} zamówień zakupu z Twojego folderu. Kwoty bez VAT.",
       poSplitNote: "Każda pozycja liczy się w dniu roboczym z opisu. Jeden dzień roboczy nigdy nie liczy się jako więcej niż jeden dzień.", unreadPo: "Pliki w folderze nieodczytane jako zamówienia zakupu: {0}",
       csvPo: "PO", csvOrderDate: "Data zamówienia",
@@ -1095,6 +1212,9 @@ window.ValkTheme = (function () {
       tplTitle: "Wzór faktury", tplCurHint: "Wzór określa układ pliku PDF i Word.", tplChange: "Zmień wzór…", tplDlgTitle: "Wybierz wzór faktury",
       tplIntroFirst: "Wybierz wygląd swoich faktur. Zawsze możesz to zmienić w Ustawieniach.", tplIntroChange: "Nowe faktury dostaną nowy układ. Faktury, które już wystawiłeś, pozostają bez zmian.",
       tplNext: "Dalej", tplUse: "Użyj tego wzoru", tplBack: "Wstecz", tplDesc_valkyrys: "Czarny pasek boczny z żółtym akcentem", tplDesc_extreme: "Czarny nagłówek i stopka ze złotem",
+      tplAdd: "Dodaj nowy wzór…", tplAddHint: "Plik Word (.docx) z [polami], jak wzór Extreme", tplDesc_custom: "Własny wzór Word. Plik Word wygląda jak Twój wzór; PDF ma układ Valkyrys z Twoim logo i danymi.",
+      tplAdded: "Dodano wzór: {0}", tplAddFail: "Tego pliku nie można użyć jako wzoru. Wybierz plik Word (.docx).", tplRemove: "Usuń wzór",
+      tplRemoveAsk: "Usunąć wzór „{0}”? Faktury, które już wystawiłeś, pozostają bez zmian.", detFromTpl: "Dane uzupełnione ze wzoru. Sprawdź je.",
       detTitle: "Twoje dane", detIntro: "Te dane są na każdej fakturze.", detIntroFirst: "Wpisz własne dane. Będą na każdej fakturze, a później możesz je zmienić w Ustawieniach.",
       dName: "Nazwa firmy", dPerson: "Imię i nazwisko pod fakturą", dStreet: "Ulica i numer", dCity: "Kod pocztowy i miejscowość", dPhone: "Numer telefonu", dEmail: "Adres e-mail", dIban: "IBAN", dBtw: "Numer VAT (BTW)", dKvk: "Numer KVK",
       detSave: "Zapisz dane", detSaved: "Dane zapisane.", detStart: "Zacznij od numeru faktury (w tym roku)", detStartHint: "Następny numer faktury. Jeśli w folderze są już faktury, aplikacja liczy dalej od najwyższego numeru.",
@@ -1168,6 +1288,7 @@ window.ValkTheme = (function () {
     for (const f of list) {
       if (!/\.pdf$/i.test(f.name) && f.type !== "application/pdf") { toast(tr("notPdf", f.name)); continue; }
       const card = { id: "c" + (++state.seq), fileName: f.name };
+      try { card.poBytes = new Uint8Array(await f.arrayBuffer()); } catch (e) {} // the original PO, for "Save as…" (own copy: pdf.js may take over its buffer)
       try {
         const parsed = await readPdf(f);
         const year = new Date().getFullYear();
@@ -1195,9 +1316,9 @@ window.ValkTheme = (function () {
   }
   /** the design and details a saved invoice was made with (invoices from before the designs existed are in the first design) */
   function recordLook(rec) { const id = TP.get(rec && rec.template).id; return { template: id, sender: TP.forRender(TP.senderFor(id, rec && rec.sender)) }; }
-  async function buildPdf(data) { return TP.renderPdf(PDFLib, await loadAssets(), data, core); }
+  async function buildPdf(data) { const assets = await loadAssets(); await customReady(data.template); return TP.renderPdf(PDFLib, assets, data, core); }
   async function buildWord(data) {
-    const assets = await loadAssets();
+    const assets = await loadAssets(); await customReady(data.template);
     if (!window.docx || !window.InvoiceDocx) throw new Error("docx");
     return TP.buildWord({ docx: window.docx, InvoiceDocx: window.InvoiceDocx, JSZip: window.JSZip }, assets, data, core);
   }
@@ -1289,6 +1410,79 @@ window.ValkTheme = (function () {
         for (const [c, data] of made) await logInvoice(c, data);
         toast(made.length === 1 ? tr("downloadedOne") : tr("downloadedMany", made.length));
       }
+    } catch (e) { toast(tr("buildFailMany")); }
+    busy(btn, false); render();
+  }
+
+  // ---- "Save as…": the ready invoices (and the POs they came from) to any folder, or as one .zip with chosen contents
+  const readyCards = () => state.cards.filter((c) => !c.error);
+  /** e.g. "62-68-2026" (one year), "62-2026" (one invoice), "62-2026-3-2027" (two years) */
+  function rangeLabel(cards) {
+    const s = [...cards].sort((a, b) => a.jaar - b.jaar || a.nummer - b.nummer), f = s[0], l = s[s.length - 1];
+    if (!f) return "";
+    if (f === l || nr(f) === nr(l)) return nr(f);
+    return f.jaar === l.jaar ? `${f.nummer}-${l.nummer}-${f.jaar}` : `${nr(f)}-${nr(l)}`;
+  }
+  const zipName = (cards) => tr("saveAsZipName", rangeLabel(cards));
+  const poFileName = (c) => { let n = String(c.fileName || (c.po || "PO") + ".pdf").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").trim() || "PO.pdf"; if (!/\.pdf$/i.test(n)) n += ".pdf"; return n; };
+  function saveDlgSync() {
+    const ready = readyCards(), withPo = ready.filter((c) => c.poBytes && c.poBytes.length).length;
+    const po = $("#saveInPo"), any = $("#saveInPo").checked || $("#saveInPdf").checked || $("#saveInDocx").checked;
+    po.disabled = !withPo; if (!withPo) po.checked = false;
+    $("#saveInPoWrap").classList.toggle("off", !withPo);
+    $("#saveInPoNote").textContent = !withPo ? tr("saveAsPoNone") : withPo < ready.length ? tr("saveAsPoSome", withPo, ready.length) : "";
+    $("#saveModeDirWrap").hidden = !desk; if (!desk) $("#saveModeZip").checked = true;
+    $("#saveDlgIntro").textContent = tr("saveAsIntro", ready.length, ready.map(nr).join(", "));
+    $("#saveGo").disabled = !any || !ready.length;
+  }
+  function openSaveAs() {
+    const ready = readyCards(); if (!ready.length) return;
+    if (!detailsOk()) return needDetails();
+    $("#saveInPo").checked = ready.some((c) => c.poBytes && c.poBytes.length); $("#saveInPdf").checked = true; $("#saveInDocx").checked = true;
+    saveDlgSync(); const d = $("#saveDlg"); if (!d.open) d.showModal();
+  }
+  async function saveAsRun() {
+    const ready = readyCards(); if (!ready.length) return;
+    if (!detailsOk()) { $("#saveDlg").close(); return needDetails(); }
+    const want = { po: $("#saveInPo").checked && !$("#saveInPo").disabled, pdf: $("#saveInPdf").checked, docx: $("#saveInDocx").checked };
+    if (!want.po && !want.pdf && !want.docx) return;
+    const mode = desk && $("#saveModeDir").checked ? "dir" : "zip", zname = zipName(ready);
+    let target = ""; // ask where first, so cancelling costs nothing
+    try {
+      if (desk && mode === "dir") { const r = await desk.pickAnyDir(tr("saveAsDirPick")); if (!r || r.canceled || !r.dir) return; target = r.dir; }
+      else if (desk) { const r = await desk.saveAsZip(zname, tr("saveAsZipPick")); if (!r || r.canceled || !r.path) return; target = r.path; }
+    } catch (e) { toast(tr("saveAsFail")); return; }
+    $("#saveDlg").close();
+    const btn = $("#saveAs"); busy(btn, true);
+    try {
+      const files = [], made = [], noPo = [];
+      for (const c of ready) {
+        const data = invoiceData(c);
+        if (want.pdf) files.push([fileName(data, c.po), await buildPdf(data)]);
+        if (want.docx) { try { files.push([fileName(data, c.po, "docx"), await buildWord(data)]); } catch (e) {} }
+        if (want.po) { if (c.poBytes && c.poBytes.length) files.push([poFileName(c), c.poBytes]); else noPo.push(c.po || c.fileName); }
+        made.push([c, data]);
+      }
+      if (!files.length) { toast(tr("saveAsNothing")); busy(btn, false); return; }
+      const seen = new Set(); // two POs with the same file name: keep both
+      for (const f of files) { let n = f[0]; const ext = n.slice(n.lastIndexOf(".")), base = n.slice(0, -ext.length); for (let i = 2; seen.has(n.toLowerCase()); i++) n = `${base} (${i})${ext}`; seen.add(n.toLowerCase()); f[0] = n; }
+      let ok = false, msg = "";
+      if (mode === "dir") {
+        let n = 0;
+        for (const [name, b] of files) { const bytes = b instanceof Blob ? new Uint8Array(await b.arrayBuffer()) : b; const r = await desk.saveToDir(target, name, bytes); if (!(r && r.ok)) break; n++; }
+        ok = n === files.length; msg = ok ? tr("saveAsDoneDir", n, target) : tr("saveAsFail");
+      } else {
+        const zip = new JSZip(); for (const [name, bytes] of files) zip.file(name, bytes);
+        const bytes = await zip.generateAsync({ type: "uint8array" });
+        if (desk) { const r = await desk.writePicked(target, bytes); ok = !!(r && r.ok); msg = ok ? tr("saveAsDoneZip", r.name || target) : tr("saveAsFail"); }
+        else { ok = await save(zname, new Blob([bytes], { type: "application/zip" }), { plain: true }); msg = ok ? tr("downloaded", zname) : ""; }
+      }
+      if (ok && (want.pdf || want.docx)) { // the invoices are made: record them like the normal save does (once; saving again elsewhere adds nothing)
+        for (const [c, data] of made) if (!(c.done && state.invoices.has(data.factuurnr))) await logInvoice(c, data);
+      }
+      if (ok && noPo.length) msg += tr("saveAsNoPo", noPo.join(", "));
+      if (msg) toast(msg);
+      if (ok && folderSet()) refreshFolder();
     } catch (e) { toast(tr("buildFailMany")); }
     busy(btn, false); render();
   }
@@ -1564,10 +1758,15 @@ window.ValkTheme = (function () {
     if (desk && (sv.src === "pos" || sv.src === "invoices")) state.statSource = sv.src;
     if (["week", "month", "quarter", "year"].includes(sv.mode)) state.statMode = sv.mode;
     if (sv.basis === "order" || sv.basis === "work") state.poBasis = sv.basis;
+    if (Array.isArray(sv.tiles)) state.kpiTiles = sv.tiles.filter((k) => KPI_ALL.includes(k));
   }
+  // the statistic tiles: which ones show is the person's choice (filter button above the tiles); shown in the order of KPI_ALL
+  const KPI_DEFAULT = ["rev", "count", "days", "avg"];
+  const KPI_ALL = ["rev", "count", "days", "avg", "inc", "best", "perInv", "rate", "hours", "weeks", "weekday", "month", "clients", "open"];
+  state.kpiTiles = KPI_DEFAULT.slice();
   try { applyStatPrefs(JSON.parse(localStorage.getItem(STAT_KEY) || "{}")); } catch (e) {}
   const saveStatPrefs = () => { // remembered in the browser storage and in the saved data (survives a restart for sure)
-    const v = { src: state.statSource, mode: state.statMode, basis: state.poBasis };
+    const v = { src: state.statSource, mode: state.statMode, basis: state.poBasis, tiles: state.kpiTiles.slice() };
     try { localStorage.setItem(STAT_KEY, JSON.stringify(v)); } catch (e) {}
     if (state.db) { try { state.db.doc("settings/statprefs").set(v); } catch (e) {} }
   };
@@ -1927,6 +2126,90 @@ window.ValkTheme = (function () {
     if (un.length) { $("#unreadSum").textContent = tr(po ? "unreadPo" : "unread", un.length); $("#unreadList").innerHTML = un.slice(0, 40).map((x) => `<li>${esc(x)}</li>`).join("") + (un.length > 40 ? `<li>…</li>` : ""); }
   }
 
+  /** can this tile show with the current source? (some figures only exist for invoices, for POs by work date, or in the desktop app) */
+  function kpiAvail(k) {
+    const po = state.statSource === "pos";
+    if (k === "inc" && po) return { ok: false, why: "kpiOnlyInv" };
+    if (k === "weekday" && !(po && state.poBasis === "work")) return { ok: false, why: "kpiOnlyPoWork" };
+    if (k === "open" && !desk) return { ok: false, why: "kpiOnlyDesk" };
+    return { ok: true };
+  }
+  /** the extra tiles (beyond the four default ones), from the same rows as the rest of the statistics */
+  function kpiExtras({ list, scope, A, po, mode, sel, cy, now, best }) {
+    const tile = (label, value, sub) => `<div class="kpi"><p class="eyebrow">${esc(label)}</p><div class="v num">${esc(value)}</div><div class="s">${sub}</div></div>`;
+    const pct = (a, b) => { const p = Math.round((a - b) / b * 100); return { cls: p >= 0 ? "up" : "down", txt: (p >= 0 ? "+" : "−") + Math.abs(p) + "%" }; };
+    return {
+      inc: () => tile(tr("kInc"), eur0(A.total), esc(tr("kIncSub", eur0(A.vat)))),
+      best: () => {
+        if (!best) return tile(tr(mode === "week" ? "kBestWeekT" : "kBestMonthT"), "–", "");
+        if (mode === "week") return tile(tr("kBestWeekT"), eur0(best.a.sub), esc(`${tr("week")} ${best.wn} · ${weekRange(new Date(best.t))}`));
+        return tile(tr("kBestMonthT"), eur0(best.v), esc(`${monthName(best.k % 12)} ${Math.floor(best.k / 12)}`));
+      },
+      perInv: () => {
+        const per = new Map(); scope.forEach((x) => per.set(x.key, (per.get(x.key) || 0) + x.sub));
+        const max = Math.max(0, ...per.values());
+        return tile(tr(po ? "kPerOrder" : "kPerInv"), A.n ? eur0(A.sub / A.n) : "–", esc(max ? tr("kMaxOne", eur0(max)) : ""));
+      },
+      rate: () => tile(tr("kRate"), A.days ? eur0(A.sub / A.days) : "–", esc(A.days ? tr("kRateHour", eur0(A.sub / A.days / 8)) : "")),
+      hours: () => tile(tr("kHours"), core.qty(core.round2(A.days * 8)), esc(tr("kHoursSub"))),
+      weeks: () => {
+        const wk = new Set(scope.filter((x) => x.days > 0).map((x) => mondayOf(x.y, x.mo, x.d).getTime()));
+        return tile(tr("kWeeks"), String(wk.size), esc(wk.size ? tr("kWeeksSub", core.qty(core.round2(A.days / wk.size))) : ""));
+      },
+      weekday: () => { // POs by work date: each row is a real work day
+        const per = Array(7).fill(0); scope.forEach((x) => { per[(new Date(Date.UTC(x.y, x.mo, x.d)).getUTCDay() + 6) % 7] += x.days; });
+        const i = per.reduce((m, v, j) => (v > per[m] ? j : m), 0);
+        if (!per[i]) return tile(tr("kWeekday"), "–", "");
+        return tile(tr("kWeekday"), cap(new Date(2024, 0, 1 + i).toLocaleDateString(state.lang, { weekday: "long" })), esc(tr("kWeekdaySub", core.qty(core.round2(per[i])))));
+      },
+      month: () => { // the current month (or the last month of a past year) against the month before it, over all rows so January compares with December
+        const ref = mode === "year" || sel === cy ? cy * 12 + now.getMonth() : sel < cy ? sel * 12 + 11 : sel * 12;
+        const sum = (k) => list.reduce((t, x) => t + (x.y * 12 + x.mo === k ? x.sub : 0), 0);
+        const cur = sum(ref), prev = sum(ref - 1), pm = monthName((ref - 1) % 12);
+        const label = ref === cy * 12 + now.getMonth() ? tr("kMonthNow") : `${monthName(ref % 12)} ${Math.floor(ref / 12)}`;
+        if (!prev) return tile(label, eur0(cur), esc(tr("kPrevMonth", pm, eur0(0))));
+        const p = pct(cur, prev);
+        return tile(label, eur0(cur), `<span class="${p.cls}">${esc(tr("kVsMonth", p.txt, `${pm} (${eur0(prev)})`))}</span>`);
+      },
+      clients: () => {
+        const c = new Map(); scope.forEach((x) => { const k = x.client || tr("noClient"); c.set(k, (c.get(k) || 0) + x.sub); });
+        const top = [...c.entries()].sort((a, b) => b[1] - a[1])[0];
+        return tile(tr("kClients"), String(c.size), esc(top ? tr("kClientsTop", top[0], (A.sub ? Math.round(top[1] / A.sub * 100) : 0) + "%") : ""));
+      },
+      open: () => { // POs in the folder that have no invoice yet (same list as "New purchase orders" on the Invoices tab); not tied to the chosen year
+        const f = state.poFolder;
+        if (!f || !f.exists) return tile(tr("kOpen"), "–", esc(tr("kOpenNoFolder")));
+        if (state.poScanSig === "" || !state.invoicesLoaded || !state.folderScanned) return tile(tr("kOpen"), "…", esc(tr("kOpenWait")));
+        const { show } = newPoItems(), val = show.reduce((t, { r }) => t + r.items.reduce((a, i) => a + (isFinite(i.total) ? i.total : 0), 0), 0);
+        return tile(tr("kOpen"), eur0(val), esc(show.length ? tr("kOpenSub", show.length) : tr("kOpenNone")));
+      },
+    };
+  }
+  function renderKpiMenu() {
+    const a = document.activeElement, fk = a && a.dataset && a.dataset.kpi, fr = a && a.id === "kpiReset"; // keep the focus where it was
+    $("#kpiMenu").innerHTML =`<p class="kmt">${esc(tr("kpiMenuTitle"))}</p>` + KPI_ALL.map((k) => {
+      const av = kpiAvail(k), on = state.kpiTiles.includes(k);
+      return `<label class="${av.ok ? "" : "na"}"><input type="checkbox" data-kpi="${k}"${on ? " checked" : ""}><span>${esc(tr("kpiN_" + k))}${av.ok ? "" : `<small>${esc(tr(av.why))}</small>`}</span></label>`;
+    }).join("") + `<div class="kfoot"><button type="button" class="ghost" id="kpiReset">${esc(tr("kpiReset"))}</button></div>`;
+    const back = fk ? $("#kpiMenu").querySelector(`input[data-kpi="${fk}"]`) : fr ? $("#kpiReset") : null; if (back) back.focus();
+  }
+  const kpiMenuOpen = (on) => {
+    $("#kpiMenu").hidden = !on; $("#kpiFilter").setAttribute("aria-expanded", String(on));
+    if (on) { renderKpiMenu(); const c = $("#kpiMenu").querySelector("input"); if (c) c.focus(); }
+  };
+  $("#kpiFilter").addEventListener("click", () => kpiMenuOpen($("#kpiMenu").hidden));
+  $("#kpiMenu").addEventListener("change", (e) => {
+    const c = e.target.closest("input[data-kpi]"); if (!c) return;
+    const set = new Set(state.kpiTiles); if (c.checked) set.add(c.dataset.kpi); else set.delete(c.dataset.kpi);
+    state.kpiTiles = KPI_ALL.filter((k) => set.has(k)); saveStatPrefs(); renderStats();
+  });
+  $("#kpiMenu").addEventListener("click", (e) => {
+    if (!e.target.closest("#kpiReset")) return;
+    state.kpiTiles = KPI_DEFAULT.slice(); saveStatPrefs(); renderStats(); renderKpiMenu();
+  });
+  document.addEventListener("click", (e) => { if (!$("#kpiMenu").hidden && !e.target.closest(".kpihead")) kpiMenuOpen(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#kpiMenu").hidden) { kpiMenuOpen(false); $("#kpiFilter").focus(); e.preventDefault(); } });
+
   function renderStats() {
     const { list, undated } = statData();
     const { years, sel, cy, now } = statScope();
@@ -1983,11 +2266,17 @@ window.ValkTheme = (function () {
     }
     const scopeTxt = mode === "year" ? tr("scopeAll") : tr("scopeYear", sel);
     const tile = (label, value, sub) => `<div class="kpi"><p class="eyebrow">${esc(label)}</p><div class="v num">${esc(value)}</div><div class="s">${sub}</div></div>`;
-    $("#kpis").innerHTML =
-      tile(tr(po ? "kOrdered" : "kRevenue"), eur0(A.sub), cmp || esc(scopeTxt)) +
-      tile(tr(po ? "kOrders" : "kInvoices"), String(A.n), esc(A.n ? tr(po ? "kAvgOrder" : "kAvgInvoice", eur0(A.sub / A.n)) : "")) +
-      tile(tr("kDays"), core.qty(A.days), esc(A.days ? tr("kAvgRate", eur0(A.sub / A.days)) : "")) +
-      tile(tr(unitsLabel), eur0(A.sub / units), esc(best ? bestText : ""));
+    const tiles = {
+      rev: () => tile(tr(po ? "kOrdered" : "kRevenue"), eur0(A.sub), cmp || esc(scopeTxt)),
+      count: () => tile(tr(po ? "kOrders" : "kInvoices"), String(A.n), esc(A.n ? tr(po ? "kAvgOrder" : "kAvgInvoice", eur0(A.sub / A.n)) : "")),
+      days: () => tile(tr("kDays"), core.qty(A.days), esc(A.days ? tr("kAvgRate", eur0(A.sub / A.days)) : "")),
+      avg: () => tile(tr(unitsLabel), eur0(A.sub / units), esc(best ? bestText : "")),
+      ...kpiExtras({ list, scope, A, po, mode, sel, cy, now, best }),
+    };
+    $("#kpis").innerHTML = KPI_ALL.filter((k) => state.kpiTiles.includes(k) && kpiAvail(k).ok && tiles[k]).map((k) => tiles[k]().replace('<div class="kpi">', `<div class="kpi" data-k="${k}">`)).join("");
+    $("#kpis").hidden = !$("#kpis").children.length;
+    $("#kpiFilter").classList.toggle("custom", state.kpiTiles.join() !== KPI_DEFAULT.join());
+    if (!$("#kpiMenu").hidden) renderKpiMenu();
 
     // ---- chart
     const unitKey = { week: "unitWeek", month: "unitMonth", quarter: "unitQuarter", year: "unitYear" }[mode];
@@ -2285,6 +2574,10 @@ window.ValkTheme = (function () {
     busy(b, false);
   });
   $("#zipAll").addEventListener("click", (e) => downloadAll(e.currentTarget));
+  $("#saveAs").addEventListener("click", openSaveAs);
+  $("#saveDlgClose").addEventListener("click", () => $("#saveDlg").close());
+  ["#saveInPo", "#saveInPdf", "#saveInDocx", "#saveModeDir", "#saveModeZip"].forEach((s) => $(s).addEventListener("change", saveDlgSync));
+  $("#saveGo").addEventListener("click", saveAsRun);
   $("#clear").addEventListener("click", () => { state.cards = []; render(); });
   $("#dlgClose").addEventListener("click", () => $("#dlg").close());
 
@@ -2360,15 +2653,86 @@ window.ValkTheme = (function () {
   function renderTplUi() {
     const id = currentTemplate(), t = TP.get(id), miss = TP.missing(currentSender());
     const img = $("#tplCurImg"); if (img.getAttribute("src") !== t.preview) img.src = t.preview;
-    $("#tplCurName").textContent = t.name; $("#tplCurDesc").textContent = tr("tplDesc_" + id);
+    $("#tplCurName").textContent = t.name; $("#tplCurDesc").textContent = tplDesc(t);
     $("#detWarn").hidden = !miss.length; $("#detWarn").textContent = miss.length ? tr("detMissing", missingLabels(miss)) : "";
     $("#detBar").hidden = !miss.length; $("#detBarText").textContent = miss.length ? tr("detBar", missingLabels(miss)) : "";
   }
-  const syncDesign = () => { if (!$("#detForm").contains(document.activeElement)) fillDetails("sd", currentSender()); renderTplUi(); };
+  const tplDesc = (t) => tr(t.custom ? "tplDesc_custom" : "tplDesc_" + t.id);
 
-  let tplMode = "change", tplPick = "";
+  // Own designs: Word files the person imported. settings.customTemplates = [{ id, name, file }] (file in <data folder>/templates, read through the
+  // desktop app); the browser version keeps the file itself in the list (b64). The designs are listed at once and their files are read afterwards.
+  const customLoads = new Map();
+  const toB64 = (u8) => { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+  const fromB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+  const customReady = (id) => customLoads.get(id) || Promise.resolve(null);
+  function syncCustoms() {
+    const entries = Array.isArray(state.settings.customTemplates) ? state.settings.customTemplates : [];
+    for (const t of TP.setCustomList(entries)) {
+      if (t.bytes || customLoads.has(t.id)) continue;
+      const e = entries.find((c) => c.id === t.id) || {};
+      customLoads.set(t.id, (async () => {
+        const raw = e.b64 ? fromB64(e.b64) : desk && desk.readTemplate && e.file ? await desk.readTemplate(e.file) : null;
+        if (!raw || !window.JSZip) return null;
+        await TP.loadCustom(JSZip, t.id, new Uint8Array(raw));
+        if (currentTemplate() === t.id) syncDesign(); else renderTplUi();
+        if ($("#tplDlg").open && !$("#tplStep1").hidden) renderTplDlg();
+        return t;
+      })().catch(() => null));
+    }
+  }
+  /** a design's own details go into the fields the person left empty (or that still hold the previous design's details); returns the filled fields */
+  function fillFromDesign(stored, t, old) {
+    const filled = [];
+    for (const k of TP.FIELDS) {
+      const v = String(t.sender[k] || ""), cur = stored[k] === undefined ? undefined : String(stored[k]).trim();
+      if (!v) continue;
+      if (cur === undefined || cur === "" || (old && cur === String(old.sender[k] || "") && cur !== v)) { delete stored[k]; filled.push(k); }
+    }
+    return filled;
+  }
+  async function addCustomBytes(name, bytes, imported) {
+    const fail = () => { if (desk && imported && imported.file) desk.removeTemplate(imported.file).catch(() => {}); $("#tplAddWarn").textContent = tr("tplAddFail"); $("#tplAddWarn").hidden = false; };
+    try { const z = await JSZip.loadAsync(bytes); if (!z.file("word/document.xml")) return fail(); } catch (err) { return fail(); }
+    const id = imported ? imported.id : "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const entry = imported ? { id, name, file: imported.file } : { id, name, b64: toB64(bytes) };
+    const list = [...(Array.isArray(state.settings.customTemplates) ? state.settings.customTemplates : []), entry];
+    TP.setCustomList(list);
+    const p = TP.loadCustom(JSZip, id, bytes).catch(() => null); customLoads.set(id, p); await p;
+    await saveSettingsDoc({ ...state.settings, customTemplates: list });
+    tplPick = id; renderTplDlg(); toast(tr("tplAdded", name));
+    const nb = $("#tplGrid [data-tpl='" + id + "']"); if (nb) nb.focus();
+  }
+  async function addCustom() {
+    $("#tplAddWarn").hidden = true;
+    if (!(desk && desk.importTemplate)) { $("#tplFile").value = ""; $("#tplFile").click(); return; } // the browser version: a file input
+    let r; try { r = await desk.importTemplate(tr("tplAdd")); } catch (err) { r = { error: "read" }; }
+    if (!r || r.canceled) return;
+    if (r.error || !r.bytes) { $("#tplAddWarn").textContent = tr("tplAddFail"); $("#tplAddWarn").hidden = false; return; }
+    await addCustomBytes(r.name || "Ontwerp", new Uint8Array(r.bytes), r);
+  }
+  $("#tplFile").addEventListener("change", async () => {
+    const f = $("#tplFile").files[0]; if (!f) return;
+    if (!/\.docx$/i.test(f.name) || f.size > 30 * 1024 * 1024) { $("#tplAddWarn").textContent = tr("tplAddFail"); $("#tplAddWarn").hidden = false; return; }
+    await addCustomBytes(f.name.replace(/\.docx$/i, ""), new Uint8Array(await f.arrayBuffer()), null);
+  });
+  async function removeCustom(id) {
+    const t = TP.get(id), list = (state.settings.customTemplates || []).filter((c) => c.id !== id), e = (state.settings.customTemplates || []).find((c) => c.id === id);
+    if (!t.custom || !confirm(tr("tplRemoveAsk", t.name))) return;
+    const next = { ...state.settings, customTemplates: list };
+    if (state.settings.template === id) next.template = "valkyrys";
+    if (desk && desk.removeTemplate && e && e.file) desk.removeTemplate(e.file).catch(() => {});
+    customLoads.delete(id); TP.setCustomList(list);
+    await saveSettingsDoc(next);
+    if (tplPick === id) tplPick = tplMode === "first" ? "" : currentTemplate();
+    renderTplDlg(); syncDesign(); render();
+  }
+  const syncDesign = () => { syncCustoms(); if (!$("#detForm").contains(document.activeElement)) fillDetails("sd", currentSender()); renderTplUi(); };
+
+  let tplMode = "change", tplPick = "", wzShown = {};
   function renderTplDlg() {
-    $("#tplGrid").innerHTML = TP.TEMPLATES.map((t) => `<button type="button" class="tplopt" role="radio" aria-checked="${t.id === tplPick}" data-tpl="${t.id}"><img src="${esc(t.preview)}" alt=""><span class="tname">${esc(t.name)}</span><span class="tdesc">${esc(tr("tplDesc_" + t.id))}</span></button>`).join("");
+    $("#tplGrid").innerHTML = TP.TEMPLATES.map((t) => `<div class="tplitem"><button type="button" class="tplopt" role="radio" aria-checked="${t.id === tplPick}" data-tpl="${esc(t.id)}"><img src="${esc(t.preview)}" alt=""><span class="tname">${esc(t.name)}</span><span class="tdesc">${esc(tplDesc(t))}</span></button>`
+      + (t.custom ? `<button type="button" class="ghost tdel" data-tpl-del="${esc(t.id)}" title="${esc(tr("tplRemove"))}" aria-label="${esc(tr("tplRemove") + ": " + t.name)}">×</button>` : "") + `</div>`).join("")
+      + `<div class="tplitem"><button type="button" class="tplopt tpladd" id="tplAdd"><span class="tplplus" aria-hidden="true">+</span><span class="tname">${esc(tr("tplAdd"))}</span><span class="tdesc">${esc(tr("tplAddHint"))}</span></button></div>`;
     $("#tplIntro").textContent = tr(tplMode === "first" ? "tplIntroFirst" : "tplIntroChange");
     $("#tplNext").textContent = tr(tplMode === "first" ? "tplNext" : "tplUse");
     $("#tplNext").disabled = !tplPick; $("#tplDlgClose").hidden = tplMode === "first";
@@ -2380,6 +2744,8 @@ window.ValkTheme = (function () {
     if (mode === "first" && document.activeElement && document.activeElement.blur) document.activeElement.blur(); // no card looks chosen before the person chose
   }
   $("#tplGrid").addEventListener("click", (e) => {
+    if (e.target.closest("#tplAdd")) { addCustom(); return; }
+    const del = e.target.closest("[data-tpl-del]"); if (del) { removeCustom(del.dataset.tplDel); return; }
     const b = e.target.closest("[data-tpl]"); if (!b) return;
     tplPick = b.dataset.tpl; renderTplDlg(); const nb = $("#tplGrid [data-tpl='" + tplPick + "']"); if (nb) nb.focus();
   });
@@ -2391,11 +2757,19 @@ window.ValkTheme = (function () {
     if (tplMode === "change") { // the details stay; only the company name follows the design when it was never changed by hand
       const old = TP.get(currentTemplate()), stored = { ...(state.settings.sender || {}) };
       if (stored.name === undefined || stored.name === old.sender.name) delete stored.name;
+      await customReady(tplPick); // an own design: its details are read from its Word file
+      const filled = old.id === tplPick ? [] : fillFromDesign(stored, TP.get(tplPick), old);
       await saveSettingsDoc({ ...state.settings, template: tplPick, sender: stored });
+      $("#detFromTpl").hidden = filled.length < 2; // (one field, the company name, is no news)
       $("#tplDlg").close(); syncDesign(); render(); return;
     }
-    const t = TP.get(tplPick), sender = TP.senderFor(t.id, state.settings.sender);
+    await customReady(tplPick);
+    const t = TP.get(tplPick), stored = { ...(state.settings.sender || {}) }, filled = fillFromDesign(stored, t, null), sender = TP.senderFor(t.id, stored);
+    // what the person already typed in this step (anything that is not what the previous design put there) stays
+    for (const k of TP.FIELDS) { const cur = $("#wz" + k).value.trim(); if (cur && cur !== String(wzShown[k] || "")) sender[k] = cur; }
+    wzShown = { ...sender };
     fillDetails("wz", sender);
+    $("#wzFromTpl").hidden = filled.filter((k) => sender[k] === t.sender[k]).length < 2;
     $("#wzstart").value = t.settings.startNumber ?? state.settings.startNumber;
     $("#tplStep1").hidden = true; $("#tplStep2").hidden = false; $("#wzWarn").hidden = true;
     $("#wz" + (TP.FIELDS.find((k) => !sender[k]) || "name")).focus();
@@ -2412,6 +2786,7 @@ window.ValkTheme = (function () {
   $("#tplLater").addEventListener("click", () => finishFirst(false));
   $("#detForm").addEventListener("submit", async (e) => {
     e.preventDefault();
+    $("#detFromTpl").hidden = true;
     if (await saveSettingsDoc({ ...state.settings, template: currentTemplate(), sender: readDetails("sd") })) toast(tr("detSaved"));
     renderTplUi(); render();
   });

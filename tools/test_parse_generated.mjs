@@ -63,6 +63,38 @@ for (const c of xcases) {
   check("word", core.parseInvoiceText(docxLines(await zip.file("word/document.xml").async("string")), T.owners(mine)));
 }
 
+// ---- a design the person imported (a Word file in the Extreme style with their own details typed in): details read out, Word filled, PDF drawn
+{
+  const { OWN, makeCustomDocx } = require("./make_custom_docx.js");
+  const bytes = await makeCustomDocx(JSZip, xAssets.extremeDocx);
+  const res = (c, m, x) => { if (!c) bad++; console.log(c ? "PASS" : "FAIL", "custom", m, c ? "" : JSON.stringify(x)); };
+  const info = await T.inspectDocx(JSZip, bytes);
+  res(Object.keys(OWN).every((k) => info.sender[k] === OWN[k]) && Object.keys(info.sender).length === 9, "details read from the Word file", info.sender);
+  res(!!info.logo && info.logo[1] === 0x50, "its logo is found");
+  const blank = await T.inspectDocx(JSZip, xAssets.extremeDocx);
+  res(JSON.stringify(blank.sender) === JSON.stringify({ name: "Extreme Building" }), "placeholders are not taken for details", blank.sender);
+  T.setCustomList([{ id: "cTest", name: "Bouw", file: "cTest.docx" }]);
+  res(T.get("cTest").custom && T.TEMPLATES.length === 3, "listed as a design");
+  await T.loadCustom(JSZip, "cTest", bytes);
+  res(T.senderFor("cTest", {}).iban === OWN.iban && T.senderFor("cTest", { iban: "X" }).iban === "X", "its details are the defaults, typed ones win");
+  const me = { ...OWN, person: "A. Ander", iban: "NL55 INGB 0000 1111 22", phone: "" };
+  for (const c of xcases.slice(0, 2)) {
+    const data = { template: "cTest", factuurnr: c.nr, datum: c.datum, betaaltermijn: "30 dagen", client: c.client, lines: c.lines, btw: c.btw, sender: T.forRender(me) };
+    const t = core.totals(c.lines, c.btw), days = c.lines.reduce((a, l) => a + core.lineDays(l.tarief, l.aantal, l.desc), 0);
+    const want = { nr: c.nr, datum: c.datum, client: c.client.name, kvk: c.client.kvk, sub: t.sub, vat: t.vat, total: t.total, btw: c.btw, days };
+    const xml = await (await JSZip.loadAsync(await T.buildWord({ docx, InvoiceDocx, JSZip }, xAssets, data, core))).file("word/document.xml").async("string");
+    const got = core.parseInvoiceText(docxLines(xml), T.owners(me));
+    res(Object.entries(want).every(([k, v]) => got[k] === v), "word read back " + c.nr, { got, want });
+    const txt = docxLines(xml).join("\n");
+    res(!/\[[^\]]*\]/.test(txt), "no placeholders left " + c.nr, txt.match(/\[[^\]]*\]/g));
+    res(txt.includes("A. Ander") && txt.includes("NL55 INGB 0000 1111 22") && !txt.includes(OWN.iban) && !txt.includes(OWN.phone) && txt.includes("t.n.v. Bouw BV") && txt.includes("30 dagen"), "current details replace the ones in the file " + c.nr);
+    const pdf = await pdfjs.getDocument({ data: new Uint8Array(await T.renderPdf(PDFLib, xAssets, data, core)), useSystemFonts: true }).promise;
+    const pl = core.linesFromTextItems((await (await pdf.getPage(1)).getTextContent()).items), gp = core.parseInvoiceText(pl, T.owners(me));
+    res(Object.entries(want).every(([k, v]) => gp[k] === v) && pl.join(" ").includes("NL55 INGB"), "pdf (Valkyrys layout) read back " + c.nr, gp);
+  }
+  T.setCustomList([]); res(T.TEMPLATES.length === 2 && T.get("cTest").id === "valkyrys", "a removed design is gone, its invoices fall back to the first design");
+}
+
 // money formats
 for (const [s, v] of [["1.350,00", 1350], ["2,250.00", 2250], ["450.00", 450], ["450,00", 450], ["€ 12.345,67", 12345.67], ["1,234,567.89", 1234567.89]]) { const g = core.parseMoney(s); const ok = g === v; if (!ok) bad++; console.log(ok ? "PASS" : "FAIL", "parseMoney", s, g); }
 if (!bad) console.log("ALL PASSED");

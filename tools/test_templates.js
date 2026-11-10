@@ -116,5 +116,43 @@ const fillWz = async (page, p) => { for (const [k, v] of Object.entries(D1)) awa
   eq([await page.textContent("#tplCurName"), await page.inputValue("#sdname"), await page.inputValue("#sdperson")], ["Valkyrys", "Valkyrys", "J. Jansen"], "switching back: the name follows the design, the typed details stay");
   ok(errs.length === 0, "no page errors in part 2: " + errs.join(" | "));
   await app.close();
+
+  // ---------------------------------------------------------------- 3. an own design: a Word file in the Extreme style with the person's details typed in
+  const JSZip = require("/opt/npm-tools/node_modules/jszip"), { OWN, makeCustomDocx } = require("./make_custom_docx.js");
+  const FIX = "/tmp/tpl-fixture/Bouw ontwerp.docx"; fs.mkdirSync(path.dirname(FIX), { recursive: true });
+  fs.writeFileSync(FIX, await makeCustomDocx(JSZip, fs.readFileSync(path.join(__dirname, "../tool/templates/extreme.docx"))));
+  fs.rmSync(HOME, { recursive: true, force: true }); fs.rmSync(INV, { recursive: true, force: true }); fs.mkdirSync(INV, { recursive: true });
+  seedProfile(HOME, { folder: INV });
+  ({ app, page, errs } = await launch());
+  await app.evaluate(({ dialog }, F) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [F] }); }, FIX);
+  await goTab(page, "settings"); await page.click("#tplChange"); await page.waitForSelector("#tplDlg[open]");
+  ok(await page.isVisible("#tplAdd"), "the picker offers to add a design");
+  await page.click("#tplAdd"); await page.waitForSelector("#tplGrid [data-tpl^=c]");
+  const cid = await page.getAttribute("#tplGrid [data-tpl^=c]", "data-tpl");
+  eq([await page.textContent(`#tplGrid [data-tpl="${cid}"] .tname`), await page.getAttribute(`#tplGrid [data-tpl="${cid}"]`, "aria-checked")], ["Bouw ontwerp", "true"], "the Word file is listed under its name and chosen");
+  const saved = data()["settings/main"].customTemplates || [];
+  ok(saved.length === 1 && saved[0].id === cid && fs.existsSync(path.join(D, "templates", saved[0].file)), "a copy is kept in the data folder and listed in the settings", saved);
+  await page.click("#tplNext"); await page.waitForFunction(() => !document.querySelector("#tplDlg").open);
+  eq(await page.evaluate((ks) => ks.map((k) => document.querySelector("#sd" + k).value), Object.keys(OWN)), Object.values(OWN), "choosing it fills in the details written in the file");
+  ok(await page.isVisible("#detFromTpl") && await page.isHidden("#detWarn"), "it says so, and nothing is missing");
+  eq(await page.textContent("#tplCurName"), "Bouw ontwerp", "Settings shows the own design");
+  ok(errs.length === 0, "no page errors in part 3a: " + errs.join(" | ")); await app.close();
+
+  ({ app, page, errs } = await launch()); // the design comes back after a restart (its file is read through the desktop app)
+  await goTab(page, "settings"); await page.waitForFunction(() => document.querySelector("#tplCurName").textContent === "Bouw ontwerp");
+  await page.waitForFunction((v) => document.querySelector("#sdiban").value === v, OWN.iban);
+  await goTab(page, "inv"); await page.setInputFiles("#file", PO); await page.waitForSelector("article.po h3");
+  await dl(page, true); ok(await wait(() => fs.existsSync(file(62, "pdf")) && fs.existsSync(file(62, "docx"))), "an invoice is made as PDF and Word in the own design");
+  const wt = docxXml(file(62, "docx")).split(/<\/w:p>/).map((p) => [...p.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g)].map((m) => m[1]).join("")).join("\n");
+  ok(wt.includes(OWN.iban) && wt.includes(OWN.street) && wt.includes("K. de Bouwer") && wt.includes(`62-${year}`) && wt.includes("Piguillet BV") && !/\[[^\]]*\]/.test(wt), "the Word file has the details, the invoice and no placeholders left", wt.match(/\[[^\]]*\]/g));
+  t = pdfText(file(62, "pdf"));
+  ok(t.includes(OWN.iban) && t.includes("Bouw BV") && t.includes(`62-${year}`), "the PDF (Valkyrys layout) has the details");
+  eq(data()[`invoices/62-${year}`].template, cid, "the invoice remembers the own design");
+  await goTab(page, "settings"); await page.click("#tplChange"); await page.waitForSelector("#tplDlg[open]");
+  page.once("dialog", (d) => d.accept()); await page.click(`[data-tpl-del="${cid}"]`);
+  await page.waitForFunction(() => !document.querySelector("#tplGrid [data-tpl^=c]"));
+  ok(!fs.existsSync(path.join(D, "templates", saved[0].file)) && !(data()["settings/main"].customTemplates || []).length && data()["settings/main"].template === "valkyrys", "a removed design is gone, the first design is used again");
+  ok(errs.length === 0, "no page errors in part 3b: " + errs.join(" | "));
+  await app.close();
   console.log(fails ? `${fails} FAILED` : "ALL PASSED"); process.exit(fails ? 1 : 0);
 })().catch((e) => { console.error("CRASH", e); process.exit(1); });

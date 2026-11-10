@@ -1,60 +1,125 @@
 <!doctype html>
 <html lang="nl"><head><meta charset="utf-8"><title>Valkyrys app</title>
 <style>
-  :root { --s: 0.34; --yellow: #FEBD17; --total: 3.4s; }
+  /* Only transform and opacity are animated (compositor-only, no layout or repaint per frame).
+     Nothing plays until both images are decoded and a first frame is painted (class "go"). */
+  :root { --s: 0.34; --yellow: #FEBD17; --ease: cubic-bezier(.22,1,.36,1); --ease-io: cubic-bezier(.65,0,.35,1);
+    --shift: calc((935px + 27px) * var(--s) / 2); }
   * { box-sizing: border-box; margin: 0; }
   html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; -webkit-user-select: none; user-select: none; cursor: default; }
   body { display: grid; place-items: center; font-family: "Segoe UI", Lato, system-ui, sans-serif; }
-  body.exit .panel { animation: leave .38s ease-in forwards; }
-  @keyframes leave { to { opacity: 0; transform: scale(1.03); } }
 
   .panel { position: relative; width: 100%; height: 100%; border-radius: 16px; overflow: hidden; display: grid; place-items: center;
     background: radial-gradient(120% 90% at 50% 40%, #1b1b1d 0%, #0d0d0e 62%, #070708 100%); border: 1px solid #2a2a2d;
-    animation: panelIn .5s ease-out both; }
-  @keyframes panelIn { from { opacity: 0; } to { opacity: 1; } }
-  .panel::before { content: ""; position: absolute; left: 50%; top: 46%; width: 520px; height: 520px; transform: translate(-50%, -50%); border-radius: 50%;
-    background: radial-gradient(closest-side, rgba(254,189,23,.10), rgba(254,189,23,0) 70%); opacity: 0; animation: halo 2.4s .7s ease-out forwards; }
-  @keyframes halo { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.6); } 40% { opacity: 1; } 100% { opacity: .55; transform: translate(-50%, -50%) scale(1); } }
+    opacity: 0; transform: scale(.985); will-change: opacity, transform; }
+  .go .panel { animation: panelIn .6s var(--ease) forwards; }
+  @keyframes panelIn { to { opacity: 1; transform: scale(1); } }
+  .exit .panel { animation: leave .55s cubic-bezier(.4,0,.2,1) forwards; }
+  @keyframes leave { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.02); } }
+
+  .halo { position: absolute; left: 50%; top: 46%; width: 520px; height: 520px; margin: -260px 0 0 -260px; border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(254,189,23,.10), rgba(254,189,23,0) 70%); opacity: 0; transform: scale(.6); will-change: opacity, transform; }
+  .go .halo { animation: halo 2.6s .6s var(--ease) forwards; }
+  @keyframes halo { 40% { opacity: 1; } 100% { opacity: .55; transform: scale(1); } }
 
   .stage { position: relative; display: flex; flex-direction: column; align-items: center; margin-top: -14px; }
   .row { display: flex; align-items: center; justify-content: center; height: calc(318px * var(--s)); }
+  .masked { -webkit-mask-repeat: no-repeat; -webkit-mask-size: 100% 100%; position: relative; overflow: hidden; background: #fff; }
+  .masked.m { width: calc(403px * var(--s)); height: calc(318px * var(--s)); -webkit-mask-image: url(emblem.png); }
+  .masked.w { width: calc(935px * var(--s)); height: calc(318px * var(--s)); -webkit-mask-image: url(word.png); }
+  /* shine: a narrow band that moves across, clipped by the logo's mask */
+  .shine { position: absolute; inset: 0; background: linear-gradient(100deg, rgba(254,189,23,0) 30%, var(--yellow) 50%, rgba(254,189,23,0) 70%);
+    transform: translateX(-110%); will-change: transform; }
 
-  /* the V: wipes in from the top, then ignites */
-  .mark, .word { background: linear-gradient(100deg, #fff 0%, #fff 42%, var(--yellow) 50%, #fff 58%, #fff 100%); background-size: 320% 100%; background-position: 120% 0;
-    -webkit-mask-repeat: no-repeat; -webkit-mask-size: 100% 100%; flex: none; }
-  .mark { width: calc(403px * var(--s)); height: calc(318px * var(--s)); -webkit-mask-image: url(emblem.png); position: relative; z-index: 2;
-    opacity: 0; clip-path: inset(0 0 100% 0);
-    animation: markIn .85s .2s cubic-bezier(.22,.8,.2,1) forwards, ignite 1.1s .95s ease-out forwards, shineA 1s 2.05s ease-in-out forwards; }
-  @keyframes markIn { 0% { opacity: 0; clip-path: inset(0 0 100% 0); transform: scale(.9); }
-                      25% { opacity: 1; }
-                      100% { opacity: 1; clip-path: inset(0 0 0 0); transform: scale(1); } }
-  @keyframes ignite { 0% { filter: drop-shadow(0 0 0 rgba(254,189,23,0)); } 22% { filter: drop-shadow(0 0 22px rgba(254,189,23,.75)); } 100% { filter: drop-shadow(0 0 10px rgba(254,189,23,.18)); } }
-  @keyframes shineA { from { background-position: 120% 0; } to { background-position: -20% 0; } }
+  /* the V: starts centred (shifted right by half the wordmark), scales and fades in */
+  .markbox { position: relative; z-index: 2; flex: none; transform: translateX(var(--shift)); will-change: transform; }
+  .mark { opacity: 0; transform: translateY(10px) scale(.86); will-change: opacity, transform; }
+  .glow { position: absolute; inset: 0; filter: blur(12px); opacity: 0; transform: scale(.9); will-change: opacity, transform; }
+  .glow .masked { background: var(--yellow); }
+  .go .mark { animation: markIn 1s .15s var(--ease) forwards; }
+  .go .glow { animation: glow 1.4s .7s var(--ease) forwards; }
+  @keyframes markIn { to { opacity: 1; transform: none; } }
+  @keyframes glow { 0% { opacity: 0; transform: scale(.9); } 30% { opacity: .9; transform: scale(1.04); } 100% { opacity: .3; transform: scale(1); } }
+  /* then the V slides left while the wordmark slides out from behind it; the logo ends up centred */
+  .go .markbox { animation: toLeft 1.1s 1.15s var(--ease-io) forwards; }
+  @keyframes toLeft { to { transform: translateX(0); } }
+  .reveal { flex: none; margin-left: calc(27px * var(--s)); overflow: hidden; transform: translateX(var(--shift)); will-change: transform; }
+  .word { transform: translateX(-100%); opacity: 0; will-change: opacity, transform; }
+  .go .word { animation: wordIn 1.1s 1.15s var(--ease-io) forwards; }
+  .go .reveal { animation: toLeft 1.1s 1.15s var(--ease-io) forwards; }
+  @keyframes wordIn { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 1; transform: translateX(0); } }
+  .go .mark .shine { animation: shine .9s 2.25s var(--ease-io) forwards; }
+  .go .word .shine { animation: shine 1s 2.4s var(--ease-io) forwards; }
+  @keyframes shine { to { transform: translateX(110%); } }
 
-  /* the wordmark: grows out of the V's right side, so the V slides left and the whole logo ends up centred */
-  .reveal { width: 0; margin-left: 0; overflow: hidden; height: 100%; flex: none; animation: slide 1s 1.2s cubic-bezier(.7,0,.15,1) forwards; }
-  @keyframes slide { to { width: calc(935px * var(--s)); margin-left: calc(27px * var(--s)); } }
-  .word { width: calc(935px * var(--s)); height: calc(318px * var(--s)); -webkit-mask-image: url(word.png); transform: translateX(-100%); opacity: 0;
-    animation: wordIn 1s 1.2s cubic-bezier(.7,0,.15,1) forwards, shineB 1s 2.25s ease-in-out forwards; }
-  @keyframes wordIn { 0% { opacity: 0; } 12% { opacity: 1; } 100% { transform: translateX(0); opacity: 1; } }
-  @keyframes shineB { from { background-position: 120% 0; } to { background-position: -20% 0; } }
-
-  .line { height: 2px; width: 0; margin-top: 20px; background: linear-gradient(90deg, rgba(254,189,23,0), var(--yellow), rgba(254,189,23,0)); animation: line .9s 2.3s cubic-bezier(.2,.8,.2,1) forwards; }
-  @keyframes line { to { width: 200px; } }
-  .sub { margin-top: 12px; font-size: 11px; font-weight: 600; letter-spacing: .62em; padding-left: .62em; color: #8d8d92; opacity: 0; animation: sub .8s 2.4s ease-out forwards; }
-  @keyframes sub { from { opacity: 0; letter-spacing: .9em; } to { opacity: 1; letter-spacing: .62em; } }
+  .line { height: 2px; width: 200px; margin-top: 20px; background: linear-gradient(90deg, rgba(254,189,23,0), var(--yellow), rgba(254,189,23,0));
+    transform: scaleX(0); will-change: transform; }
+  .go .line { animation: line .9s 2.4s var(--ease) forwards; }
+  @keyframes line { to { transform: scaleX(1); } }
+  .sub { margin-top: 12px; font-size: 11px; font-weight: 600; letter-spacing: .62em; padding-left: .62em; color: #8d8d92; opacity: 0; transform: translateY(6px); will-change: opacity, transform; }
+  .go .sub { animation: sub .8s 2.55s var(--ease) forwards; }
+  @keyframes sub { to { opacity: 1; transform: none; } }
 
   .bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,.04); }
-  .bar i { display: block; height: 100%; width: 0; background: var(--yellow); box-shadow: 0 0 10px rgba(254,189,23,.6); animation: bar 3.1s .25s cubic-bezier(.4,.1,.3,1) forwards; }
-  @keyframes bar { to { width: 100%; } }
+  .bar i { display: block; height: 100%; width: 100%; background: var(--yellow); box-shadow: 0 0 10px rgba(254,189,23,.6); transform: scaleX(0); transform-origin: 0 50%; will-change: transform; }
+  .go .bar i { animation: bar 3.2s .2s cubic-bezier(.4,.1,.3,1) forwards; }
+  @keyframes bar { to { transform: scaleX(1); } }
+
+  /* reduced motion: no movement, the finished logo simply fades in and out */
+  @media (prefers-reduced-motion: reduce) {
+    .go .panel { animation: fade .4s ease-out forwards; }
+    .exit .panel { animation: fadeOut .4s ease-in forwards; }
+    @keyframes fade { from { opacity: 0; transform: none; } to { opacity: 1; transform: none; } }
+    @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+    .go .halo, .go .mark, .go .glow, .go .markbox, .go .reveal, .go .word, .go .shine, .go .line, .go .sub, .go .bar i { animation: none; }
+    .go .halo { opacity: .55; transform: none; } .go .mark, .go .word, .go .sub { opacity: 1; transform: none; }
+    .go .glow { opacity: .3; transform: none; } .go .markbox, .go .reveal, .go .line, .go .bar i { transform: none; }
+  }
 </style></head>
 <body>
   <div class="panel">
+    <div class="halo"></div>
     <div class="stage">
-      <div class="row"><div class="mark"></div><div class="reveal"><div class="word"></div></div></div>
+      <div class="row">
+        <div class="markbox">
+          <div class="glow"><div class="masked m"></div></div>
+          <div class="mark"><div class="masked m"><div class="shine"></div></div></div>
+        </div>
+        <div class="reveal"><div class="word"><div class="masked w"><div class="shine"></div></div></div></div>
+      </div>
       <div class="line"></div>
       <div class="sub">APP</div>
     </div>
     <div class="bar"><i></i></div>
   </div>
+<script>
+  // window.splash: state "loading" -> "playing" -> "holding" (animation ended, finished logo stays) -> "done" (main may take over) -> "leaving"
+  // splashDone resolves at "done"; splashExit() fades the panel out and resolves when the fade has ended (main closes the window then).
+  const HOLD_MS = 800;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.splash = { state: "loading", animEndAt: 0, reduce };
+  const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
+  const later = (ms) => new Promise((r) => setTimeout(r, ms));
+  window.splashDone = (async () => {
+    // decode the two logo images before anything moves, so the first frames don't stutter (the masks reuse the cached decode)
+    await Promise.race([Promise.all(["emblem.png", "word.png"].map((src) => { const i = new Image(); i.src = src; return i.decode().catch(() => {}); })), later(1500)]);
+    await frame(); await frame();
+    document.body.classList.add("go"); window.splash.state = "playing";
+    await frame();
+    const anims = document.getAnimations();
+    await Promise.race([Promise.all(anims.map((a) => a.finished.catch(() => {}))), later(6000)]);
+    window.splash.state = "holding"; window.splash.animEndAt = performance.now();
+    await later(reduce ? 400 : HOLD_MS);
+    window.splash.state = "done";
+    return true;
+  })();
+  window.splashExit = () => new Promise((res) => {
+    window.splash.state = "leaving";
+    const panel = document.querySelector(".panel");
+    const done = () => { window.splash.state = "gone"; res(true); };
+    panel.addEventListener("animationend", (e) => { if (e.animationName === "leave" || e.animationName === "fadeOut") done(); });
+    setTimeout(done, 1000); // safety if animationend never comes
+    document.body.classList.add("exit");
+  });
+</script>
 </body></html>

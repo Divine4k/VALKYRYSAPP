@@ -159,9 +159,83 @@ function registerFolderIpc(getWin) {
   }));
 }
 
+// ---- "Save as…": save the ready invoices (and their POs) anywhere. The page can only write into a folder or a .zip path
+// the user picked in a native dialog in this run; the names it sends must be plain file names.
+function registerSaveIpc(getWin) {
+  const guard = (fn) => async (e, ...a) => { if (!fromApp(e) || !unlocked) throw new Error("not allowed"); return fn(e, ...a); };
+  const pickedDirs = new Set(), pickedZips = new Set();
+  const okName = (n) => typeof n === "string" && n.length > 0 && n.length < 240 && n === path.basename(n) && n !== "." && n !== ".." && !/[\\/:*?"<>|\u0000-\u001f]/.test(n);
+  const toBuf = (bytes) => { const b = Buffer.from(bytes || []); return b.length && b.length <= 200 * 1024 * 1024 ? b : null; };
+  const writeAtomic = (file, buf) => { const tmp = file + ".part"; fs.writeFileSync(tmp, buf); try { fs.renameSync(tmp, file); } catch (err) { try { fs.unlinkSync(tmp); } catch (e2) {} throw err; } };
+  ipcMain.handle("save:pickDir", guard(async (e, title) => {
+    const r = await dialog.showOpenDialog(getWin() || undefined, { title: String(title || "Valkyrys app"), defaultPath: app.getPath("documents"), properties: ["openDirectory", "createDirectory"] });
+    if (r.canceled || !r.filePaths || !r.filePaths[0] || !isDir(r.filePaths[0])) return { canceled: true };
+    const dir = path.resolve(r.filePaths[0]); pickedDirs.add(dir); return { canceled: false, dir };
+  }));
+  ipcMain.handle("save:toDir", guard(async (e, dir, name, bytes) => {
+    const d = typeof dir === "string" ? path.resolve(dir) : "";
+    if (!d || !pickedDirs.has(d)) return { ok: false, error: "dir" };
+    if (!isDir(d)) return { ok: false, error: "missing" };
+    if (!okName(name) || !SAVE_EXT.test(name)) return { ok: false, error: "name" };
+    const buf = toBuf(bytes); if (!buf) return { ok: false, error: "size" };
+    const ext = path.extname(name), base = name.slice(0, -ext.length); let file = path.join(d, name);
+    for (let i = 2; fs.existsSync(file) && i < 500; i++) file = path.join(d, `${base} (${i})${ext}`); // never replace a file already there
+    try { writeAtomic(file, buf); return { ok: true, name: path.basename(file) }; } catch (err) { return { ok: false, error: String((err && err.code) || "write") }; }
+  }));
+  ipcMain.handle("save:zipDialog", guard(async (e, defaultName, title) => {
+    const n = okName(defaultName) && /\.zip$/i.test(defaultName) ? defaultName : "facturen.zip";
+    const r = await dialog.showSaveDialog(getWin() || undefined, { title: String(title || "Valkyrys app"), defaultPath: path.join(app.getPath("documents"), n), filters: [{ name: "ZIP", extensions: ["zip"] }], properties: ["createDirectory", "showOverwriteConfirmation"] });
+    if (r.canceled || !r.filePath) return { canceled: true };
+    let p = path.resolve(r.filePath); if (!/\.zip$/i.test(p)) p += ".zip";
+    pickedZips.add(p); return { canceled: false, path: p };
+  }));
+  ipcMain.handle("save:writePath", guard(async (e, p, bytes) => {
+    const f = typeof p === "string" ? path.resolve(p) : "";
+    if (!f || !pickedZips.has(f) || !/\.zip$/i.test(f)) return { ok: false, error: "path" };
+    if (!isDir(path.dirname(f))) return { ok: false, error: "missing" };
+    const buf = toBuf(bytes); if (!buf) return { ok: false, error: "size" };
+    try { writeAtomic(f, buf); pickedZips.delete(f); return { ok: true, path: f, name: path.basename(f) }; } catch (err) { return { ok: false, error: String((err && err.code) || "write") }; }
+  }));
+}
+registerSaveIpc(() => win);
+
+// ---- the person's own invoice designs: Word files (.docx with [placeholders]) they import, copied to <data folder>/templates/<id>.docx
+const tplDir = () => path.join(app.getPath("userData"), "templates");
+const tplPath = (file) => (typeof file === "string" && /^c[a-z0-9]{4,40}\.docx$/.test(file) ? path.join(tplDir(), file) : "");
+function registerTplIpc(getWin) {
+  const guard = (fn) => async (e, ...a) => { if (!fromApp(e) || !unlocked) throw new Error("not allowed"); return fn(e, ...a); };
+  ipcMain.handle("tpl:import", guard(async (e, title) => { // asks for a Word file and keeps a copy: { id, name, file, bytes }
+    const r = await dialog.showOpenDialog(getWin() || undefined, { title: title || "Valkyrys app", defaultPath: app.getPath("documents"), properties: ["openFile"], filters: [{ name: "Word", extensions: ["docx"] }] });
+    if (r.canceled || !r.filePaths[0]) return { canceled: true };
+    const src = r.filePaths[0];
+    let buf; try { if (fs.statSync(src).size > 30 * 1024 * 1024) return { canceled: false, error: "size" }; buf = fs.readFileSync(src); } catch (err) { return { canceled: false, error: "read" }; }
+    if (!/\.docx$/i.test(src) || buf.length < 4 || buf[0] !== 0x50 || buf[1] !== 0x4b) return { canceled: false, error: "format" }; // a .docx is a zip file
+    const id = "c" + Date.now().toString(36) + crypto.randomBytes(3).toString("hex"), file = id + ".docx";
+    try { fs.mkdirSync(tplDir(), { recursive: true }); fs.writeFileSync(tplPath(file), buf); } catch (err) { return { canceled: false, error: "write" }; }
+    return { canceled: false, id, file, name: path.basename(src).replace(/\.docx$/i, ""), bytes: buf };
+  }));
+  ipcMain.handle("tpl:read", guard((e, file) => { const p = tplPath(file); try { return p ? fs.readFileSync(p) : null; } catch (err) { return null; } }));
+  ipcMain.handle("tpl:remove", guard((e, file) => { const p = tplPath(file); try { if (p) fs.unlinkSync(p); } catch (err) {} return true; }));
+}
+registerTplIpc(() => win);
+
 const APP_PORT = 47831;
 const arg = process.argv.find((a) => a.startsWith("--splash-ms="));
-const SPLASH_MS = arg ? Number(arg.slice(12)) : 3500; // how long the logo animation plays at least
+// --splash-ms=N: keep the splash at least N ms from start (tests). Without it the splash page decides: it says when its animation
+// plus a short hold of the finished logo is done (window.splashDone, ~4.2 s); SPLASH_FALLBACK_MS is the minimum if the page can't answer.
+const SPLASH_MS = arg ? Number(arg.slice(12)) : 0;
+const SPLASH_FALLBACK_MS = 4200, SPLASH_FADE_MS = 550;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// fade a window's opacity (Windows/macOS; on Linux setOpacity does nothing and the window is simply there)
+async function fadeOpacity(w, from, to, ms) {
+  if (!w || w.isDestroyed() || typeof w.setOpacity !== "function") return;
+  const steps = Math.max(1, Math.round(ms / 16)), ease = (t) => 1 - Math.pow(1 - t, 3);
+  for (let i = 0; i <= steps; i++) {
+    if (w.isDestroyed()) return;
+    try { w.setOpacity(from + (to - from) * ease(i / steps)); } catch (e) { return; }
+    if (i < steps) await sleep(ms / steps);
+  }
+}
 
 function showSplash() {
   const splash = new BrowserWindow({ width: 640, height: 360, frame: false, transparent: true, resizable: false, movable: false, minimizable: false, maximizable: false,
@@ -194,16 +268,23 @@ app.whenReady().then(() => {
     // ready-to-show, or give up waiting after 20 s so the splash can never hang on screen
     const loaded = Promise.race([new Promise((res) => win.once("ready-to-show", res)), new Promise((res) => setTimeout(res, 20000))]);
     win.loadURL(origin + "/");
-    // show the app once it is ready AND the logo animation has played; then fade the splash out
+    // show the app once it is ready AND the logo animation has played and held a moment; then cross-fade:
+    // the app fades in behind the (always-on-top) splash while the splash fades out, and the splash closes after its fade has ended
+    const splashLive = () => splash && !splash.isDestroyed();
+    const splashDone = !splashLive() ? Promise.resolve() : Promise.race([
+      splash.webContents.executeJavaScript("window.splashDone").catch(() => sleep(Math.max(0, SPLASH_FALLBACK_MS - (Date.now() - started)))),
+      sleep(12000)]);
     loaded.then(async () => {
-      const wait = Math.max(0, SPLASH_MS - (Date.now() - started));
-      await new Promise((r) => setTimeout(r, wait));
-      if (!win) return;
-      win.show(); win.focus();
-      if (splash && !splash.isDestroyed()) {
-        try { await splash.webContents.executeJavaScript("document.body.classList.add('exit')"); } catch (e) {}
-        setTimeout(() => { if (!splash.isDestroyed()) splash.close(); }, 420);
-      }
+      await splashDone;
+      await sleep(Math.max(0, SPLASH_MS - (Date.now() - started)));
+      if (!win) { if (splashLive()) splash.close(); return; }
+      if (!splashLive()) { win.show(); win.focus(); return; }
+      try { win.setOpacity(0); } catch (e) {}
+      win.showInactive(); // behind the splash, so it never pops over it
+      const out = Promise.race([splash.webContents.executeJavaScript("window.splashExit()").catch(() => {}), sleep(SPLASH_FADE_MS + 700)]);
+      await Promise.all([out, fadeOpacity(win, 0, 1, SPLASH_FADE_MS)]);
+      if (splashLive()) splash.close();
+      if (win) { try { win.setOpacity(1); } catch (e) {} win.focus(); }
     });
   });
 });

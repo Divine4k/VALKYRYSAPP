@@ -172,68 +172,216 @@
   // ---------------------------------------------------------------- Extreme Building: Word
   // The Word file of this design (tool/templates/extreme.docx) has placeholders in square brackets; they are replaced here, so the file is the design itself.
   const xmlEsc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  /** replaces the text of the n-th run that has exactly this text (1 = first) */
-  function setText(xml, from, to, nth = 1) {
-    const re = new RegExp("(<w:t(?: [^>]*)?>)" + from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(</w:t>)", "g");
-    let i = 0, hit = false;
-    const out = xml.replace(re, (m, a, b) => { i++; if (i !== nth) return m; hit = true; return a + xmlEsc(to) + b; });
-    if (!hit) throw new Error("template text not found: " + from);
-    return out;
-  }
-  /** replaces the text of every run that has exactly this text */
-  function setTextAll(xml, from, to) {
-    const re = new RegExp("(<w:t(?: [^>]*)?>)" + from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(</w:t>)", "g");
-    let n = 0; const out = xml.replace(re, (m, a, b) => { n++; return a + xmlEsc(to) + b; });
-    if (!n) throw new Error("template text not found: " + from);
-    return out;
-  }
   const withSpace = (xml) => xml.replace(/<w:t>/g, '<w:t xml:space="preserve">'); // keeps leading and trailing spaces such as "KVK  "
 
-  async function fillExtremeDocx(JSZip, templateBytes, data, core) {
+  // ---------------------------------------------------------------- Word designs with [placeholders]: fill in, and read the sender's details out
+  // Works for any Word file made in the style of tool/templates/extreme.docx: the same [placeholders], or real text in their place
+  // (a design where the person already typed their own details). Placeholders split over several runs by Word are joined first.
+  const unXml = (s) => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
+  const T_RE = /(<w:t(?:\s[^>]*)?>)([^<]*)(<\/w:t>)/g;
+  function runsOf(xml) {
+    const out = []; let m; T_RE.lastIndex = 0;
+    while ((m = T_RE.exec(xml))) out.push({ pos: m.index, len: m[0].length, open: m[1], orig: m[2], text: unXml(m[2]), changed: false });
+    return out;
+  }
+  function joinRuns(xml, runs) {
+    let out = "", at = 0;
+    for (const r of runs) {
+      const open = r.changed && !/xml:space/.test(r.open) ? r.open.replace("<w:t", '<w:t xml:space="preserve"') : r.open;
+      out += xml.slice(at, r.pos) + open + (r.changed ? xmlEsc(r.text) : r.orig) + "</w:t>"; at = r.pos + r.len;
+    }
+    return out + xml.slice(at);
+  }
+  const setRun = (r, text) => { if (r.text !== text) { r.text = text; r.changed = true; } };
+  /** "[Post" + "code]" in two runs (Word does that after spell checking or editing) becomes one run */
+  function mergeSplit(runs) {
+    for (let i = 0; i < runs.length; i++) {
+      const t = runs[i].text, o = t.lastIndexOf("[");
+      if (o < 0 || t.lastIndexOf("]") > o) continue;
+      let acc = t; const used = [];
+      for (let j = i + 1; j < runs.length && j <= i + 10 && acc.length < 160; j++) {
+        const k = runs[j].text.indexOf("]");
+        if (k < 0) { acc += runs[j].text; used.push([j, ""]); continue; }
+        acc += runs[j].text; used.push([j, ""]); // the rest of that run comes along ("[n" + "r]-2026" -> "[nr]-2026")
+        if (/^\[[^\[\]<>]{1,40}\]/.test(acc.slice(o))) { setRun(runs[i], acc); for (const [n, rest] of used) setRun(runs[n], rest); }
+        break;
+      }
+    }
+  }
+  const phKey = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const hasPh = (s) => /\[[^\[\]]{1,40}\]/.test(s);
+  const ROW_PH = { omschrijving: "desc", nummer: "desc", po: "desc", ponummer: "desc", tarief: "tarief", prijs: "tarief", aantal: "aantal", bedrag: "bedrag" };
+  const rowRole = (s) => { const m = s.match(/\[([^\[\]]{1,40})\]/); return m ? ROW_PH[phKey(m[1])] : undefined; };
+  const isLabel = (s) => /^(van|contact|betaalgegevens|btw[ -]?(nr|nummer)\.?|kvk([ -]?(nr|nummer))?\.?|iban|bank|factuur( aan)?|factuurnr\.?|factuurnummer|datum|betaaltermijn|omschrijving|tarief|aantal|bedrag|subtotaal|totaal( te betalen)?|met vriendelijke groet,?)\s*:?$/i.test(s.trim());
+  const BTW_RE = /\b(NL\s?\d{9}\s?B\s?\d{2})\b/i, IBAN_RE = /\b([A-Z]{2}\d{2}(?:\s?[A-Z0-9]{4}){2,7}(?:\s?[A-Z0-9]{1,3})?)\b/, MAIL_RE = /[\w.+-]+@[\w-]+(\.[\w-]+)+/;
+  const PHONE_RE = /^(?:tel(?:efoon)?\.?|t\.?)\s*:?\s*(\+?[\d][\d\s()./-]{7,})$/i, PC_RE = /^\d{4}\s?[A-Z]{2}\b/;
+  /** where the client's block is (between "Factuur aan" and the invoice number), so the client is never taken for the sender: [from, to) in runs */
+  function clientWindow(runs) {
+    const a = runs.findIndex((r) => /^factuur aan:?$/i.test(r.text.trim()));
+    if (a < 0) return [-1, -1];
+    let b = runs.findIndex((r, i) => i > a && /^(factuurnr\.?|factuurnummer|datum|omschrijving)\s*:?$/i.test(r.text.trim()));
+    if (b < 0) b = Math.min(runs.length, a + 12);
+    return [a + 1, b];
+  }
+  /** the sender's details that are written in a design (real text, not [placeholders]); texts = the runs' text in order, client block left out */
+  function readSender(texts) {
+    const o = {};
+    const set = (k, v) => { v = String(v || "").trim(); if (v && !hasPh(v) && !isLabel(v) && !o[k]) o[k] = v; };
+    for (let i = 0; i < texts.length; i++) {
+      const t = texts[i], next = texts[i + 1] || "";
+      if (/^van:?$/i.test(t)) { // footer block: company, street, postcode and town
+        const blk = []; for (let j = i + 1; j < texts.length && blk.length < 3 && !isLabel(texts[j]); j++) blk.push(texts[j]);
+        if (blk[0]) set("name", blk[0]);
+        const pc = blk.findIndex((s) => PC_RE.test(s));
+        if (pc > 0) { set("city", blk[pc]); if (pc > 1) set("street", blk[pc - 1]); }
+        else { set("street", blk[1]); set("city", blk[2]); }
+      }
+      if (/^met vriendelijke groet,?$/i.test(t)) {
+        if (!isLabel(next)) set("person", next);
+        const after = texts[i + 2] || ""; if (after && !isLabel(after) && !MAIL_RE.test(after)) set("name", after);
+      }
+      if (/^btw[ -]?(nr|nummer)\.?:?$/i.test(t) && BTW_RE.test(next)) set("btw", next.match(BTW_RE)[1]);
+      if (/^kvk([ -]?(nr|nummer))?\.?:?$/i.test(t) && /^\d{8}$/.test(next.replace(/\s/g, ""))) set("kvk", next.replace(/\s/g, ""));
+      if (/^iban:?$/i.test(t) && IBAN_RE.test(next)) set("iban", next.match(IBAN_RE)[1]);
+      let m;
+      if ((m = t.match(/^kvk(?:[ -]?(?:nr|nummer))?\.?\s*:?\s*(\d{8})$/i))) set("kvk", m[1]);
+      if ((m = t.match(/^t\.?\s*n\.?\s*v\.?\s+(.+)$/i))) set("name", m[1]);
+      if ((m = t.match(PHONE_RE))) set("phone", m[1]);
+      else if (/^(\+31|0)[\d\s-]{8,}$/.test(t)) set("phone", t);
+      if ((m = t.match(MAIL_RE))) set("email", m[0]);
+      if ((m = t.match(BTW_RE))) set("btw", m[1].toUpperCase());
+      if (!/^(nl\s?\d{9}\s?b)/i.test(t) && (m = t.match(IBAN_RE)) && /\d{6}/.test(m[1].replace(/\s/g, ""))) set("iban", m[1]);
+    }
+    if (!o.city) { const i = texts.findIndex((s) => PC_RE.test(s) && s.length < 60); if (i >= 0) { set("city", texts[i]); if (i > 0 && /\d/.test(texts[i - 1]) && /[a-z]/i.test(texts[i - 1])) set("street", texts[i - 1]); } }
+    return o;
+  }
+  const PARTS = (zip) => Object.keys(zip.files).filter((n) => /^word\/(document|header\d*|footer\d*)\.xml$/.test(n)).sort((a, b) => (a === "word/document.xml" ? -1 : b === "word/document.xml" ? 1 : a.localeCompare(b)));
+  /** the text of the parts (document first) without the client block, Word's split placeholders joined */
+  async function partTexts(zip) {
+    const texts = [];
+    for (const n of PARTS(zip)) {
+      const runs = runsOf(await zip.file(n).async("string")); mergeSplit(runs);
+      const [a, b] = clientWindow(runs);
+      runs.forEach((r, i) => { const t = r.text.trim(); if (t && !(i >= a && i < b)) texts.push(t); });
+    }
+    return texts;
+  }
+  /** first wide picture of the body (the logo), as PNG bytes, or null */
+  async function findLogo(zip) {
+    try {
+      const xml = await zip.file("word/document.xml").async("string"), rels = (await zip.file("word/_rels/document.xml.rels").async("string"));
+      for (const d of xml.split(/<w:drawing>/).slice(1)) {
+        const ext = d.match(/<wp:extent cx="(\d+)" cy="(\d+)"/), emb = d.match(/r:embed="([^"]+)"/);
+        if (!ext || !emb) continue;
+        const cx = +ext[1], cy = +ext[2]; if (!(cy > 0 && cx >= 1200000 && cx / cy >= 2.5 && cx / cy <= 14)) continue;
+        const rel = rels.match(new RegExp('Id="' + emb[1] + '"[^>]*Target="([^"]+)"')) || rels.match(new RegExp('Target="([^"]+)"[^>]*Id="' + emb[1] + '"'));
+        const f = rel && zip.file("word/" + rel[1].replace(/^\.?\//, ""));
+        if (!f) continue;
+        const b = await f.async("uint8array");
+        if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return b;
+        return null;
+      }
+    } catch (e) {}
+    return null;
+  }
+  /** what a design's Word file tells about itself: the sender's details written in it, and its logo */
+  async function inspectDocx(JSZip, bytes) {
+    const zip = await JSZip.loadAsync(bytes);
+    return { sender: readSender(await partTexts(zip)), logo: await findLogo(zip) };
+  }
+
+  /** fills a design's Word file: [placeholders], the sample client and invoice values, the line rows (the first row is the model), and the
+      sender's details written in the file (replaced by the current ones). opts.maxLines: a fixed number of rows (the Extreme design: 6). */
+  async function fillTemplateDocx(JSZip, templateBytes, data, core, opts = {}) {
     const zip = await JSZip.loadAsync(templateBytes);
-    let xml = withSpace(await zip.file("word/document.xml").async("string"));
     const S = { ...BLANK, ...(data.sender || {}) }, K = data.client || {};
     if (!S.street && S.address) { S.street = S.address[0] || ""; S.city = S.address[1] || ""; S.phone = S.phone || String(S.address[2] || "").replace(/^Tel:\s*/i, ""); }
-    const lines = data.lines.slice(0, MAX_LINES), t = core.totals(lines, data.btw);
+    const lines = opts.maxLines ? data.lines.slice(0, opts.maxLines) : data.lines, t = core.totals(lines, data.btw);
+    const orig = readSender(await partTexts(zip)); // what the file says about the sender now, replaced below by the current details
+    const VAL = {
+      naam: S.person, bedrijfsnaam: S.name, bedrijf: S.name, firmanaam: S.name, straathuisnummer: S.street, straat: S.street, adres: S.street,
+      postcodeplaats: S.city, plaats: S.city, postcode: "", telefoonnummer: S.phone, telefoon: S.phone, emailadres: S.email, email: S.email,
+      iban: S.iban, btwnummer: S.btw, btwnr: S.btw, kvknummer: S.kvk, kvknr: S.kvk, kvk: S.kvk,
+      nr: data.factuurnr, factuurnr: data.factuurnr, factuurnummer: data.factuurnr, datum: data.datum, betaaltermijn: data.betaaltermijn,
+      klant: K.name || "", klantnaam: K.name || "", klantstraat: K.street || "", klantadres: K.street || "", klantplaats: K.city || "", klantpostcodeplaats: K.city || "",
+      klantkvk: K.kvk || "", klantbtw: K.btw || "", subtotaal: core.eur(t.sub), btwbedrag: core.eur(t.vat), totaal: core.eur(t.total), btwlabel: t.btwLabel,
+    };
+    const fillPh = (s) => s.replace(/\[nr\]-(?:\d{4}|\[jaar\])/gi, data.factuurnr).replace(/\[postcode\]\s*\[plaats\]/gi, S.city)
+      .replace(/\[([^\[\]]{1,40})\]/g, (m, k) => (Object.prototype.hasOwnProperty.call(VAL, phKey(k)) ? String(VAL[phKey(k)] ?? "") : m));
 
-    // the six invoice rows: the first row of the file is the model, the empty ones after it are replaced
-    const start = xml.indexOf("<w:tr>", xml.lastIndexOf("<w:tr>", xml.indexOf("PO-[nummer]")));
-    const end = xml.indexOf("</w:tbl>", start);
-    const rowEnd = xml.indexOf("</w:tr>", start) + "</w:tr>".length;
-    const model = xml.slice(start, rowEnd);
-    const rows = [];
-    for (let r = 0; r < MAX_LINES; r++) {
-      const l = lines[r]; let row = model;
-      const vals = l ? [l.desc, core.eur(l.tarief), core.qty(l.aantal), core.eur(core.round2(l.tarief * l.aantal))] : ["", "", "", ""];
-      row = setText(row, "PO-[nummer]", vals[0]);
-      row = setText(row, "€ [tarief]", vals[1]); row = setText(row, "[aantal]", vals[2]); row = setText(row, "€ [bedrag]", vals[3]);
-      rows.push(row);
+    for (const part of PARTS(zip)) {
+      let xml = withSpace(await zip.file(part).async("string"));
+      let runs = runsOf(xml); mergeSplit(runs); xml = joinRuns(xml, runs);
+
+      // the invoice rows: the row with the first row placeholder is the model, it and the rows after it in its table are replaced
+      let tblFrom = -1, tblTo = -1;
+      const mark = runsOf(xml).find((r) => { const k = rowRole(r.text); return k === "desc" || k === "tarief"; });
+      if (mark) {
+        let start = -1; const re = /<w:tr[ >]/g; let m; while ((m = re.exec(xml)) && m.index < mark.pos) start = m.index;
+        const end = xml.indexOf("</w:tbl>", mark.pos), rowEnd = xml.indexOf("</w:tr>", mark.pos) + "</w:tr>".length;
+        if (start >= 0 && end > rowEnd) {
+          const model = xml.slice(start, rowEnd), have = (xml.slice(start, end).match(/<w:tr[ >]/g) || []).length;
+          const n = opts.maxLines || Math.max(have, lines.length), rows = [];
+          for (let r = 0; r < n; r++) {
+            const l = lines[r], rr = runsOf(model);
+            const v = l ? { desc: l.desc, tarief: core.eur(l.tarief), aantal: core.qty(l.aantal), bedrag: core.eur(core.round2(l.tarief * l.aantal)) } : { desc: "", tarief: "", aantal: "", bedrag: "" };
+            rr.forEach((x) => { const k = rowRole(x.text); if (k) setRun(x, v[k]); });
+            rows.push(joinRuns(model, rr));
+          }
+          const body = rows.join("");
+          xml = xml.slice(0, start) + body + xml.slice(end); tblFrom = start; tblTo = start + body.length;
+        }
+      }
+
+      runs = runsOf(xml);
+      const done = new Set();
+      const before = (r) => tblFrom < 0 || r.pos < tblFrom, after = (r) => tblTo < 0 || r.pos >= tblTo;
+      // the client: the sample client of the file (or placeholders) under "Factuur aan", in order: name, street, town, KVK, BTW
+      const [a, b] = clientWindow(runs);
+      if (a >= 0) {
+        const map = new Map(); let pos = 0, want = "";
+        for (let i = a; i < b; i++) {
+          const r = runs[i], s = r.text.trim(); if (!s) continue; done.add(i);
+          if (map.has(r.text)) { setRun(r, map.get(r.text)); continue; }
+          let v;
+          if (/^kvk:?$/i.test(s)) { v = K.kvk ? r.text : ""; want = "kvk"; }
+          else if (/^btw:?$/i.test(s)) { v = K.btw ? r.text : ""; want = "btw"; }
+          else if (want) { v = K[want] || ""; want = ""; }
+          else { v = [K.name, K.street, K.city][pos++] || ""; }
+          map.set(r.text, v); setRun(r, v);
+        }
+      }
+      // date and term: placeholders, or the sample values of the file above the rows
+      if (!runs.some((r) => /\[datum\]/i.test(r.text))) { const r = runs.find((r, i) => !done.has(i) && before(r) && /^\d{1,2}[/.-]\d{1,2}[/.-]\d{4}$/.test(r.text.trim())); if (r) { setRun(r, data.datum); done.add(runs.indexOf(r)); } }
+      if (!runs.some((r) => /\[betaaltermijn\]/i.test(r.text))) { const r = runs.find((r, i) => !done.has(i) && before(r) && /^\d+\s+dagen$/i.test(r.text.trim())); if (r) { setRun(r, data.betaaltermijn); done.add(runs.indexOf(r)); } }
+      // totals below the rows: "[bedrag]" in order (subtotal, VAT, total), the VAT line's label and its sample amount
+      if (tblTo >= 0) {
+        const am = runs.filter((r) => after(r) && rowRole(r.text) === "bedrag");
+        const vals = am.length >= 3 ? [t.sub, t.vat, t.total] : am.length === 2 ? [t.sub, t.total] : [t.total];
+        am.forEach((r, i) => { setRun(r, core.eur(vals[Math.min(i, vals.length - 1)])); done.add(runs.indexOf(r)); });
+        const lab = runs.find((r) => after(r) && /^btw\s*(verlegd|\d+([.,]\d+)?\s*%)$/i.test(r.text.trim())); if (lab) { setRun(lab, t.btwLabel); done.add(runs.indexOf(lab)); }
+        if (am.length < 3) { const z = runs.find((r, i) => !done.has(i) && after(r) && /^€\s*0,00$/.test(r.text.trim())); if (z) { setRun(z, core.eur(t.vat)); done.add(runs.indexOf(z)); } }
+      }
+      // the sender's details written in the file, and the placeholders
+      runs.forEach((r, i) => {
+        if (done.has(i)) return;
+        const s = r.text.trim(); let m;
+        if (s) {
+          const k = FIELDS.find((f) => orig[f] && s === orig[f]);
+          if (k) { setRun(r, S[k]); return; }
+          if (orig.name && (m = s.match(/^(t\.?\s*n\.?\s*v\.?\s+)(.+)$/i)) && m[2] === orig.name) { setRun(r, m[1] + S.name); return; }
+          if (orig.phone && (m = s.match(PHONE_RE)) && m[1] === orig.phone) { setRun(r, S.phone ? s.slice(0, s.length - m[1].length) + S.phone : ""); return; }
+          if (orig.email && s.includes(orig.email)) { setRun(r, S.email ? r.text.replace(orig.email, S.email) : ""); return; }
+          if (orig.kvk && (m = s.match(/^(kvk(?:[ -]?(?:nr|nummer))?\.?\s*:?\s*)(\d{8})$/i)) && m[2] === orig.kvk) { setRun(r, S.kvk ? m[1] + S.kvk : ""); return; }
+        }
+        if (!r.text.includes("[")) return;
+        const v = fillPh(r.text);
+        if (v === r.text) return;
+        setRun(r, /^\s*(tel(efoon)?\.?|t\.?)\s*:?\s*$/i.test(v) ? "" : v); // "Tel: " without a number goes
+      });
+      xml = joinRuns(xml, runs);
+      zip.file(part, xml);
     }
-    xml = xml.slice(0, start) + rows.join("") + xml.slice(end);
-
-    xml = setText(xml, "[nr]-2026", data.factuurnr);
-    xml = setText(xml, "09/11/2026", data.datum);
-    xml = setText(xml, "14 dagen", data.betaaltermijn);
-    xml = setText(xml, "Piguillet BV", K.name || "");
-    xml = setText(xml, "Edisonstraat 8", K.street || "");
-    xml = setText(xml, "2652 XS Berkel en Rodenrijs", K.city || "");
-    xml = setText(xml, "KVK  ", K.kvk ? "KVK  " : ""); xml = setText(xml, "52742938", K.kvk || "");
-    xml = setText(xml, "BTW  ", K.btw ? "BTW  " : ""); xml = setText(xml, "NL850577950B01", K.btw || "");
-    xml = setText(xml, "€ [bedrag]", core.eur(t.sub), 1); // subtotal (the rows above are already filled in)
-    xml = setText(xml, "BTW verlegd", t.btwLabel);
-    xml = setText(xml, "€ 0,00", core.eur(t.vat));
-    xml = setText(xml, "€ [bedrag]", core.eur(t.total), 1); // total
-    xml = setText(xml, "[Naam]", S.person);
-    xml = setTextAll(xml, "Extreme Building", S.name); // under the signature and in the footer
-    xml = setText(xml, "[Straat + huisnummer]", S.street);
-    xml = setText(xml, "[Postcode]  [Plaats]", S.city);
-    xml = setText(xml, "Tel: [telefoonnummer]", S.phone ? "Tel: " + S.phone : "");
-    xml = setText(xml, "[e-mailadres]", S.email);
-    xml = setText(xml, "[IBAN]", S.iban);
-    xml = setText(xml, "t.n.v. Extreme Building", "t.n.v. " + S.name);
-    xml = setText(xml, "[BTW-nummer]", S.btw);
-    xml = setText(xml, "[KVK-nummer]", S.kvk);
-    zip.file("word/document.xml", xml);
     const core1 = zip.file("docProps/core.xml");
     if (core1) {
       let c = await core1.async("string");
@@ -242,18 +390,51 @@
     }
     return zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
   }
+  const fillExtremeDocx = (JSZip, templateBytes, data, core) => fillTemplateDocx(JSZip, templateBytes, data, core, { maxLines: MAX_LINES });
+
+  // ---------------------------------------------------------------- the person's own designs (Word files they imported)
+  // Settings keep the list ({id, name, file}); the desktop app keeps the files in <data folder>/templates. They are listed here like the other
+  // designs, with the details written in the file as their defaults. Word is filled from the file itself; the PDF cannot follow an unknown
+  // layout, so it is drawn in the Valkyrys layout with the logo of the file (the first wide picture) and the details.
+  const CUSTOM_PREVIEW = "img/tpl-custom.png";
+  const NO_LOGO = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg=="; // 1x1, transparent
+  const b64bytes = (s) => (typeof Buffer !== "undefined" ? new Uint8Array(Buffer.from(s, "base64")) : Uint8Array.from(atob(s), (c) => c.charCodeAt(0)));
+  const custom = (id) => TEMPLATES.find((t) => t.custom && t.id === id) || null;
+  /** the list from the settings: entries appear at once (so a chosen design is known before its file is read), gone ones are taken out */
+  function setCustomList(list) {
+    const want = (Array.isArray(list) ? list : []).filter((c) => c && typeof c.id === "string" && c.id);
+    for (let i = TEMPLATES.length - 1; i >= 0; i--) if (TEMPLATES[i].custom && !want.some((c) => c.id === TEMPLATES[i].id)) TEMPLATES.splice(i, 1);
+    for (const c of want) {
+      const t = custom(c.id);
+      if (t) t.name = c.name || t.name;
+      else TEMPLATES.push({ id: c.id, name: c.name || "Ontwerp", preview: CUSTOM_PREVIEW, custom: true, file: c.file || "", bytes: null, logo: null, found: [], sender: { ...BLANK }, settings: {} });
+    }
+    return TEMPLATES.filter((t) => t.custom);
+  }
+  /** gives a listed design its Word file: reads the details and the logo out of it */
+  async function loadCustom(JSZip, id, bytes) {
+    const t = custom(id); if (!t) return null;
+    const info = await inspectDocx(JSZip, bytes);
+    t.bytes = bytes; t.logo = info.logo; t.sender = { ...BLANK, ...info.sender }; t.found = Object.keys(info.sender);
+    return t;
+  }
 
   // ---------------------------------------------------------------- one entry point per output
   /** PDF of an invoice in the design named by data.template (the first design when it is missing) */
   function renderPdf(PDFLib, assets, data, core) {
     if (data.template === "extreme") return renderExtreme(PDFLib, assets, data, core);
+    const c = custom(data.template);
+    if (c) return core.renderInvoice(PDFLib, { ...assets, images: { ...assets.images, logo: c.logo || b64bytes(NO_LOGO) } }, data);
     return core.renderInvoice(PDFLib, assets, data);
   }
   /** Word file of an invoice in the design named by data.template */
   async function buildWord(deps, assets, data, core) { // deps: { docx, InvoiceDocx, JSZip }
     if (data.template === "extreme") return fillExtremeDocx(deps.JSZip, assets.extremeDocx, data, core);
+    const c = custom(data.template);
+    if (c) { if (!c.bytes) throw new Error("template file missing"); return fillTemplateDocx(deps.JSZip, c.bytes, data, core); }
     return deps.InvoiceDocx.buildDocx(deps.docx, assets.docx, data, core);
   }
 
-  return { TEMPLATES, FIELDS, REQUIRED, get, senderFor, missing, forRender, owners, renderPdf, buildWord, renderExtreme, fillExtremeDocx };
+  return { TEMPLATES, FIELDS, REQUIRED, get, senderFor, missing, forRender, owners, renderPdf, buildWord, renderExtreme, fillExtremeDocx,
+    fillTemplateDocx, inspectDocx, readSender, setCustomList, loadCustom, CUSTOM_PREVIEW };
 });
