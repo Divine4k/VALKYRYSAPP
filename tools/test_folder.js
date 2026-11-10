@@ -40,11 +40,15 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   const xb = await page.$eval('article.po [data-act="remove"]', (b) => ({ t: b.textContent.trim(), title: b.title, aria: b.getAttribute("aria-label"), svg: !!b.querySelector("svg"), w: b.offsetWidth, h: b.offsetHeight }));
   ok(!xb.t && xb.svg && xb.title === "Verwijderen uit de lijst" && xb.aria.includes("Verwijderen uit de lijst") && Math.abs(xb.w - xb.h) < 2, "remove is a round × icon button with the translated label: " + JSON.stringify(xb));
   const rec = (n) => JSON.parse(fs.readFileSync(path.join(dataHome, "Valkyrys app", "data.json"), "utf8"))["invoices/" + n];
-  const hbtns = (n) => page.$$eval(`#hist li`, (li, n) => { const l = li.find((x) => x.querySelector(".t").textContent === n); return l ? [...l.querySelectorAll("button")].map((b) => b.dataset.hprev || (b.dataset.redo ? "redo" : b.dataset.del ? "del" : "?")) : null; }, n);
+  // what the invoice's row in Documents offers: the PDF / Word chips that are on, make again, the eye (as the app draws it), delete
+  const hbtns = async (n) => { await goTab(page, "docs"); await page.waitForTimeout(300);
+    const r = await page.$$eval(`#docsList li[data-nr="${n}"]`, (li) => li.length ? [...li[0].querySelectorAll("button")].filter((b) => !b.disabled && b.dataset.doc !== "po" && !b.dataset.reveal && !b.dataset.missignore).map((b) => b.dataset.doc || (b.dataset.remake ? "remake" : b.dataset.draw ? "draw" : b.dataset.deldoc ? "del" : "?")) : null);
+    await goTab(page, "inv"); return r; };
+  ok(!(await page.$("#hist")) && !(await page.$("#histEmpty")), "no 'Gemaakte facturen' list on the Invoices tab");
   await page.click('article.po [data-act="download"]'); await page.waitForTimeout(2500);
   ok(fs.existsSync(F + "/VALKYRYS 65-2026.pdf") && fs.statSync(F + "/VALKYRYS 65-2026.pdf").size > 10000, "PDF saved into the folder (" + (fs.existsSync(F + "/VALKYRYS 65-2026.pdf") && fs.statSync(F + "/VALKYRYS 65-2026.pdf").size) + " bytes)");
   console.log("toast:", await page.textContent("#toast"));
-  ok(JSON.stringify(await hbtns("65-2026")) === '["pdf","del"]', "history: only PDF shown while only the PDF exists: " + (await hbtns("65-2026")));
+  ok(JSON.stringify(await hbtns("65-2026")) === '["pdf","del"]', "Documents: only PDF on while only the PDF exists: " + (await hbtns("65-2026")));
   ok(JSON.stringify(rec("65-2026").formats) === '["pdf"]', "record formats [pdf]: " + JSON.stringify(rec("65-2026").formats));
   const ft2 = await foot(); ok(ft2.includes("download:Opnieuw opslaan (PDF)") && ft2.includes("download-both*:Opnieuw opslaan (PDF + Word)") && ft2.includes("download-docx:Opnieuw opslaan (Word)") && (await page.textContent("article.po .done")).includes("Opgeslagen als 65-2026"), "after saving: note + 'opnieuw' labels: " + ft2);
   await page.click('article.po [data-act="download-docx"]'); await page.waitForTimeout(2500);
@@ -52,17 +56,18 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   ok(!fs.readdirSync(F).some((n) => n.endsWith(".part")), "no temp files left");
   const r65 = rec("65-2026");
   ok(JSON.stringify(r65.formats) === '["pdf","docx"]' && JSON.stringify(r65.savedFiles) === '["VALKYRYS 65-2026.pdf","VALKYRYS 65-2026.docx"]', "record keeps both formats and both file names: " + JSON.stringify([r65.formats, r65.savedFiles]));
-  ok(JSON.stringify(await hbtns("65-2026")) === '["pdf","word","del"]', "history: PDF + Word once both exist");
+  ok(JSON.stringify(await hbtns("65-2026")) === '["pdf","word","del"]', "Documents: PDF + Word once both exist");
   await goTab(page, "docs"); await page.waitForTimeout(300); ok((await page.$$eval("#docsList li", (l) => l.length)) === 3, "Documents now lists 3 invoices"); await goTab(page, "inv");
   ok((await page.textContent("#nextNr")) === "66-2026", "next number now " + (await page.textContent("#nextNr")));
-  // history PDF / Word: preview the file in the folder, nothing written
+  // Documents PDF / Word: preview the file in the folder, nothing written
   const mt = (e) => fs.statSync(`${F}/VALKYRYS 65-2026.${e}`).mtimeMs, files0 = fs.readdirSync(F).join("|"), m0 = [mt("pdf"), mt("docx")];
-  await page.click('#hist button[data-hprev="pdf"][data-nr="65-2026"]'); await page.waitForSelector("#poDlg[open] #poPages canvas", { timeout: 10000 });
-  ok((await page.textContent("#poDlgTitle")).includes("65-2026"), "history PDF opens the preview of 65-2026");
+  await goTab(page, "docs"); await page.waitForTimeout(300);
+  await page.click('#docsList li[data-nr="65-2026"] button[data-doc="pdf"]'); await page.waitForSelector("#poDlg[open] #poPages canvas", { timeout: 10000 });
+  ok((await page.textContent("#poDlgTitle")).includes("65-2026"), "Documents PDF opens the preview of 65-2026");
   await page.click("#poDlgClose");
-  await page.click('#hist button[data-hprev="word"][data-nr="65-2026"]'); await page.waitForSelector("#poDlg[open] #poPages .wpage", { timeout: 10000 });
-  ok((await page.textContent("#poPages")).includes("65-2026"), "history Word shows the Word file");
-  await page.click("#poDlgClose"); await page.waitForTimeout(300);
+  await page.click('#docsList li[data-nr="65-2026"] button[data-doc="word"]'); await page.waitForSelector("#poDlg[open] #poPages .wpage", { timeout: 10000 });
+  ok((await page.textContent("#poPages")).includes("65-2026"), "Documents Word shows the Word file");
+  await page.click("#poDlgClose"); await page.waitForTimeout(300); await goTab(page, "inv");
   ok(fs.readdirSync(F).join("|") === files0 && mt("pdf") === m0[0] && mt("docx") === m0[1], "previewing writes nothing (same files, same times)");
   // save both from the card: both rewritten (same number: no question), no (2) copy
   await page.waitForTimeout(50); await page.click('article.po [data-act="download-both"]'); await page.waitForTimeout(3000);
@@ -70,15 +75,24 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   ok(mt("pdf") > m0[0] && mt("docx") > m0[1], "save both rewrote the PDF and the Word file");
   ok(!fs.readdirSync(F).some((n) => n.includes("(2)")), "re-saving the same invoice replaces the file");
   ok(JSON.stringify(rec("65-2026").savedFiles) === '["VALKYRYS 65-2026.pdf","VALKYRYS 65-2026.docx"]', "file names not doubled in the record");
-  // no file left in the folder: one "Opnieuw maken" button that makes both again
+  // no file left in the folder: Documents shows it as the app draws it (eye), the stale banner names it
   fs.renameSync(`${F}/VALKYRYS 65-2026.pdf`, "/tmp/65.pdf"); fs.renameSync(`${F}/VALKYRYS 65-2026.docx`, "/tmp/65.docx");
-  await page.click("aside button[data-refresh]"); await page.waitForTimeout(1500);
-  ok(JSON.stringify(await hbtns("65-2026")) === '["redo","del"]', "history: only 'Opnieuw maken' when no file is in the folder: " + (await hbtns("65-2026")));
-  ok((await page.textContent('#hist button[data-redo="65-2026"]')) === "Opnieuw maken", "button says 'Opnieuw maken'");
-  await page.click('#hist button[data-redo="65-2026"]'); await page.waitForTimeout(3000);
+  await page.click("#newPo button[data-refresh]").catch(() => {}); await goTab(page, "docs"); await page.click("#docsView button[data-refresh]"); await page.waitForTimeout(1500); await goTab(page, "inv");
+  { const b = await hbtns("65-2026"); ok(JSON.stringify(b) === '["draw","del"]', "Documents: eye + delete when no file is in the folder: " + b); }
+  ok(await page.isVisible("#staleBar") && (await page.textContent("#staleBar")).includes("65-2026"), "the stale banner names 65-2026");
+  await goTab(page, "docs"); await page.click('#docsList li[data-nr="65-2026"] button[data-draw]'); await page.waitForSelector("#poDlg[open] #poPages canvas", { timeout: 15000 });
+  ok((await page.textContent("#poDlgTitle")).includes("65-2026"), "the eye shows 65-2026 as the app draws it");
+  await page.click("#poDlgClose"); await page.waitForTimeout(300);
+  ok(!fs.existsSync(`${F}/VALKYRYS 65-2026.pdf`), "viewing writes nothing");
+  // only the Word file missing: "Opnieuw maken" in its row makes it again
+  fs.renameSync("/tmp/65.pdf", `${F}/VALKYRYS 65-2026.pdf`); await page.click("#docsView button[data-refresh]"); await page.waitForTimeout(1500); await goTab(page, "inv");
+  { const b = await hbtns("65-2026"); ok(JSON.stringify(b) === '["pdf","del","remake"]', "Documents: PDF + 'Opnieuw maken' when the Word file is missing: " + b); }
+  await goTab(page, "docs");
+  ok((await page.textContent('#docsList li[data-nr="65-2026"] button[data-remake]')) === "Opnieuw maken", "button says 'Opnieuw maken'");
+  await page.click('#docsList li[data-nr="65-2026"] button[data-remake]'); await page.waitForTimeout(3000); await goTab(page, "inv");
   ok(fs.existsSync(`${F}/VALKYRYS 65-2026.pdf`) && fs.existsSync(`${F}/VALKYRYS 65-2026.docx`), "made again: PDF and Word back in the folder");
-  ok(JSON.stringify(await hbtns("65-2026")) === '["pdf","word","del"]', "history shows PDF + Word again");
-  await page.locator("main:visible").first().screenshot({ path: "/tmp/inv_card.png" }); // card footer + "Gemaakte facturen"
+  ok(JSON.stringify(await hbtns("65-2026")) === '["pdf","word","del"]', "Documents shows PDF + Word again");
+  await page.locator("main:visible").first().screenshot({ path: "/tmp/inv_card.png" }); // card footer + sidebar
   // open a file from the list
   await goTab(page, "docs"); await page.click('#docsList button[data-doc="pdf"][data-nr="65-2026"]'); await page.waitForSelector("#poPages canvas", { timeout: 10000 });
   await page.click("#poDlgOpen"); await page.waitForTimeout(300); await page.click("#poDlgClose"); await goTab(page, "inv");

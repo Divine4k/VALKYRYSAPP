@@ -19,7 +19,10 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
   await app.firstWindow(); let page; for (let i = 0; i < 100 && !page; i++) { page = app.windows().find((w) => !w.url().includes("splash")); if (!page) await new Promise((r) => setTimeout(r, 200)); }
   const errs = []; page.on("pageerror", (e) => errs.push(e.message));
   await page.setViewportSize({ width: 1280, height: 1000 }).catch(() => {});
-  await page.waitForSelector("#hist li", { state: "attached" }); await page.waitForTimeout(500);
+  // the saved invoices are read: the statistics tab (the start tab) shows their revenue
+  const loaded = () => page.waitForFunction(() => { const v = document.querySelector("#kpis .kpi .v"); return v && /[1-9]/.test(v.textContent); }, null, { timeout: 30000 });
+  await loaded(); await page.waitForTimeout(500);
+  ok(!(await page.$("#hist")), "no 'Gemaakte facturen' list on the Invoices tab");
   console.log("today:", new Date().toISOString().slice(0, 10));
   ok(await page.isVisible("#statsView") && !(await page.isVisible("#viewInv")), "starts on the statistics tab"); eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.dataset.tab)), ["stats", "inv", "docs", "settings"], "tabs: statistics, invoices, documents, settings");
   await goTab(page, "stats"); await page.waitForTimeout(300);
@@ -109,7 +112,7 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
   ok(await page.$eval("#kpiFilter", (b) => b.classList.contains("custom")), "filter button marked as changed");
   await page.keyboard.press("Escape"); await page.waitForTimeout(100);
   ok(!(await page.isVisible("#kpiMenu")), "Escape closes the tile menu");
-  await page.reload(); await page.waitForSelector("#hist li", { state: "attached" }); await page.waitForTimeout(500);
+  await page.reload(); await loaded(); await page.waitForTimeout(500);
   await goTab(page, "stats"); await page.selectOption("#statYear", "2026"); await page.waitForTimeout(300);
   eq(await kids(), ["rev", "count", "avg", "inc", "rate"], "tile choice survives a reload");
   await page.click("#kpiFilter"); await page.waitForTimeout(150);

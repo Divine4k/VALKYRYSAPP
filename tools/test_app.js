@@ -19,6 +19,6 @@ const { chromium } = require("playwright"); const fs = require("fs");
   console.log("preview canvas px:", await page.evaluate(() => { const c = document.querySelector("#dlgCanvas"); const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 4000) if (d[i] > 200) n++; return c.width + "x" + c.height + " light samples " + n; }));
   await page.screenshot({ path: "/tmp/vf-shot.png" });
   await page.reload(); await page.waitForTimeout(1000);
-  console.log("after reload: next", await page.textContent("#nextNr"), "| history:", await page.evaluate(() => [...document.querySelectorAll("#hist .t")].map((e) => e.textContent).join(",")), "| client:", await page.inputValue("#cName"));
+  console.log("after reload: next", await page.textContent("#nextNr"), "| documents:", await (async () => { await page.click("#tabDocs"); await page.waitForTimeout(200); const l = await page.$$eval("#docsList li", (x) => x.map((e) => e.dataset.nr).join(",")); await page.click("#tabInv"); return l; })(), "| #hist gone:", !(await page.$("#hist")), "| client:", await page.inputValue("#cName"));
   console.log("errors:", errs); await b.close();
 })();

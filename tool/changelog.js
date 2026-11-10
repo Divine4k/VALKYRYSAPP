@@ -3,6 +3,15 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
+    version: "1.1.3", date: "2026-11-10",
+    items: [
+      { type: "improved",
+        nl: "De lijst „Gemaakte facturen” op het tabblad Facturen is weg: alles staat bij Documenten. Daar bekijk je de PDF en het Word-bestand, verwijder je een factuur en maak je ontbrekende bestanden opnieuw.",
+        en: "The “Invoices made” list on the Invoices tab is gone: everything is in Documents. There you view the PDF and the Word file, delete an invoice and make missing files again.",
+        pl: "Lista „Wystawione faktury” na karcie Faktury zniknęła: wszystko jest w Dokumentach. Tam podejrzysz PDF i plik Word, usuniesz fakturę i utworzysz ponownie brakujące pliki." },
+    ],
+  },
+  {
     version: "1.1.2", date: "2026-11-10",
     items: [
       { type: "fixed",

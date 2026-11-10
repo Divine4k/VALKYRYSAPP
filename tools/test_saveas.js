@@ -58,8 +58,10 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   ok(!fs.readdirSync(path.dirname(Z)).some((n) => n.endsWith(".part")), "no temp file left");
   await page.waitForTimeout(800);
   ok((await page.$$eval("article.po .done", (d) => d.length)) === 2, "both invoices marked as made");
-  const histNrs = await page.$$eval("#hist .t", (t) => t.map((x) => x.textContent));
-  ok(nrs.every((n) => histNrs.includes(n)), "both recorded in the history");
+  await goTab(page, "docs"); await page.waitForTimeout(300);
+  const histNrs = await page.$$eval("#docsList li", (l) => l.map((x) => x.dataset.nr)); await goTab(page, "inv");
+  ok(nrs.every((n) => histNrs.includes(n)), "both listed in Documents");
+  ok(!(await page.$("#hist")), "no 'Gemaakte facturen' list on the Invoices tab");
   const db1 = JSON.parse(fs.readFileSync(dataFile, "utf8")); const made1 = nrs.map((n) => db1["invoices/" + n] && db1["invoices/" + n].createdAt);
   ok(made1.every(Boolean), "saved in data.json");
 

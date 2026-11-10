@@ -93,7 +93,9 @@ const server = http.createServer((req, res) => {
   fs.writeFileSync(path.join(outDir, sw.filename), Buffer.from(sw.b64, "base64"));
   console.log("saved word file:", sw.filename);
   await page.waitForTimeout(300);
-  console.log("after download, next number:", await page.textContent("#nextNr"), "| history:", await page.evaluate(() => [...document.querySelectorAll("#hist .t")].map((e) => e.textContent).join(", ")));
+  // the invoices made are listed in Documents (the Invoices tab has no list of its own any more)
+  const docsNrs = async () => { await page.click("#tabDocs"); await page.waitForTimeout(200); const l = await page.$$eval("#docsList li", (x) => x.map((e) => e.dataset.nr)); await page.click("#tabInv"); await page.waitForTimeout(100); return l.join(", "); };
+  console.log("after download, next number:", await page.textContent("#nextNr"), "| documents:", await docsNrs(), "| #hist exists:", !!(await page.$("#hist")));
 
   // the same PO again: should warn it was already invoiced and get the next number
   await page.setInputFiles("#file", poPath);
@@ -116,8 +118,8 @@ const server = http.createServer((req, res) => {
   await page.waitForTimeout(300);
   ord.afterSettings = await page.evaluate(() => window.__t.state.cards.filter(x=>!x.done).map((x) => x.po + ":" + x.nummer).join(" "));
   console.log("order test:", JSON.stringify(ord));
-  await page.click('#hist button[data-del]'); await page.click('#delGo'); await page.waitForTimeout(300);
-  console.log("history after delete:", await page.evaluate(() => [...document.querySelectorAll("#hist .t")].map((e) => e.textContent).join(", ")));
+  await page.click("#tabDocs"); await page.waitForTimeout(200); await page.click('#docsList button[data-deldoc]'); await page.click('#delGo'); await page.waitForTimeout(300); await page.click("#tabInv");
+  console.log("documents after delete:", await docsNrs());
   // language switch
   for (const lg of ["en", "pl", "nl"]) {
     await page.evaluate((v) => { const s = document.querySelector("#lang"); s.value = v; s.dispatchEvent(new Event("change", { bubbles: true })); }, lg); await page.waitForTimeout(200);
@@ -153,10 +155,14 @@ const server = http.createServer((req, res) => {
   await page.waitForTimeout(300); const r = await rec(nrNew);
   ok(r && JSON.stringify(r.formats) === '["pdf","docx"]', "record formats: " + JSON.stringify(r && r.formats));
   ok((await page.textContent("article.po .done")).includes(nrNew) && (await page.textContent('article.po [data-act="download-both"]')).startsWith("Opnieuw"), "done note + 'again' label");
-  ok(JSON.stringify(await page.$$eval(`#hist li`, (li, n) => { const l = li.find((x) => x.querySelector(".t").textContent === n); return [...l.querySelectorAll("button")].map((b) => b.dataset.redo ? "redo:" + b.textContent : b.dataset.del ? "del" : "?"); }, nrNew)) === '["redo:Opnieuw maken","del"]', "history without a folder: 'Opnieuw maken' + ×");
-  // Opnieuw maken: downloads PDF + Word again
-  n0 = await nSaved(); await page.click(`#hist button[data-redo="${nrNew}"]`); await page.waitForFunction((n) => window.__saved.length >= n + 2, n0, { timeout: 20000 });
-  ok(true, "'Opnieuw maken' downloads PDF + Word");
+  ok(!(await page.$("#hist")) && !(await page.$("#histEmpty")), "no 'Gemaakte facturen' list on the Invoices tab");
+  // Documents without a folder: the PDF chip draws the invoice again (dashed), no Word file, delete
+  await page.click("#tabDocs"); await page.waitForTimeout(200);
+  const row = `#docsList li[data-nr="${nrNew}"]`;
+  ok(JSON.stringify(await page.$$eval(`${row} button`, (b) => b.filter((x) => !x.disabled && x.dataset.doc !== "po").map((x) => x.dataset.doc || (x.dataset.deldoc ? "del" : "?")))) === '["pdf","del"]', "Documents without a folder: PDF (drawn by the app) + delete");
+  await page.click(`${row} button[data-doc="pdf"]`); await page.waitForSelector("#poDlg[open] #poPages canvas", { timeout: 20000 });
+  ok((await page.textContent("#poDlgTitle")).includes(nrNew), "the PDF chip shows " + nrNew + " as the app draws it");
+  await page.click("#poDlgClose"); await page.click("#tabInv"); await page.waitForTimeout(200);
   // batch: one card invoiced elsewhere, one new -> skip those
   await page.$eval("#clear", (b) => b.click()); await page.setInputFiles("#file", [poPath]); await page.waitForSelector("article.po h3"); await page.setInputFiles("#file", [poPath]);
   await page.waitForFunction(() => document.querySelectorAll("article.po").length === 2, null, { timeout: 15000 });
@@ -174,7 +180,7 @@ const server = http.createServer((req, res) => {
   ok(await page.$eval('article.po [data-act="remove"]', (b) => b.title === "Verwijderen uit de lijst" && !!b.querySelector("svg") && !b.textContent.trim()), "× button with title 'Verwijderen uit de lijst'");
   await page.click('article.po [data-act="remove"]'); await page.waitForTimeout(200);
   ok((await page.$$("article.po")).length === nCards - 1, "× removes the card");
-  await page.locator("#hist").scrollIntoViewIfNeeded(); await page.screenshot({ path: path.join(outDir, "tool-112.png"), fullPage: true });
+  await page.screenshot({ path: path.join(outDir, "tool-112.png"), fullPage: true });
   console.log(fails ? `${fails} check(s) failed` : "all 1.1.2 checks passed");
   const phone = await browser.newPage({ viewport: { width: 390, height: 900 } });
   await phone.route(/./, (r) => r.request().url().startsWith("http://localhost") ? r.continue() : r.abort());

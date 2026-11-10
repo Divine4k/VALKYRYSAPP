@@ -31,7 +31,8 @@ const eq2 = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a
   await page.waitForFunction(() => document.querySelectorAll("#npList li").length === 5, null, { timeout: 60000 });
   ok(true, "5 new purchase orders listed");
   // refresh buttons present where they are useful
-  for (const sel of ["#newPo [data-refresh]", "aside [data-refresh]"]) ok(await page.isVisible(sel), "refresh button visible: " + sel);
+  ok(await page.isVisible("#newPo [data-refresh]"), "refresh button visible: #newPo [data-refresh]");
+  ok(!(await page.$("#hist")) && !(await page.$("#histEmpty")) && !(await page.$("aside [data-refresh]")), "no 'Gemaakte facturen' list in the sidebar any more");
   // make 5 invoices into the folder: 62..66 (PDF + Word)
   await page.click("#npAll"); await page.waitForFunction(() => document.querySelectorAll("article.po h3").length === 5, null, { timeout: 30000 });
   await page.click("#zipAll"); for (let i = 0; i < 300 && !exists("VALKYRYS 66-2026.docx"); i++) await sleep(200); await sleep(1500);
@@ -41,8 +42,9 @@ const eq2 = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a
   ok((await page.textContent("#nextNr")) === "67-2026", "next number 67-2026");
   await page.click("#clear"); await sleep(300); // the finished cards would keep their numbers taken
 
-  // ---- 1. delete from the history with its files: record gone, files to the bin, the PO stays
-  await page.click('#hist button[data-del="66-2026"]'); await page.waitForSelector("#delDlg[open]");
+  // ---- 1. delete from Documents with its files: record gone, files to the bin, the PO stays
+  await goTab(page, "docs"); await page.waitForSelector('#docsList li[data-nr="66-2026"] button[data-deldoc]', { timeout: 15000 });
+  await page.click('#docsList li[data-nr="66-2026"] button[data-deldoc]'); await page.waitForSelector("#delDlg[open]");
   ok((await page.textContent("#delDlgTitle")).includes("66-2026"), "dialog title names the invoice");
   ok(await page.isVisible("#delPdfWrap") && await page.isChecked("#delPdf") && (await page.textContent("#delPdfWrap")).includes("VALKYRYS 66-2026.pdf"), "PDF checkbox shown, checked, with its file name");
   ok(await page.isVisible("#delWordWrap") && await page.isChecked("#delWord") && (await page.textContent("#delWordWrap")).includes("VALKYRYS 66-2026.docx"), "Word checkbox shown, checked, with its file name");
@@ -66,6 +68,8 @@ const eq2 = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a
   ok((await app.evaluate(() => globalThis.__trash.length)) === 2, "2 trash calls");
   ok((await page.textContent("#nextNr")) === "66-2026", "number 66 free again: " + (await page.textContent("#nextNr")));
   console.log("toast:", await page.textContent("#toast"));
+  ok(!(await page.$('#docsList li[data-nr="66-2026"]')), "66-2026 gone from Documents");
+  await goTab(page, "inv");
 
   // ---- 1b. a file deleted outside the app: the row says the PDF is missing, banners on Documents and in the new-orders panel, the Incomplete filter, make again, ignore
   fs.rmSync(path.join(INV, "VALKYRYS 62-2026.pdf"));
@@ -158,15 +162,15 @@ const eq2 = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a
 
   // ---- 7. "Keep" remembers; an older record without savedFiles counts by the folder's range
   fs.rmSync(path.join(INV, "VALKYRYS 62-2026.pdf")); fs.rmSync(path.join(INV, "VALKYRYS 62-2026.docx"), { force: true }); // (its Word file went in 1b)
-  await page.click("aside [data-refresh]"); await sleep(1500);
-  ok(await page.isVisible("#staleBar") && (await page.textContent("#staleBar")).includes("62-2026"), "history refresh button: 62 flagged");
+  await page.click("#newPo [data-refresh]"); await sleep(1500);
+  ok(await page.isVisible("#staleBar") && (await page.textContent("#staleBar")).includes("62-2026"), "refresh button: 62 flagged");
   await page.click('#staleBar button[data-stale="keep"]'); await sleep(800);
   ok(!(await page.isVisible("#staleBar")) && db()["invoices/62-2026"], "keep: banner gone, record kept");
   ok(((db()["settings/keptstale"] || {}).list || []).includes("62-2026"), "kept numbers stored");
 
   // ---- 7b. two invoices for one purchase order: 62-2026 (made here for PO-200001) and a file "VALKYRYS 70-2026 PO-200001.pdf"
   fs.writeFileSync(path.join(INV, "VALKYRYS 70-2026 PO-200001.pdf"), "x");
-  await page.click("aside [data-refresh]"); await sleep(1500);
+  await page.click("#newPo [data-refresh]"); await sleep(1500);
   const dupLine = await page.textContent("#npWarn").catch(() => ""); console.log("dup line:", dupLine);
   ok(await page.isVisible("#npWarn") && dupLine.includes("PO-200001 heeft 2 facturen: 62-2026 en 70-2026"), "new-orders panel: 'PO-200001 heeft 2 facturen: 62-2026 en 70-2026'");
   await page.click('#npWarn button[data-dw="dup"]'); await sleep(500);

@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap">
 <style>
-/* Layout: brand band on top; work column (drop zone + one card per PO) beside a narrow column (next number, settings, history). */
+/* Layout: brand band on top; work column (drop zone + one card per PO) beside a narrow column (next number, settings). */
 :root {
   --bg: #F1F2F4; --surface: #FFFFFF; --sunken: #F7F8F9; --ink: #111214; --text: #2B2D31; --muted: #656972;
   --line: #E0E2E6; --brand: #FEBD17; --accent: #FEBD17; --accent-ink: #111111; --band: #111111; --band-text: #FFFFFF; --band-muted: #A9ABB0;
@@ -743,16 +743,11 @@ window.ValkTheme = (function () {
     <p id="noCards" class="empty" data-i18n="noCards">Nog geen inkooporders toegevoegd. Je kunt er meerdere tegelijk in slepen; ze krijgen opeenvolgende factuurnummers.</p>
   </section>
 
-  <aside class="col" aria-label="Nummering en geschiedenis">
+  <aside class="col" aria-label="Nummering en instellingen">
     <div class="panel">
       <p class="eyebrow" data-i18n="next">Volgende factuur</p>
       <div class="next"><b id="nextNr" class="num">…</b><span class="small" id="nextNote"></span></div>
       <p class="small" id="storeNote"></p>
-    </div>
-    <div class="panel">
-      <div class="ehead"><p class="eyebrow" data-i18n="history">Gemaakte facturen</p><button type="button" class="ghost refresh" data-refresh data-i18n-aria="refresh" aria-label="Vernieuwen" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg></button></div>
-      <ul class="hist" id="hist"></ul>
-      <p class="empty" id="histEmpty" data-i18n="histEmpty">Facturen die je hier downloadt, verschijnen in deze lijst. Zo zie je ook of een PO al gefactureerd is.</p>
     </div>
     <details class="panel" id="settingsBox">
       <summary class="eyebrow" data-i18n="setInvoices">Facturen en klant</summary>
@@ -1092,7 +1087,6 @@ window.ValkTheme = (function () {
       sStart: "Begin bij factuurnummer (dit jaar)", sFile: "Bestandsnaam van facturen", sFileHint: "Gebruik {nummer}, {po}, {datum} en {klant}. Voorbeeld: {0}", sTerm: "Betaaltermijn", sBtw: "Standaard BTW",
       "btw.verlegd": "BTW verlegd", "btw.21": "BTW 21%", "btw.9": "BTW 9%",
       client: "Klant", cName: "Naam", cStreet: "Straat", cCity: "Postcode en plaats", cKvk: "KVK", cBtw: "BTW-nummer", save: "Instellingen opslaan",
-      history: "Gemaakte facturen", histEmpty: "Facturen die je hier downloadt, verschijnen in deze lijst. Zo zie je ook of een PO al gefactureerd is.",
       close: "Sluiten", preview: "Voorbeeld {0}", langLabel: "Taal",
       libError: "De onderdelen om PDF's te lezen en te maken zijn niet geladen. Herlaad de pagina; werkt het dan nog niet, probeer het later opnieuw.",
       loading: "Bezig met laden…", stored: "Nummering en gemaakte facturen worden bewaard.", notStored: "Nummering en geschiedenis worden in deze weergave niet bewaard.",
@@ -1110,7 +1104,7 @@ window.ValkTheme = (function () {
       ordered: "Besteld {0}", by: "door {0}", unknownPo: "Onbekende PO", remove: "Verwijderen", removeAria: "Verwijder {0}",
       desc: "Omschrijving", qty: "Aantal", rate2: "Tarief", invNo: "Factuurnummer", invDate: "Factuurdatum", vat: "BTW", totalPay: "Totaal te betalen",
       doneAs: "✓ Gedownload als {0}", view: "Bekijken", dlWord: "Download Word", dlPdf: "Download PDF", dlAgain: "Opnieuw downloaden (PDF)", busy: "Bezig…",
-      delAria: "Verwijder {0} uit de lijst", delTitle: "Verwijder uit de lijst", sure: "Zeker?", delToast: "{0} is uit de lijst gehaald. Het nummer is weer vrij.", delFail: "Verwijderen lukte niet.",
+      sure: "Zeker?", delToast: "{0} is uit de lijst gehaald. Het nummer is weer vrij.", delFail: "Verwijderen lukte niet.",
       batchText: "{0} facturen klaar: {1}.", nrFormat: "Gebruik de vorm 62-2026.",
       folder: "Map met facturen", folderIntro: "Kies een map waar je facturen bewaard worden. Nieuwe facturen worden daar automatisch in opgeslagen en de app laat alles zien wat er al in staat.",
       folderPick: "Kies map…", folderChange: "Andere map…",
@@ -1124,7 +1118,7 @@ window.ValkTheme = (function () {
       saveBoth: "Opslaan (PDF + Word)", saveBothAgain: "Opnieuw opslaan (PDF + Word)", saveWordAgain: "Opnieuw opslaan (Word)", dlBoth: "Download (PDF + Word)", dlBothAgain: "Opnieuw downloaden (PDF + Word)", dlWordAgain: "Opnieuw downloaden (Word)",
       removeCard: "Verwijderen uit de lijst", removeCardAria: "Verwijderen uit de lijst: {0}", alreadyInvNr: "{0} is al gefactureerd als {1}.",
       poDupTitle: "Al gefactureerd", poDupOne: "{0} is al gefactureerd als {1}. Toch nog een factuur maken?", poDupMany: "Deze inkooporders zijn al gefactureerd. Toch nog een factuur maken?", poDupItem: "{0}: al gefactureerd als {1}",
-      poDupGo: "Toch opslaan", poDupSkip: "Deze overslaan", histRemake: "Opnieuw maken", histRemakeTitle: "Het bestand staat niet in de map: maak de factuur opnieuw", histPdfAria: "PDF van {0} bekijken", histWordAria: "Word-bestand van {0} bekijken",
+      poDupGo: "Toch opslaan", poDupSkip: "Deze overslaan",
       saveWord: "Opslaan als Word", saveAgain: "Opnieuw opslaan (PDF)",
       saveAll: "Alles opslaan in de map", doneSaved: "✓ Opgeslagen als {0}",
       savedIn: "{0} opgeslagen in de map.", savedMany: "{0} facturen opgeslagen in de map.",
@@ -1254,7 +1248,6 @@ window.ValkTheme = (function () {
       sStart: "Start at invoice number (this year)", sFile: "Invoice file name", sFileHint: "Use {nummer} (number), {po}, {datum} (date) and {klant} (client). Example: {0}", sTerm: "Payment term", sBtw: "Default VAT",
       "btw.verlegd": "VAT reverse-charged", "btw.21": "VAT 21%", "btw.9": "VAT 9%",
       client: "Client", cName: "Name", cStreet: "Street", cCity: "Postcode and city", cKvk: "KVK (Chamber of Commerce no.)", cBtw: "VAT number", save: "Save settings",
-      history: "Invoices made", histEmpty: "Invoices you download appear in this list. That also shows whether a PO has already been invoiced.",
       close: "Close", preview: "Preview {0}", langLabel: "Language",
       libError: "The components for reading and making PDFs did not load. Reload the page; if it still fails, try again later.",
       loading: "Loading…", stored: "Numbering and invoices made are saved.", notStored: "Numbering and history are not saved in this view.",
@@ -1272,7 +1265,7 @@ window.ValkTheme = (function () {
       ordered: "Ordered {0}", by: "by {0}", unknownPo: "Unknown PO", remove: "Remove", removeAria: "Remove {0}",
       desc: "Description", qty: "Quantity", rate2: "Rate", invNo: "Invoice number", invDate: "Invoice date", vat: "VAT", totalPay: "Total to pay",
       doneAs: "✓ Downloaded as {0}", view: "Preview", dlWord: "Download Word", dlPdf: "Download PDF", dlAgain: "Download again (PDF)", busy: "Working…",
-      delAria: "Remove {0} from the list", delTitle: "Remove from the list", sure: "Sure?", delToast: "{0} was removed from the list. The number is free again.", delFail: "Removing failed.",
+      sure: "Sure?", delToast: "{0} was removed from the list. The number is free again.", delFail: "Removing failed.",
       batchText: "{0} invoices ready: {1}.", nrFormat: "Use the format 62-2026.",
       folder: "Invoice folder", folderIntro: "Choose a folder where your invoices are kept. New invoices are saved there automatically and the app shows everything that is already in it.",
       folderPick: "Choose folder…", folderChange: "Change folder…",
@@ -1286,7 +1279,7 @@ window.ValkTheme = (function () {
       saveBoth: "Save (PDF + Word)", saveBothAgain: "Save again (PDF + Word)", saveWordAgain: "Save again (Word)", dlBoth: "Download (PDF + Word)", dlBothAgain: "Download again (PDF + Word)", dlWordAgain: "Download again (Word)",
       removeCard: "Remove from the list", removeCardAria: "Remove from the list: {0}", alreadyInvNr: "{0} was already invoiced as {1}.",
       poDupTitle: "Already invoiced", poDupOne: "{0} was already invoiced as {1}. Make another invoice anyway?", poDupMany: "These purchase orders were already invoiced. Make another invoice anyway?", poDupItem: "{0}: already invoiced as {1}",
-      poDupGo: "Save anyway", poDupSkip: "Skip these", histRemake: "Make again", histRemakeTitle: "The file is not in the folder: make the invoice again", histPdfAria: "View the PDF of {0}", histWordAria: "View the Word file of {0}",
+      poDupGo: "Save anyway", poDupSkip: "Skip these",
       saveWord: "Save as Word", saveAgain: "Save again (PDF)",
       saveAll: "Save all to the folder", doneSaved: "✓ Saved as {0}",
       savedIn: "{0} saved to the folder.", savedMany: "{0} invoices saved to the folder.",
@@ -1416,7 +1409,6 @@ window.ValkTheme = (function () {
       sStart: "Zacznij od numeru faktury (w tym roku)", sFile: "Nazwa pliku faktury", sFileHint: "Użyj {nummer} (numer), {po}, {datum} (data) i {klant} (klient). Przykład: {0}", sTerm: "Termin płatności", sBtw: "Domyślny VAT",
       "btw.verlegd": "VAT – odwrotne obciążenie", "btw.21": "VAT 21%", "btw.9": "VAT 9%",
       client: "Klient", cName: "Nazwa", cStreet: "Ulica", cCity: "Kod pocztowy i miasto", cKvk: "KVK (numer rejestru handlowego)", cBtw: "Numer VAT", save: "Zapisz ustawienia",
-      history: "Wystawione faktury", histEmpty: "Pobrane faktury pojawiają się na tej liście. Dzięki temu widać też, czy zamówienie zostało już zafakturowane.",
       close: "Zamknij", preview: "Podgląd {0}", langLabel: "Język",
       libError: "Nie załadowano składników do odczytu i tworzenia plików PDF. Odśwież stronę; jeśli nadal nie działa, spróbuj później.",
       loading: "Ładowanie…", stored: "Numeracja i wystawione faktury są zapisywane.", notStored: "W tym widoku numeracja i historia nie są zapisywane.",
@@ -1434,7 +1426,7 @@ window.ValkTheme = (function () {
       ordered: "Zamówiono {0}", by: "przez {0}", unknownPo: "Nieznane zamówienie", remove: "Usuń", removeAria: "Usuń {0}",
       desc: "Opis", qty: "Ilość", rate2: "Stawka", invNo: "Numer faktury", invDate: "Data faktury", vat: "VAT", totalPay: "Razem do zapłaty",
       doneAs: "✓ Pobrano jako {0}", view: "Podgląd", dlWord: "Pobierz Word", dlPdf: "Pobierz PDF", dlAgain: "Pobierz ponownie (PDF)", busy: "Chwileczkę…",
-      delAria: "Usuń {0} z listy", delTitle: "Usuń z listy", sure: "Na pewno?", delToast: "Usunięto {0} z listy. Numer jest znów wolny.", delFail: "Usuwanie nie powiodło się.",
+      sure: "Na pewno?", delToast: "Usunięto {0} z listy. Numer jest znów wolny.", delFail: "Usuwanie nie powiodło się.",
       batchText: "Gotowe faktury ({0}): {1}.", nrFormat: "Użyj formatu 62-2026.",
       folder: "Folder z fakturami", folderIntro: "Wybierz folder, w którym przechowujesz faktury. Nowe faktury będą tam zapisywane automatycznie, a aplikacja pokaże wszystko, co już w nim jest.",
       folderPick: "Wybierz folder…", folderChange: "Zmień folder…",
@@ -1448,7 +1440,7 @@ window.ValkTheme = (function () {
       saveBoth: "Zapisz (PDF + Word)", saveBothAgain: "Zapisz ponownie (PDF + Word)", saveWordAgain: "Zapisz ponownie (Word)", dlBoth: "Pobierz (PDF + Word)", dlBothAgain: "Pobierz ponownie (PDF + Word)", dlWordAgain: "Pobierz ponownie (Word)",
       removeCard: "Usuń z listy", removeCardAria: "Usuń z listy: {0}", alreadyInvNr: "{0} zostało już zafakturowane jako {1}.",
       poDupTitle: "Już zafakturowane", poDupOne: "{0} zostało już zafakturowane jako {1}. Mimo to wystawić kolejną fakturę?", poDupMany: "Te zamówienia zostały już zafakturowane. Mimo to wystawić kolejne faktury?", poDupItem: "{0}: już zafakturowane jako {1}",
-      poDupGo: "Zapisz mimo to", poDupSkip: "Pomiń te", histRemake: "Utwórz ponownie", histRemakeTitle: "Pliku nie ma w folderze: utwórz fakturę ponownie", histPdfAria: "Pokaż PDF faktury {0}", histWordAria: "Pokaż plik Word faktury {0}",
+      poDupGo: "Zapisz mimo to", poDupSkip: "Pomiń te",
       saveWord: "Zapisz jako Word", saveAgain: "Zapisz ponownie (PDF)",
       saveAll: "Zapisz wszystko w folderze", doneSaved: "✓ Zapisano jako {0}",
       savedIn: "Zapisano {0} w folderze.", savedMany: "Zapisano faktur w folderze: {0}.",
@@ -1977,25 +1969,9 @@ window.ValkTheme = (function () {
     const za = $("#zipAll"), zk = folderSet() ? "saveAll" : "zipAll";
     if (za.dataset.i18n !== zk) za.dataset.i18n = zk;
     if (!za.disabled) za.textContent = tr(zk);
-    renderHistory(); renderFolder(); renderPoFolderSet(); renderNewPos();
+    renderFolder(); renderPoFolderSet(); renderNewPos();
     if (state.tab === "stats") renderStats();
     if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); if (sel && el.setSelectionRange) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
-  }
-
-  function renderHistory() {
-    const list = [...state.invoices.values()].sort((a, b) => (b.jaar - a.jaar) || (b.nummer - a.nummer)).slice(0, 25);
-    // PDF / Word open the file that is in the invoice folder (matched like the Documents tab); none there: one button that makes it again
-    const sets = new Map(list.length ? docSets().filter((s) => !s.poOnly).map((s) => [s.nr, s]) : []);
-    $("#hist").innerHTML = list.map((i) => {
-      const n = esc(i.factuurnr), s = sets.get(i.factuurnr) || {};
-      const btns = (s.pdf ? `<button type="button" data-hprev="pdf" data-nr="${n}" aria-label="${esc(tr("histPdfAria", i.factuurnr))}" title="${esc(s.pdf.name)}">PDF</button>` : "")
-        + (s.docx ? `<button type="button" data-hprev="word" data-nr="${n}" aria-label="${esc(tr("histWordAria", i.factuurnr))}" title="${esc(s.docx.name)}">Word</button>` : "")
-        + (!s.pdf && !s.docx && i.lines && i.lines.length ? `<button type="button" class="ghost" data-redo="${n}"${folderSet() ? ` title="${esc(tr("histRemakeTitle"))}"` : ""}>${esc(tr("histRemake"))}</button>` : "");
-      return `<li><span class="t num">${n}</span>
-      <span class="s">${esc([i.po, i.datum].filter(Boolean).join(" · "))} · <span class="nw num">${esc(core.eur(i.totaal || 0))}</span></span>
-      <span class="redo">${btns}<button type="button" class="ghost" data-del="${n}" aria-label="${esc(tr("delAria", i.factuurnr))}" title="${esc(tr("delTitle"))}">×</button></span></li>`;
-    }).join("");
-    $("#histEmpty").hidden = list.length > 0;
   }
 
   function updateFileHint() {
@@ -3467,35 +3443,6 @@ window.ValkTheme = (function () {
     if (b.dataset.act === "download") downloadCard(c, b);
     if (b.dataset.act === "download-docx") downloadCard(c, b, "docx");
     if (b.dataset.act === "download-both") downloadCard(c, b, "both");
-  });
-  $("#hist").addEventListener("click", async (e) => {
-    const d = e.target.closest("button[data-del]");
-    if (d) { deleteSet(d.dataset.del, d); return; }
-    const v = e.target.closest("button[data-hprev]");
-    if (v) { // look at the file in the folder; nothing is made or written
-      const s = desk && docOf(v.dataset.nr), f = s && (v.dataset.hprev === "word" ? s.docx : s.pdf); if (!f) { render(); return; }
-      if (v.dataset.hprev === "word") previewDoc({ title: tr("wordPrevTitle", s.nr), load: () => desk.readFile(f.rel), open: { rel: f.rel }, word: true });
-      else previewDoc({ title: tr("invPrevTitle", s.nr), load: () => desk.readFile(f.rel), open: { rel: f.rel } });
-      return;
-    }
-    const b = e.target.closest("button[data-redo]"); if (!b) return; // no file of it anywhere: make it again (PDF + Word)
-    const i = state.invoices.get(b.dataset.redo); if (!i) return;
-    busy(b, true);
-    const done = [], names = [];
-    try {
-      const data = { factuurnr: i.factuurnr, datum: i.datum, betaaltermijn: i.betaaltermijn || state.settings.betaaltermijn, client: i.client || state.settings.client, lines: i.lines, btw: i.btw || "verlegd", ...recordLook(i) };
-      for (const fmt of ["pdf", "docx"]) {
-        const bytes = await build(fmt, data);
-        if (!(await save(fileName(data, i.po, fmt), new Blob([bytes], { type: MIME[fmt] })))) break;
-        done.push(fmt); if (state.savedTo) names.push(state.savedTo);
-      }
-      if (done.length) toast(tr(names.length ? "savedIn" : "downloaded", i.factuurnr));
-    } catch (err) { toast(tr("buildFail")); }
-    if (done.length) { // the record learns what was written, like a normal save
-      const rec = mergeSaved({ ...i }, i, done, names); state.invoices.set(rec.factuurnr, rec);
-      if (state.db) { try { await state.db.doc("invoices/" + rec.factuurnr).set(rec); } catch (err) {} }
-    }
-    busy(b, false); render();
   });
   $("#zipAll").addEventListener("click", (e) => downloadAll(e.currentTarget));
   $("#saveAs").addEventListener("click", openSaveAs);

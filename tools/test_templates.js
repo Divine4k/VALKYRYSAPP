@@ -103,9 +103,11 @@ const fillWz = async (page, p) => { for (const [k, v] of Object.entries(D1)) awa
   ok(w.includes(D1.iban) && w.includes("Voorbeeldstraat 12") && w.includes("J. Jansen") && !/\[(IBAN|Naam|nr|bedrag|tarief)/.test(w), "the Word file has the details and no placeholders left");
 
   // an invoice made earlier keeps the design it was made in
-  fs.rmSync(file(62, "pdf")); fs.rmSync(file(62, "docx"), { force: true });
-  await page.click("aside button[data-refresh]"); await page.waitForSelector(`#hist button[data-redo="62-${year}"]`, { timeout: 10000 }); // no file left: "Opnieuw maken"
-  await page.click(`#hist button[data-redo="62-${year}"]`); ok(await wait(() => fs.existsSync(file(62, "pdf"))), "an old invoice can be made again");
+  fs.rmSync(file(62, "pdf")); // its PDF is gone: Documents offers "Opnieuw maken"
+  ok(!(await page.$("#hist")), "no 'Gemaakte facturen' list on the Invoices tab");
+  await goTab(page, "docs"); await page.click("#docsView button[data-refresh]");
+  const remake = `#docsList li[data-nr="62-${year}"] button[data-remake]`; await page.waitForSelector(remake, { timeout: 10000 });
+  await page.click(remake); ok(await wait(() => fs.existsSync(file(62, "pdf"))), "an old invoice can be made again"); await goTab(page, "inv");
   t = pdfText(file(62, "pdf"));
   ok(t.includes("Valkyrys") && t.includes("NL42 INGB 0103 2069 73") && !t.includes("Extreme Building"), "and it still has the design and details it was made with");
   const inv = data();
