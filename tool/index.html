@@ -94,6 +94,8 @@ details summary { cursor: pointer; font-weight: 700; color: var(--ink); list-sty
 details summary::-webkit-details-marker { display: none; }
 details summary::after { content: "+"; font-weight: 900; color: var(--muted); }
 details[open] summary::after { content: "\2212"; }
+#settingsBox > summary { margin: 0; }
+#settingsBox[open] > summary { margin-bottom: 10px; }
 .stack { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
 .hist { list-style: none; margin: 8px 0 0; padding: 0; }
 .hist li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 10px 0; border-top: 1px solid var(--line); align-items: center; }
@@ -511,6 +513,22 @@ window.ValkTheme = (function () {
       <ul class="hist" id="hist"></ul>
       <p class="empty" id="histEmpty" data-i18n="histEmpty">Facturen die je hier downloadt, verschijnen in deze lijst. Zo zie je ook of een PO al gefactureerd is.</p>
     </div>
+    <details class="panel" id="settingsBox">
+      <summary class="eyebrow" data-i18n="setInvoices">Facturen en klant</summary>
+      <form id="settings" class="stack">
+          <label class="f" for="sStart"><span data-i18n="sStart">Begin bij factuurnummer (dit jaar)</span><input id="sStart" type="number" min="1" step="1" inputmode="numeric"></label>
+          <label class="f" for="sTerm"><span data-i18n="sTerm">Betaaltermijn</span><input id="sTerm" type="text"></label>
+          <label class="f" for="sFile"><span data-i18n="sFile">Bestandsnaam</span><input id="sFile" type="text" autocomplete="off" spellcheck="false"><small class="hint" id="sFileHint"></small></label>
+          <label class="f" for="sBtw"><span data-i18n="sBtw">Standaard BTW</span><select id="sBtw"><option value="verlegd" data-i18n="btw.verlegd">BTW verlegd</option><option value="21" data-i18n="btw.21">BTW 21%</option><option value="9" data-i18n="btw.9">BTW 9%</option></select></label>
+          <p class="eyebrow" style="margin:6px 0 0" data-i18n="client">Klant</p>
+          <label class="f" for="cName"><span data-i18n="cName">Naam</span><input id="cName" type="text" autocomplete="off"></label>
+          <label class="f" for="cStreet"><span data-i18n="cStreet">Straat</span><input id="cStreet" type="text" autocomplete="off"></label>
+          <label class="f" for="cCity"><span data-i18n="cCity">Postcode en plaats</span><input id="cCity" type="text" autocomplete="off"></label>
+          <label class="f" for="cKvk"><span data-i18n="cKvk">KVK</span><input id="cKvk" type="text" autocomplete="off"></label>
+          <label class="f" for="cBtw"><span data-i18n="cBtw">BTW-nummer</span><input id="cBtw" type="text" autocomplete="off"></label>
+          <button class="primary" type="submit" data-i18n="save">Instellingen opslaan</button>
+        </form>
+    </details>
   </aside>
 </main>
 
@@ -554,24 +572,6 @@ window.ValkTheme = (function () {
       </div>
     </div>
   </section>
-  <aside class="col" aria-label="Facturen en klant">
-    <div class="panel" id="settingsBox">
-      <p class="eyebrow" data-i18n="setInvoices">Facturen en klant</p>
-      <form id="settings" class="stack">
-          <label class="f" for="sStart"><span data-i18n="sStart">Begin bij factuurnummer (dit jaar)</span><input id="sStart" type="number" min="1" step="1" inputmode="numeric"></label>
-          <label class="f" for="sTerm"><span data-i18n="sTerm">Betaaltermijn</span><input id="sTerm" type="text"></label>
-          <label class="f" for="sFile"><span data-i18n="sFile">Bestandsnaam</span><input id="sFile" type="text" autocomplete="off" spellcheck="false"><small class="hint" id="sFileHint"></small></label>
-          <label class="f" for="sBtw"><span data-i18n="sBtw">Standaard BTW</span><select id="sBtw"><option value="verlegd" data-i18n="btw.verlegd">BTW verlegd</option><option value="21" data-i18n="btw.21">BTW 21%</option><option value="9" data-i18n="btw.9">BTW 9%</option></select></label>
-          <p class="eyebrow" style="margin:6px 0 0" data-i18n="client">Klant</p>
-          <label class="f" for="cName"><span data-i18n="cName">Naam</span><input id="cName" type="text" autocomplete="off"></label>
-          <label class="f" for="cStreet"><span data-i18n="cStreet">Straat</span><input id="cStreet" type="text" autocomplete="off"></label>
-          <label class="f" for="cCity"><span data-i18n="cCity">Postcode en plaats</span><input id="cCity" type="text" autocomplete="off"></label>
-          <label class="f" for="cKvk"><span data-i18n="cKvk">KVK</span><input id="cKvk" type="text" autocomplete="off"></label>
-          <label class="f" for="cBtw"><span data-i18n="cBtw">BTW-nummer</span><input id="cBtw" type="text" autocomplete="off"></label>
-          <button class="primary" type="submit" data-i18n="save">Instellingen opslaan</button>
-        </form>
-    </div>
-  </aside>
 </main>
 
 <div class="sv" id="statsView" role="tabpanel" aria-labelledby="tabStats">
@@ -688,7 +688,7 @@ window.ValkTheme = (function () {
   const I18N = {
     nl: {
       title: "App", tagline: "Sleep inkooporders erin en download kant-en-klare facturen.",
-      tabSettings: "Instellingen", settingsTagline: "Mappen, pincode, weergave en je factuurgegevens.",
+      tabSettings: "Instellingen", settingsTagline: "Mappen, pincode en weergave.",
       foldersTitle: "Mappen", foldersIntro: "Kies waar je facturen en inkooporders staan. De statistieken en de lijst met nieuwe inkooporders worden hieruit gelezen.",
       folderPo: "Map met inkooporders", folderIntroPo: "Kies de map met de inkooporders (PDF’s) die je van je klant krijgt. Hieruit komen de nieuwe inkooporders en de statistieken.",
       folderIntroInv: "Stel bij Instellingen de map in waar je facturen bewaard worden.", openSettings: "Naar instellingen",
@@ -721,7 +721,7 @@ window.ValkTheme = (function () {
       "n.sumMismatch": "Regels tellen niet op: {0} berekend, {1} in de PO.", "n.totalOk": "Klopt met het PO-totaal van {0}.", "n.totalBad": "PO-totaal is {0}, de regels samen {1}.",
       alreadyInv: "{0} is al gefactureerd als {1} ({2}).", numTaken: "Factuurnummer {0} is al gebruikt voor {1}.", otherInvoice: "een andere factuur",
       numDup: "Factuurnummer {0} staat hierboven al bij {1}.", otherClient: "Andere klant? De PO noemt KVK {0}, de factuur gebruikt {1}.",
-      fillClient: "Vul eerst de klantgegevens in bij Instellingen.", maxLines: "Alleen de eerste {0} regels passen op de factuur.",
+      fillClient: "Vul eerst de klantgegevens in bij Facturen en klant.", maxLines: "Alleen de eerste {0} regels passen op de factuur.",
       ordered: "Besteld {0}", by: "door {0}", unknownPo: "Onbekende PO", remove: "Verwijderen", removeAria: "Verwijder {0}",
       desc: "Omschrijving", qty: "Aantal", rate2: "Tarief", invNo: "Factuurnummer", invDate: "Factuurdatum", vat: "BTW", totalPay: "Totaal te betalen",
       doneAs: "✓ Gedownload als {0}", view: "Bekijken", dlWord: "Download Word", dlPdf: "Download PDF", dlAgain: "Opnieuw downloaden (PDF)", busy: "Bezig…",
@@ -801,7 +801,7 @@ window.ValkTheme = (function () {
     },
     en: {
       title: "App", tagline: "Drop in purchase orders and download ready-made invoices.",
-      tabSettings: "Settings", settingsTagline: "Folders, PIN, appearance and your invoice details.",
+      tabSettings: "Settings", settingsTagline: "Folders, PIN and appearance.",
       foldersTitle: "Folders", foldersIntro: "Choose where your invoices and purchase orders are. The statistics and the list of new purchase orders are read from them.",
       folderPo: "Purchase order folder", folderIntroPo: "Choose the folder with the purchase orders (PDFs) you get from your client. New purchase orders and the statistics come from it.",
       folderIntroInv: "Set the folder where your invoices are kept under Settings.", openSettings: "Go to settings",
@@ -834,7 +834,7 @@ window.ValkTheme = (function () {
       "n.sumMismatch": "Lines don't add up: {0} calculated, {1} in the PO.", "n.totalOk": "Matches the PO total of {0}.", "n.totalBad": "PO total is {0}, the lines add up to {1}.",
       alreadyInv: "{0} was already invoiced as {1} ({2}).", numTaken: "Invoice number {0} is already used for {1}.", otherInvoice: "another invoice",
       numDup: "Invoice number {0} is already used above for {1}.", otherClient: "Different client? The PO shows KVK {0}, the invoice uses {1}.",
-      fillClient: "Fill in the client details under Settings first.", maxLines: "Only the first {0} lines fit on the invoice.",
+      fillClient: "Fill in the client details under Invoices and client first.", maxLines: "Only the first {0} lines fit on the invoice.",
       ordered: "Ordered {0}", by: "by {0}", unknownPo: "Unknown PO", remove: "Remove", removeAria: "Remove {0}",
       desc: "Description", qty: "Quantity", rate2: "Rate", invNo: "Invoice number", invDate: "Invoice date", vat: "VAT", totalPay: "Total to pay",
       doneAs: "✓ Downloaded as {0}", view: "Preview", dlWord: "Download Word", dlPdf: "Download PDF", dlAgain: "Download again (PDF)", busy: "Working…",
@@ -914,7 +914,7 @@ window.ValkTheme = (function () {
     },
     pl: {
       title: "App", tagline: "Przeciągnij zamówienia zakupu i pobierz gotowe faktury.",
-      tabSettings: "Ustawienia", settingsTagline: "Foldery, kod PIN, wygląd i dane faktur.",
+      tabSettings: "Ustawienia", settingsTagline: "Foldery, kod PIN i wygląd.",
       foldersTitle: "Foldery", foldersIntro: "Wybierz, gdzie są Twoje faktury i zamówienia zakupu. Statystyki i lista nowych zamówień są odczytywane z tych folderów.",
       folderPo: "Folder z zamówieniami zakupu", folderIntroPo: "Wybierz folder z zamówieniami zakupu (PDF), które dostajesz od klienta. Stąd pochodzą nowe zamówienia i statystyki.",
       folderIntroInv: "Ustaw w Ustawieniach folder, w którym przechowujesz faktury.", openSettings: "Przejdź do ustawień",
@@ -947,7 +947,7 @@ window.ValkTheme = (function () {
       "n.sumMismatch": "Pozycje się nie sumują: wyliczono {0}, w zamówieniu {1}.", "n.totalOk": "Zgadza się z kwotą zamówienia: {0}.", "n.totalBad": "Kwota zamówienia to {0}, a pozycje dają razem {1}.",
       alreadyInv: "{0} zostało już zafakturowane jako {1} ({2}).", numTaken: "Numer faktury {0} jest już użyty dla {1}.", otherInvoice: "innej faktury",
       numDup: "Numer faktury {0} jest już użyty powyżej dla {1}.", otherClient: "Inny klient? Zamówienie podaje KVK {0}, a faktura używa {1}.",
-      fillClient: "Najpierw uzupełnij dane klienta w Ustawieniach.", maxLines: "Na fakturze zmieści się tylko pierwszych {0} pozycji.",
+      fillClient: "Najpierw uzupełnij dane klienta w sekcji Faktury i klient.", maxLines: "Na fakturze zmieści się tylko pierwszych {0} pozycji.",
       ordered: "Zamówiono {0}", by: "przez {0}", unknownPo: "Nieznane zamówienie", remove: "Usuń", removeAria: "Usuń {0}",
       desc: "Opis", qty: "Ilość", rate2: "Stawka", invNo: "Numer faktury", invDate: "Data faktury", vat: "VAT", totalPay: "Razem do zapłaty",
       doneAs: "✓ Pobrano jako {0}", view: "Podgląd", dlWord: "Pobierz Word", dlPdf: "Pobierz PDF", dlAgain: "Pobierz ponownie (PDF)", busy: "Chwileczkę…",
@@ -1335,6 +1335,7 @@ window.ValkTheme = (function () {
     $("#sFile").value = s.fileTemplate || DEFAULTS.fileTemplate; updateFileHint(); $("#sStart").value = s.startNumber; $("#sTerm").value = s.betaaltermijn; $("#sBtw").value = s.btw;
     $("#cName").value = s.client.name || ""; $("#cStreet").value = s.client.street || ""; $("#cCity").value = s.client.city || "";
     $("#cKvk").value = s.client.kvk || ""; $("#cBtw").value = s.client.btw || "";
+    if (!s.client.name) $("#settingsBox").open = true; // nothing filled in yet: show the form
   }
 
   // ------------------------------------------------------------ invoice folder (desktop app only)
