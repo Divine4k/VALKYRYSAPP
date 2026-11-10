@@ -65,16 +65,6 @@
   .go .bar i { animation: bar 3.2s .2s cubic-bezier(.4,.1,.3,1) forwards; }
   @keyframes bar { to { transform: scaleX(1); } }
 
-  /* reduced motion: no movement, the finished logo simply fades in and out */
-  @media (prefers-reduced-motion: reduce) {
-    .go .panel { animation: fade .4s ease-out forwards; }
-    .exit .panel { animation: fadeOut .4s ease-in forwards; }
-    @keyframes fade { from { opacity: 0; transform: none; } to { opacity: 1; transform: none; } }
-    @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
-    .go .halo, .go .mark, .go .glow, .go .markbox, .go .reveal, .go .word, .go .shine, .go .line, .go .sub, .go .bar i { animation: none; }
-    .go .halo { opacity: .55; transform: none; } .go .mark, .go .word, .go .sub { opacity: 1; transform: none; }
-    .go .glow { opacity: .3; transform: none; } .go .markbox, .go .reveal, .go .line, .go .bar i { transform: none; }
-  }
 </style></head>
 <body>
   <div class="panel">
@@ -96,8 +86,7 @@
   // window.splash: state "loading" -> "playing" -> "holding" (animation ended, finished logo stays) -> "done" (main may take over) -> "leaving"
   // splashDone resolves at "done"; splashExit() fades the panel out and resolves when the fade has ended (main closes the window then).
   const HOLD_MS = 800;
-  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  window.splash = { state: "loading", animEndAt: 0, reduce };
+  window.splash = { state: "loading", animEndAt: 0 }; // the logo animation always plays (also when Windows animation effects are off)
   const frame = () => new Promise((r) => requestAnimationFrame(() => r()));
   const later = (ms) => new Promise((r) => setTimeout(r, ms));
   window.splashDone = (async () => {
@@ -109,7 +98,7 @@
     const anims = document.getAnimations();
     await Promise.race([Promise.all(anims.map((a) => a.finished.catch(() => {}))), later(6000)]);
     window.splash.state = "holding"; window.splash.animEndAt = performance.now();
-    await later(reduce ? 400 : HOLD_MS);
+    await later(HOLD_MS);
     window.splash.state = "done";
     return true;
   })();
@@ -117,7 +106,7 @@
     window.splash.state = "leaving";
     const panel = document.querySelector(".panel");
     const done = () => { window.splash.state = "gone"; res(true); };
-    panel.addEventListener("animationend", (e) => { if (e.animationName === "leave" || e.animationName === "fadeOut") done(); });
+    panel.addEventListener("animationend", (e) => { if (e.animationName === "leave") done(); });
     setTimeout(done, 1000); // safety if animationend never comes
     document.body.classList.add("exit");
   });
