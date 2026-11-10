@@ -239,6 +239,16 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .look { align-items: center; margin-top: 4px; }
 .look .langsel { margin-left: 0; color: var(--ink); background-color: var(--surface); border-color: var(--line); min-height: 38px; font-size: 14px; }
 .look button.themebtn { min-height: 38px; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.tplgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-top: 14px; }
+.tplopt { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 8px; padding: 10px; text-align: left; min-height: 0; }
+.tplopt[aria-checked="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink); }
+.tplopt img, .tplcur img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
+.tplopt .tdesc { font-weight: 400; font-size: 12.5px; color: var(--muted); }
+.tplcur { display: flex; gap: 14px; align-items: flex-start; }
+.tplcur img { width: 96px; flex: 0 0 auto; }
+.tplcur .small { margin: 0 0 10px; }
+.wact { margin-top: 16px; }
+#tplStep2 { display: flex; flex-direction: column; gap: 10px; }
 .look button.themebtn:hover { border-color: var(--muted); }
 /* duplicate days */
 .dupbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 18px; background: var(--warn-bg); border-color: transparent; }
@@ -463,6 +473,7 @@ window.ValkTheme = (function () {
 <main id="viewInv" role="tabpanel" aria-labelledby="tabInv" hidden>
   <section class="col" aria-label="Inkooporders">
     <div id="libError" class="banner err" hidden></div>
+    <div class="panel dupbar" id="detBar" role="status" hidden><span class="dtext" id="detBarText"></span><button type="button" id="detBarGo" data-i18n="detBarGo">Gegevens invullen</button></div>
     <div class="drop" id="drop">
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 18v-6"/><path d="M9.5 14.5 12 12l2.5 2.5"/></svg>
       <h2 data-i18n="dropTitle">Sleep inkooporders (PDF) hierheen</h2>
@@ -555,6 +566,19 @@ window.ValkTheme = (function () {
     </div>
   </section>
   <aside class="col" aria-label="Facturen en klant">
+    <div class="panel" id="tplPanel">
+      <p class="eyebrow" data-i18n="tplTitle">Factuurontwerp</p>
+      <div class="tplcur"><img id="tplCurImg" alt="" width="96"><div><p class="fsub" id="tplCurName"></p><p class="small" id="tplCurDesc"></p><p class="small" data-i18n="tplCurHint"></p><div class="frow"><button type="button" id="tplChange" data-i18n="tplChange">Ontwerp wijzigen…</button></div></div></div>
+    </div>
+    <div class="panel" id="detPanel">
+      <p class="eyebrow" data-i18n="detTitle">Jouw gegevens</p>
+      <p class="small" style="margin:0" data-i18n="detIntro"></p>
+      <form id="detForm" class="stack" novalidate>
+        <div id="detFields" class="stack" style="margin:0"></div>
+        <p class="chip warn" id="detWarn" hidden role="alert"></p>
+        <button class="primary" type="submit" data-i18n="detSave">Gegevens opslaan</button>
+      </form>
+    </div>
     <div class="panel" id="settingsBox">
       <p class="eyebrow" data-i18n="setInvoices">Facturen en klant</p>
       <form id="settings" class="stack">
@@ -659,6 +683,34 @@ window.ValkTheme = (function () {
     </div>
   </div>
 </dialog>
+<template id="detTpl">
+  <label class="f" for="{p}name"><span data-i18n="dName">Bedrijfsnaam</span><input id="{p}name" type="text" autocomplete="off"></label>
+  <label class="f" for="{p}person"><span data-i18n="dPerson">Naam onder de factuur</span><input id="{p}person" type="text" autocomplete="off"></label>
+  <label class="f" for="{p}street"><span data-i18n="dStreet">Straat en huisnummer</span><input id="{p}street" type="text" autocomplete="off"></label>
+  <label class="f" for="{p}city"><span data-i18n="dCity">Postcode en plaats</span><input id="{p}city" type="text" autocomplete="off"></label>
+  <label class="f" for="{p}phone"><span data-i18n="dPhone">Telefoonnummer</span><input id="{p}phone" type="text" autocomplete="off"></label>
+  <label class="f" for="{p}email"><span data-i18n="dEmail">E-mailadres</span><input id="{p}email" type="text" autocomplete="off" spellcheck="false"></label>
+  <label class="f" for="{p}iban"><span data-i18n="dIban">IBAN</span><input id="{p}iban" type="text" autocomplete="off" spellcheck="false"></label>
+  <label class="f" for="{p}btw"><span data-i18n="dBtw">BTW-nummer</span><input id="{p}btw" type="text" autocomplete="off" spellcheck="false"></label>
+  <label class="f" for="{p}kvk"><span data-i18n="dKvk">KVK-nummer</span><input id="{p}kvk" type="text" autocomplete="off" spellcheck="false"></label>
+</template>
+<dialog id="tplDlg" aria-labelledby="tplDlgTitle">
+  <div class="dlg-head"><strong id="tplDlgTitle" data-i18n="tplDlgTitle">Kies je factuurontwerp</strong><button type="button" id="tplDlgClose" data-i18n="close" hidden>Sluiten</button></div>
+  <div class="dlg-body">
+    <div id="tplStep1">
+      <p class="small" style="margin:0" id="tplIntro"></p>
+      <div class="tplgrid" id="tplGrid" role="radiogroup" aria-labelledby="tplDlgTitle"></div>
+      <div class="frow wact"><button type="button" class="primary" id="tplNext" disabled></button></div>
+    </div>
+    <form id="tplStep2" hidden novalidate>
+      <p class="small" style="margin:0" data-i18n="detIntroFirst"></p>
+      <div id="wzFields" class="stack" style="margin:0"></div>
+      <label class="f" for="wzstart"><span data-i18n="detStart">Begin bij factuurnummer (dit jaar)</span><input id="wzstart" type="number" min="1" step="1" inputmode="numeric"><small class="hint" data-i18n="detStartHint"></small></label>
+      <p class="chip warn" id="wzWarn" hidden role="alert"></p>
+      <div class="frow wact"><button type="button" class="ghost" id="tplBack" data-i18n="tplBack">Terug</button><button type="submit" class="primary" id="tplDone" data-i18n="welcomeDone">Klaar</button><button type="button" class="ghost" id="tplLater" data-i18n="welcomeLater">Later</button></div>
+    </form>
+  </div>
+</dialog>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
@@ -668,10 +720,12 @@ window.ValkTheme = (function () {
 <script src="vendor/docx.iife.js"></script>
 <script src="invoice-core.js"></script>
 <script src="invoice-docx.js"></script>
+<script src="invoice-templates.js"></script>
 <script>
 (function () {
   "use strict";
   const core = window.InvoiceCore;
+  const TP = window.InvoiceTemplates; // the invoice designs and the person's own details
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const pad = (n) => String(n).padStart(2, "0");
@@ -679,7 +733,7 @@ window.ValkTheme = (function () {
   const isoToNl = (iso) => { const [y, m, d] = iso.split("-"); return `${d}/${m}/${y}`; };
 
   const DEFAULTS = { startNumber: 1, startYear: new Date().getFullYear(), betaaltermijn: "14 dagen", btw: "verlegd", fileTemplate: "VALKYRYS {nummer}",
-    client: { name: "", street: "", city: "", kvk: "", btw: "" } };
+    client: { name: "", street: "", city: "", kvk: "", btw: "" }, template: "" };
   const state = { settings: structuredClone(DEFAULTS), invoices: new Map(), cards: [], db: null, dl: null, assets: null, seq: 0, lang: "nl", folder: null, files: [], fileNums: new Map(), folderSig: "", savedTo: "", tab: "stats", statMode: "month", statYear: 0, parseCache: new Map(), folderInvoices: [], unread: [], scan: null, dbReady: null,
     statSource: "invoices", poBasis: "work", poSkip: new Set(), poChecked: false, npAll: false, npBusy: false, invoicesLoaded: false, folderScanned: false, poFolder: null, poFiles: [], poSig: "", poScanSig: "", poRecs: [], poUnread: [], poScan: null, poCache: new Map(), poDup: null, poSame: [], welcomed: false };
   state.dbReady = new Promise((res) => { state.dbResolve = res; });
@@ -798,6 +852,13 @@ window.ValkTheme = (function () {
       csvPo: "PO", csvOrderDate: "Orderdatum",
       csvFirstDay: "Eerste werkdag",
       settingsSaved: "Instellingen opgeslagen.", saveFail: "Opslaan lukte niet.", notPersisted: "Instellingen gelden alleen voor nu: opslaan werkt hier niet.",
+      tplTitle: "Factuurontwerp", tplCurHint: "Het ontwerp bepaalt de opmaak van je PDF en Word-bestand.", tplChange: "Ontwerp wijzigen…", tplDlgTitle: "Kies je factuurontwerp",
+      tplIntroFirst: "Kies hoe je facturen eruitzien. Je kunt dit later altijd wijzigen bij Instellingen.", tplIntroChange: "Nieuwe facturen krijgen de nieuwe opmaak. Facturen die je al hebt gemaakt blijven zoals ze zijn.",
+      tplNext: "Volgende", tplUse: "Dit ontwerp gebruiken", tplBack: "Terug", tplDesc_valkyrys: "Zwarte zijbalk met geel accent", tplDesc_extreme: "Zwarte kop en voet met goud",
+      detTitle: "Jouw gegevens", detIntro: "Deze gegevens staan op elke factuur.", detIntroFirst: "Vul je eigen gegevens in. Ze komen op elke factuur te staan en je kunt ze later wijzigen bij Instellingen.",
+      dName: "Bedrijfsnaam", dPerson: "Naam onder de factuur", dStreet: "Straat en huisnummer", dCity: "Postcode en plaats", dPhone: "Telefoonnummer", dEmail: "E-mailadres", dIban: "IBAN", dBtw: "BTW-nummer", dKvk: "KVK-nummer",
+      detSave: "Gegevens opslaan", detSaved: "Gegevens opgeslagen.", detStart: "Begin bij factuurnummer (dit jaar)", detStartHint: "Het eerstvolgende factuurnummer. Staan er al facturen in je map, dan telt de app door vanaf het hoogste nummer.",
+      detMissing: "Vul eerst je gegevens in bij Instellingen: {0}.", detBar: "Je gegevens zijn nog niet compleet ({0}). Zonder die gegevens kun je geen facturen maken.", detBarGo: "Gegevens invullen",
     },
     en: {
       title: "App", tagline: "Drop in purchase orders and download ready-made invoices.",
@@ -911,6 +972,13 @@ window.ValkTheme = (function () {
       csvPo: "PO", csvOrderDate: "Order date",
       csvFirstDay: "First work day",
       settingsSaved: "Settings saved.", saveFail: "Saving failed.", notPersisted: "Settings only apply for now: saving doesn't work in this view.",
+      tplTitle: "Invoice design", tplCurHint: "The design sets the layout of your PDF and Word file.", tplChange: "Change design…", tplDlgTitle: "Choose your invoice design",
+      tplIntroFirst: "Choose how your invoices look. You can change this any time under Settings.", tplIntroChange: "New invoices get the new layout. Invoices you already made stay as they are.",
+      tplNext: "Next", tplUse: "Use this design", tplBack: "Back", tplDesc_valkyrys: "Black sidebar with a yellow accent", tplDesc_extreme: "Black header and footer with gold",
+      detTitle: "Your details", detIntro: "These details are printed on every invoice.", detIntroFirst: "Enter your own details. They are printed on every invoice and you can change them later under Settings.",
+      dName: "Company name", dPerson: "Name under the invoice", dStreet: "Street and number", dCity: "Postcode and city", dPhone: "Phone number", dEmail: "E-mail address", dIban: "IBAN", dBtw: "VAT number", dKvk: "KVK number (Chamber of Commerce)",
+      detSave: "Save details", detSaved: "Details saved.", detStart: "Start at invoice number (this year)", detStartHint: "The next invoice number. If your folder already has invoices, the app continues from the highest number.",
+      detMissing: "Fill in your details under Settings first: {0}.", detBar: "Your details are not complete yet ({0}). You can’t make invoices without them.", detBarGo: "Fill in details",
     },
     pl: {
       title: "App", tagline: "Przeciągnij zamówienia zakupu i pobierz gotowe faktury.",
@@ -1024,6 +1092,13 @@ window.ValkTheme = (function () {
       csvPo: "PO", csvOrderDate: "Data zamówienia",
       csvFirstDay: "Pierwszy dzień pracy",
       settingsSaved: "Zapisano ustawienia.", saveFail: "Zapis nie powiódł się.", notPersisted: "Ustawienia obowiązują tylko teraz: w tym widoku zapis nie działa.",
+      tplTitle: "Wzór faktury", tplCurHint: "Wzór określa układ pliku PDF i Word.", tplChange: "Zmień wzór…", tplDlgTitle: "Wybierz wzór faktury",
+      tplIntroFirst: "Wybierz wygląd swoich faktur. Zawsze możesz to zmienić w Ustawieniach.", tplIntroChange: "Nowe faktury dostaną nowy układ. Faktury, które już wystawiłeś, pozostają bez zmian.",
+      tplNext: "Dalej", tplUse: "Użyj tego wzoru", tplBack: "Wstecz", tplDesc_valkyrys: "Czarny pasek boczny z żółtym akcentem", tplDesc_extreme: "Czarny nagłówek i stopka ze złotem",
+      detTitle: "Twoje dane", detIntro: "Te dane są na każdej fakturze.", detIntroFirst: "Wpisz własne dane. Będą na każdej fakturze, a później możesz je zmienić w Ustawieniach.",
+      dName: "Nazwa firmy", dPerson: "Imię i nazwisko pod fakturą", dStreet: "Ulica i numer", dCity: "Kod pocztowy i miejscowość", dPhone: "Numer telefonu", dEmail: "Adres e-mail", dIban: "IBAN", dBtw: "Numer VAT (BTW)", dKvk: "Numer KVK",
+      detSave: "Zapisz dane", detSaved: "Dane zapisane.", detStart: "Zacznij od numeru faktury (w tym roku)", detStartHint: "Następny numer faktury. Jeśli w folderze są już faktury, aplikacja liczy dalej od najwyższego numeru.",
+      detMissing: "Najpierw uzupełnij swoje dane w Ustawieniach: {0}.", detBar: "Twoje dane nie są jeszcze kompletne ({0}). Bez nich nie można wystawiać faktur.", detBarGo: "Uzupełnij dane",
     },
   };
   const tr = (k, ...a) => String(((I18N[state.lang] || I18N.nl)[k] ?? I18N.nl[k] ?? k)).replace(/\{(\d)\}/g, (m, i) => (a[+i] ?? ""));
@@ -1042,11 +1117,12 @@ window.ValkTheme = (function () {
   async function loadAssets() {
     if (state.assets) return state.assets;
     const get = async (p) => { const r = await fetch(p); if (!r.ok) throw new Error(p); return new Uint8Array(await r.arrayBuffer()); };
-    const images = { logo: await get("img/logo-white.png"), sidebar: await get("img/sidebar.png") };
+    const images = { logo: await get("img/logo-white.png"), sidebar: await get("img/sidebar.png"), extremeLogo: await get("img/extreme-logo.png"), extremeEmblem: await get("img/extreme-emblem.png") };
     state.docxAssets = { logo: images.logo, logoW: 1365, logoH: 318, accent: await get("img/accent.png"), background: await get("img/background.png") };
     let fonts = null;
     try { fonts = { regular: await get("fonts/Carlito-Regular.ttf"), bold: await get("fonts/Carlito-Bold.ttf"), italic: await get("fonts/Carlito-Italic.ttf") }; } catch (e) { fonts = null; }
-    state.assets = { fontkit: window.fontkit || null, fonts, images };
+    let extremeDocx = null; try { extremeDocx = await get("templates/extreme.docx"); } catch (e) {}
+    state.assets = { fontkit: window.fontkit || null, fonts, images, docx: state.docxAssets, extremeDocx };
     return state.assets;
   }
 
@@ -1115,13 +1191,15 @@ window.ValkTheme = (function () {
   function invoiceData(c) {
     return { factuurnr: nr(c), datum: isoToNl(c.dateISO), betaaltermijn: state.settings.betaaltermijn,
       client: { ...state.settings.client }, lines: c.lines.map((l) => ({ desc: l.desc, tarief: +l.tarief || 0, aantal: +l.aantal || 0 })),
-      btw: c.btw, sender: core.SENDER };
+      btw: c.btw, template: currentTemplate(), sender: TP.forRender(currentSender()) };
   }
-  async function buildPdf(data) { return core.renderInvoice(PDFLib, await loadAssets(), data); }
+  /** the design and details a saved invoice was made with (invoices from before the designs existed are in the first design) */
+  function recordLook(rec) { const id = TP.get(rec && rec.template).id; return { template: id, sender: TP.forRender(TP.senderFor(id, rec && rec.sender)) }; }
+  async function buildPdf(data) { return TP.renderPdf(PDFLib, await loadAssets(), data, core); }
   async function buildWord(data) {
-    await loadAssets();
+    const assets = await loadAssets();
     if (!window.docx || !window.InvoiceDocx) throw new Error("docx");
-    return InvoiceDocx.buildDocx(window.docx, state.docxAssets, data, core);
+    return TP.buildWord({ docx: window.docx, InvoiceDocx: window.InvoiceDocx, JSZip: window.JSZip }, assets, data, core);
   }
   const MIME = { pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" };
   const build = (fmt, data) => (fmt === "docx" ? buildWord(data) : buildPdf(data));
@@ -1167,12 +1245,14 @@ window.ValkTheme = (function () {
     c.done = true;
     const t = core.totals(data.lines, data.btw);
     const doc = { factuurnr: data.factuurnr, nummer: c.nummer, jaar: c.jaar, po: c.po, datum: data.datum, betaaltermijn: data.betaaltermijn,
-      client: data.client, lines: data.lines, btw: data.btw, totaal: t.total, dagen: c.dates || [], createdAt: new Date().toISOString() };
+      client: data.client, lines: data.lines, btw: data.btw, totaal: t.total, dagen: c.dates || [], createdAt: new Date().toISOString(),
+      template: data.template, sender: Object.fromEntries(TP.FIELDS.map((k) => [k, (data.sender && data.sender[k]) || ""])) };
     state.invoices.set(doc.factuurnr, doc);
     if (state.db) { try { await state.db.doc("invoices/" + doc.factuurnr).set(doc); } catch (e) { toast(tr("notLogged")); } }
   }
 
   async function downloadCard(c, btn, fmt = "pdf") {
+    if (!detailsOk()) return needDetails();
     const data = invoiceData(c);
     busy(btn, true);
     try {
@@ -1185,6 +1265,7 @@ window.ValkTheme = (function () {
   async function downloadAll(btn) {
     const ready = state.cards.filter((c) => !c.error);
     if (!ready.length) return;
+    if (!detailsOk()) return needDetails();
     busy(btn, true);
     if (folderSet()) { // straight into the folder: one PDF and one Word file per invoice, no zip
       try {
@@ -1383,7 +1464,7 @@ window.ValkTheme = (function () {
       if (!entry) return null;
       lines = docxLines(await entry.async("string"));
     }
-    return core.parseInvoiceText(lines);
+    return core.parseInvoiceText(lines, TP.owners(currentSender()));
   }
   const tick = () => new Promise((r) => setTimeout(r, 0));
   let scanSeq = 0;
@@ -1795,7 +1876,7 @@ window.ValkTheme = (function () {
   function previewInvoice(x) {
     const nrTxt = x.key, mine = state.invoices.get(x.key), title = tr("invPrevTitle", nrTxt);
     if (mine && mine.lines && mine.lines.length) {
-      const data = { factuurnr: mine.factuurnr, datum: mine.datum, betaaltermijn: mine.betaaltermijn || state.settings.betaaltermijn, client: mine.client || state.settings.client, lines: mine.lines, btw: mine.btw || "verlegd", sender: core.SENDER };
+      const data = { factuurnr: mine.factuurnr, datum: mine.datum, betaaltermijn: mine.betaaltermijn || state.settings.betaaltermijn, client: mine.client || state.settings.client, lines: mine.lines, btw: mine.btw || "verlegd", ...recordLook(mine) };
       return previewDoc({ title, load: () => buildPdf(data) });
     }
     const rel = x.i && x.i.file; if (!rel || !desk) return previewDoc({ title, nopreview: "poPrevFail" });
@@ -2137,7 +2218,7 @@ window.ValkTheme = (function () {
     if (storeKey) $("#storeNote").textContent = tr(storeKey);
     updateFileHint();
     if ($("#dlg").open) $("#dlgTitle").textContent = tr("preview", $("#dlgTitle").dataset.nr || "");
-    renderThemeUi(); renderPin(); window.ValkLockLang = state.lang; if (desk && $("#welcomeDlg").open) renderWelcome();
+    renderThemeUi(); renderPin(); renderTplUi(); if ($("#tplDlg").open) renderTplDlg(); window.ValkLockLang = state.lang; if (desk && $("#welcomeDlg").open) renderWelcome();
     render();
   }
   function saveLang() {
@@ -2195,7 +2276,7 @@ window.ValkTheme = (function () {
     const i = state.invoices.get(b.dataset.redo); if (!i) return;
     busy(b, true);
     try {
-      const data = { factuurnr: i.factuurnr, datum: i.datum, betaaltermijn: i.betaaltermijn || state.settings.betaaltermijn, client: i.client || state.settings.client, lines: i.lines, btw: i.btw || "verlegd", sender: core.SENDER };
+      const data = { factuurnr: i.factuurnr, datum: i.datum, betaaltermijn: i.betaaltermijn || state.settings.betaaltermijn, client: i.client || state.settings.client, lines: i.lines, btw: i.btw || "verlegd", ...recordLook(i) };
       const fmt = b.dataset.fmt === "docx" ? "docx" : "pdf";
       const bytes = await build(fmt, data);
       if (await save(fileName(data, i.po, fmt), new Blob([bytes], { type: MIME[fmt] }))) toast(doneToast(i.factuurnr));
@@ -2209,7 +2290,7 @@ window.ValkTheme = (function () {
   $("#settings").addEventListener("submit", async (e) => {
     e.preventDefault();
     const s = {
-      startNumber: Math.max(1, parseInt($("#sStart").value, 10) || 1), startYear: new Date().getFullYear(),
+      ...state.settings, startNumber: Math.max(1, parseInt($("#sStart").value, 10) || 1), startYear: new Date().getFullYear(),
       betaaltermijn: $("#sTerm").value.trim() || "14 dagen", btw: $("#sBtw").value, fileTemplate: $("#sFile").value.trim() || DEFAULTS.fileTemplate,
       client: { name: $("#cName").value.trim(), street: $("#cStreet").value.trim(), city: $("#cCity").value.trim(), kvk: $("#cKvk").value.trim(), btw: $("#cBtw").value.trim() },
     };
@@ -2256,8 +2337,93 @@ window.ValkTheme = (function () {
     $("#welcomeDlg").addEventListener("close", () => { markWelcomed(); });
   }
 
+  // ------------------------------------------------------------ invoice design and own details
+  // The design (Valkyrys, Extreme Building, ...) and the person's details live in settings/main: state.settings.template and state.settings.sender.
+  // Only what the person typed is saved in sender; everything else comes from the design's defaults (see invoice-templates.js).
+  const currentTemplate = () => TP.get(state.settings.template).id;
+  const currentSender = () => TP.senderFor(currentTemplate(), state.settings.sender);
+  const DET_LABEL = { name: "dName", person: "dPerson", street: "dStreet", city: "dCity", phone: "dPhone", email: "dEmail", iban: "dIban", btw: "dBtw", kvk: "dKvk" };
+  const missingLabels = (miss) => miss.map((k) => tr(DET_LABEL[k])).join(", ");
+  const detailsOk = () => !TP.missing(currentSender()).length;
+  function needDetails() { toast(tr("detMissing", missingLabels(TP.missing(currentSender())))); setTab("settings"); return false; }
+  const mountDetails = (host, p) => { host.innerHTML = $("#detTpl").innerHTML.replace(/\{p\}/g, p); };
+  const readDetails = (p) => Object.fromEntries(TP.FIELDS.map((k) => [k, $("#" + p + k).value.trim()]));
+  const fillDetails = (p, s) => TP.FIELDS.forEach((k) => { $("#" + p + k).value = s[k] || ""; });
+  mountDetails($("#detFields"), "sd"); mountDetails($("#wzFields"), "wz");
+
+  async function saveSettingsDoc(next) {
+    state.settings = next;
+    if (state.db) { try { await state.db.doc("settings/main").set(next); return true; } catch (err) { toast(tr("saveFail")); return false; } }
+    toast(tr("notPersisted")); return false;
+  }
+  function renderTplUi() {
+    const id = currentTemplate(), t = TP.get(id), miss = TP.missing(currentSender());
+    const img = $("#tplCurImg"); if (img.getAttribute("src") !== t.preview) img.src = t.preview;
+    $("#tplCurName").textContent = t.name; $("#tplCurDesc").textContent = tr("tplDesc_" + id);
+    $("#detWarn").hidden = !miss.length; $("#detWarn").textContent = miss.length ? tr("detMissing", missingLabels(miss)) : "";
+    $("#detBar").hidden = !miss.length; $("#detBarText").textContent = miss.length ? tr("detBar", missingLabels(miss)) : "";
+  }
+  const syncDesign = () => { if (!$("#detForm").contains(document.activeElement)) fillDetails("sd", currentSender()); renderTplUi(); };
+
+  let tplMode = "change", tplPick = "";
+  function renderTplDlg() {
+    $("#tplGrid").innerHTML = TP.TEMPLATES.map((t) => `<button type="button" class="tplopt" role="radio" aria-checked="${t.id === tplPick}" data-tpl="${t.id}"><img src="${esc(t.preview)}" alt=""><span class="tname">${esc(t.name)}</span><span class="tdesc">${esc(tr("tplDesc_" + t.id))}</span></button>`).join("");
+    $("#tplIntro").textContent = tr(tplMode === "first" ? "tplIntroFirst" : "tplIntroChange");
+    $("#tplNext").textContent = tr(tplMode === "first" ? "tplNext" : "tplUse");
+    $("#tplNext").disabled = !tplPick; $("#tplDlgClose").hidden = tplMode === "first";
+  }
+  function openTpl(mode) {
+    tplMode = mode; tplPick = mode === "first" ? "" : currentTemplate();
+    $("#tplStep1").hidden = false; $("#tplStep2").hidden = true; $("#wzWarn").hidden = true;
+    renderTplDlg(); const d = $("#tplDlg"); if (!d.open) d.showModal();
+    if (mode === "first" && document.activeElement && document.activeElement.blur) document.activeElement.blur(); // no card looks chosen before the person chose
+  }
+  $("#tplGrid").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-tpl]"); if (!b) return;
+    tplPick = b.dataset.tpl; renderTplDlg(); const nb = $("#tplGrid [data-tpl='" + tplPick + "']"); if (nb) nb.focus();
+  });
+  $("#tplChange").addEventListener("click", () => openTpl("change"));
+  $("#tplDlgClose").addEventListener("click", () => $("#tplDlg").close());
+  $("#tplDlg").addEventListener("cancel", (e) => { if (tplMode === "first") e.preventDefault(); }); // the first choice cannot be skipped
+  $("#tplNext").addEventListener("click", async () => {
+    if (!tplPick) return;
+    if (tplMode === "change") { // the details stay; only the company name follows the design when it was never changed by hand
+      const old = TP.get(currentTemplate()), stored = { ...(state.settings.sender || {}) };
+      if (stored.name === undefined || stored.name === old.sender.name) delete stored.name;
+      await saveSettingsDoc({ ...state.settings, template: tplPick, sender: stored });
+      $("#tplDlg").close(); syncDesign(); render(); return;
+    }
+    const t = TP.get(tplPick), sender = TP.senderFor(t.id, state.settings.sender);
+    fillDetails("wz", sender);
+    $("#wzstart").value = t.settings.startNumber ?? state.settings.startNumber;
+    $("#tplStep1").hidden = true; $("#tplStep2").hidden = false; $("#wzWarn").hidden = true;
+    $("#wz" + (TP.FIELDS.find((k) => !sender[k]) || "name")).focus();
+  });
+  $("#tplBack").addEventListener("click", () => { $("#tplStep2").hidden = true; $("#tplStep1").hidden = false; });
+  async function finishFirst(strict) {
+    const sender = readDetails("wz"), miss = TP.missing(sender);
+    if (strict && miss.length) { $("#wzWarn").textContent = tr("detMissing", missingLabels(miss)); $("#wzWarn").hidden = false; $("#wz" + miss[0]).focus(); return; }
+    const t = TP.get(tplPick), start = Math.max(1, parseInt($("#wzstart").value, 10) || 1);
+    await saveSettingsDoc({ ...state.settings, ...t.settings, template: t.id, sender, startNumber: start, startYear: new Date().getFullYear() });
+    $("#tplDlg").close(); fillSettingsForm(); syncDesign(); renumber(); render();
+  }
+  $("#tplStep2").addEventListener("submit", (e) => { e.preventDefault(); finishFirst(true); });
+  $("#tplLater").addEventListener("click", () => finishFirst(false));
+  $("#detForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (await saveSettingsDoc({ ...state.settings, template: currentTemplate(), sender: readDetails("sd") })) toast(tr("detSaved"));
+    renderTplUi(); render();
+  });
+  $("#detBarGo").addEventListener("click", () => { setTab("settings"); const m = TP.missing(currentSender())[0]; if (m) $("#sd" + m).focus(); });
+  /** first start: the design is chosen (and the details filled in) before the folders are asked for */
+  async function firstRun() {
+    if (state.firstRunDone) return; state.firstRunDone = true;
+    if (state.db && !state.settings.template) await new Promise((res) => { $("#tplDlg").addEventListener("close", res, { once: true }); openTpl("first"); });
+    maybeWelcome();
+  }
+
   // ------------------------------------------------------------ start
-  fillSettingsForm();
+  fillSettingsForm(); fillDetails("sd", currentSender());
   applyLang();
   storeKey = "loading"; applyLang();
   setTab("stats"); // the statistics are what opens first
@@ -2275,13 +2441,13 @@ window.ValkTheme = (function () {
     if (db) { try { const c = await db.doc("settings/poskip").get(); if (c.exists && Array.isArray(c.data().list)) state.poSkip = new Set(c.data().list); } catch (e) {} }
     if (db) { try { const c = await db.doc("settings/statprefs").get(); if (c.exists) { applyStatPrefs(c.data()); if (state.tab === "stats") renderStats(); if (desk) refreshPoFolder(); } } catch (e) {} }
     state.dbResolve();
-    maybeWelcome();
     storeKey = db ? "stored" : "notStored"; $("#storeNote").textContent = tr(storeKey);
     if (!dl) toast(tr("dlOnlyClaude"));
-    if (!db) { state.invoicesLoaded = true; renderNewPos(); return; }
+    if (!db) { state.invoicesLoaded = true; renderNewPos(); firstRun(); return; }
     db.doc("settings/main").onSnapshot((snap) => {
       if (snap.exists) { state.settings = Object.assign(structuredClone(DEFAULTS), snap.data()); state.settings.client = Object.assign({}, DEFAULTS.client, snap.data().client || {}); }
       if (!$("#settingsBox").contains(document.activeElement)) fillSettingsForm();
+      syncDesign(); firstRun();
       render();
     }, () => {});
     db.doc("settings/prefs").onSnapshot((snap) => {

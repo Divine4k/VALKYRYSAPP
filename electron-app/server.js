@@ -8,8 +8,8 @@ const DEFAULT_SETTINGS = { startNumber: 62, startYear: 2026, betaaltermijn: "14 
   client: { name: "Piguillet BV", street: "Edisonstraat 8", city: "2652 XS Berkel en Rodenrijs", kvk: "52742938", btw: "NL850577950B01" } };
 
 function createServer(webDir, dataFile, isUnlocked = () => true) {
-  let docs = {};
-  try { docs = JSON.parse(fs.readFileSync(dataFile, "utf8")); } catch (e) { docs = { "settings/main": DEFAULT_SETTINGS }; }
+  let docs = {}, existed = false;
+  try { docs = JSON.parse(fs.readFileSync(dataFile, "utf8")); existed = true; } catch (e) { docs = { "settings/main": DEFAULT_SETTINGS }; }
 
   function save() {
     try {
@@ -19,6 +19,9 @@ function createServer(webDir, dataFile, isUnlocked = () => true) {
       fs.renameSync(dataFile + ".tmp", dataFile);
     } catch (e) { console.error("save failed", e); }
   }
+
+  // data from before the invoice designs existed: those invoices use the Valkyrys design (a fresh install has no template yet, so the app asks)
+  if (existed && docs && typeof docs === "object" && !(docs["settings/main"] && docs["settings/main"].template)) { docs["settings/main"] = { ...(docs["settings/main"] || {}), template: "valkyrys" }; save(); }
 
   const server = http.createServer((req, res) => {
     // only requests addressed to this exact address are answered (blocks other web pages from reaching the app through a changed host name)
@@ -55,4 +58,4 @@ function createServer(webDir, dataFile, isUnlocked = () => true) {
   });
   return server;
 }
-module.exports = { createServer };
+module.exports = { createServer, DEFAULT_SETTINGS };

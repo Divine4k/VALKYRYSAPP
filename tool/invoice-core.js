@@ -188,7 +188,8 @@
   }
   const validDate = (d, m, y) => d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 2000 && y <= 2100;
   /** Reads what an invoice made with this layout (new or older version) says: number, date, client, amounts, days. Fields it cannot find are null. */
-  function parseInvoiceText(lines) {
+  function parseInvoiceText(lines, own) {
+    const owners = (own && own.length ? own : [SENDER]).filter((o) => o && (o.name || o.kvk));
     const rows = lines.map((l) => String(l).replace(/\s+/g, " ").trim()).filter(Boolean);
     const text = rows.join(" ");
     const r = { nr: null, datum: null, client: null, kvk: null, po: null, sub: null, vat: null, total: null, btw: null, days: null, hourLines: 0 };
@@ -230,12 +231,17 @@
     if (found) { r.days = days; r.hourLines = hourLines; }
     // client: the line under "Factuur aan"; the name column of an older layout shares that line with the sender
     const idx = rows.findIndex((l) => l.replace(/\s+/g, "").toUpperCase().includes("FACTUURAAN"));
-    if (idx >= 0 && rows[idx + 1]) {
-      let c = rows[idx + 1]; const own = new RegExp("^" + SENDER.name + "\\s+(?=\\S)", "i");
-      if (own.test(c)) c = c.replace(own, "");
-      if (c.toLowerCase() !== SENDER.name.toLowerCase()) r.client = c.trim();
+    // a layout with the invoice number, date and term in a box beside the client has those label rows (FACTUURNR. ..., DATUM ...) in between: skip them
+    const isMeta = (l) => /^(FACTUURNR|DATUM|BETAALTERMIJN)/.test(l.replace(/\s+/g, "").toUpperCase());
+    let ci = idx + 1; while (idx >= 0 && rows[ci] && isMeta(rows[ci]) && ci < idx + 5) ci++;
+    if (idx >= 0 && rows[ci]) {
+      let c = rows[ci];
+      // a layout with the client on the left and the invoice number, date and term on the right puts both on one text row: cut at the first label
+      c = c.split(/\s+(?=F\s?A\s?C\s?T\s?U\s?U\s?R\s?N|D\s?A\s?T\s?U\s?M|B\s?E\s?T\s?A\s?A\s?L\s?T)/i)[0];
+      for (const o of owners) { if (!o.name) continue; const re = new RegExp("^" + o.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s+(?=\\S)", "i"); if (re.test(c)) { c = c.replace(re, ""); break; } }
+      if (!owners.some((o) => o.name && c.toLowerCase() === o.name.toLowerCase())) r.client = c.trim();
     }
-    for (const m of text.matchAll(/KVK(?:\s*nr)?[.:]?\s*(\d{8})/gi)) if (m[1] !== SENDER.kvk) { r.kvk = m[1]; break; }
+    for (const m of text.matchAll(/KVK(?:\s*nr)?[.:]?\s*(\d{8})/gi)) if (!owners.some((o) => o.kvk && o.kvk === m[1])) { r.kvk = m[1]; break; }
     return r;
   }
 
@@ -340,27 +346,9 @@
     return font;
   }
 
-  // ---------------------------------------------------------------- drawing the invoice
-  // Positions in pt from the top of an A4 page, measured from the Word invoice.
-  const PAGE_W = 595.28, PAGE_H = 841.89, SIDE_W = 149.95;
-  const MX = 189.55, MR = 555.55;                       // main column left / right
-  const COL = [189.55, 354.55, 429.55, 477.55, 555.55]; // table column edges A|B|C|D
-  const C = {
-    INK: "111111", BODY: "333333", MUTED: "6B6B6B", YELLOW: "FEBD17",
-    WHITE: "FFFFFF", SOFT: "B5B5B5", HAIR: "E2E2E2", FOOT: "DCDCDC",
-  };
-  const MAX_LINES = 6;
-
-  async function renderInvoice(PDFLib, assets, data) {
-    const { PDFDocument, rgb, StandardFonts } = PDFLib;
-    const color = (h) => { const n = parseInt(h, 16); return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255); };
-    const doc = await PDFDocument.create();
-    doc.setTitle(`Factuur ${data.factuurnr}`);
-    doc.setAuthor("Valkyrys");
-    doc.setSubject(data.lines.map((l) => l.desc).join(", "));
-    doc.setCreator("Valkyrys facturen");
-    doc.setLanguage("nl-NL");
-
+  /** Embeds the invoice fonts (Carlito, or Helvetica when they are missing). Returns the three fonts and safe(): text the chosen font can draw. */
+  async function setupFonts(PDFLib, doc, assets) {
+    const { StandardFonts } = PDFLib;
     let R, B, I, winAnsiOnly = false;
     if (assets.fontkit && assets.fonts) {
       doc.registerFontkit(assets.fontkit);
@@ -382,6 +370,31 @@
     }
     const ASCII_FALLBACK = (ch) => { if (ch === "ł") return "l"; if (ch === "Ł") return "L"; const base = ch.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); return /^[\x20-\x7E]$/.test(base) ? base : "?"; };
     const safe = (s) => (winAnsiOnly ? String(s).normalize("NFC").replace(/[^\x20-\x7E -ÿ€‘’“”–—]/g, ASCII_FALLBACK) : String(s));
+    return { R, B, I, safe, winAnsiOnly };
+  }
+
+  // ---------------------------------------------------------------- drawing the invoice
+  // Positions in pt from the top of an A4 page, measured from the Word invoice.
+  const PAGE_W = 595.28, PAGE_H = 841.89, SIDE_W = 149.95;
+  const MX = 189.55, MR = 555.55;                       // main column left / right
+  const COL = [189.55, 354.55, 429.55, 477.55, 555.55]; // table column edges A|B|C|D
+  const C = {
+    INK: "111111", BODY: "333333", MUTED: "6B6B6B", YELLOW: "FEBD17",
+    WHITE: "FFFFFF", SOFT: "B5B5B5", HAIR: "E2E2E2", FOOT: "DCDCDC",
+  };
+  const MAX_LINES = 6;
+
+  async function renderInvoice(PDFLib, assets, data) {
+    const { PDFDocument, rgb } = PDFLib;
+    const color = (h) => { const n = parseInt(h, 16); return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255); };
+    const doc = await PDFDocument.create();
+    doc.setTitle(`Factuur ${data.factuurnr}`);
+    doc.setAuthor("Valkyrys");
+    doc.setSubject(data.lines.map((l) => l.desc).join(", "));
+    doc.setCreator("Valkyrys facturen");
+    doc.setLanguage("nl-NL");
+
+    const { R, B, I, safe } = await setupFonts(PDFLib, doc, assets);
 
     const page = doc.addPage([PAGE_W, PAGE_H]);
     const rect = (x, top, w, h, hex) => page.drawRectangle({ x, y: PAGE_H - top - h, width: w, height: h, color: color(hex) });
@@ -513,5 +526,5 @@
     kvk: "81828233",
   };
 
-  return { parseAmount, eur, qty, round2, linesFromTextItems, parseInvoiceText, parseMoney, parsePO, workDatesOf, unitKind, dayEquivalent, lineDays, isHourLine, invoiceLinesFromPO, poDates, checkPO, totals, BTW, renderInvoice, SENDER, MAX_LINES };
+  return { parseAmount, eur, qty, round2, linesFromTextItems, parseInvoiceText, parseMoney, parsePO, workDatesOf, unitKind, dayEquivalent, lineDays, isHourLine, invoiceLinesFromPO, poDates, checkPO, totals, BTW, renderInvoice, setupFonts, SENDER, MAX_LINES };
 });

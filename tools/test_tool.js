@@ -43,7 +43,7 @@ const server = http.createServer((req, res) => {
   // stand-ins for the platform's db and downloads, seeded like the real store
   await page.addInitScript(() => {
     const store = new Map(Object.entries({
-      "settings/main": { startNumber: 62, startYear: 2026, betaaltermijn: "14 dagen", btw: "verlegd",
+      "settings/main": { template: "valkyrys", startNumber: 62, startYear: 2026, betaaltermijn: "14 dagen", btw: "verlegd",
         client: { name: "Piguillet BV", street: "Edisonstraat 8", city: "2652 XS Berkel en Rodenrijs", kvk: "52742938", btw: "NL850577950B01" } },
       "invoices/61-2026": { factuurnr: "61-2026", nummer: 61, jaar: 2026, po: "PO-008074", datum: "29/10/2026", totaal: 2250, btw: "verlegd",
         lines: [{ desc: "PO-008074", tarief: 450, aantal: 5 }] },

@@ -10,13 +10,27 @@ const goTab = (page, name) => page.click(TABS[name]);
 /** switch the interface language ("nl", "en", "pl") whichever tab is open (the list itself lives in Settings) */
 const setLang = (page, lang) => page.evaluate((v) => { const s = document.querySelector("#lang"); s.value = v; s.dispatchEvent(new Event("change", { bubbles: true })); }, lang);
 
-/** a profile that is set up: no PIN question, and the first-start folder question already answered. `config` adds to config.json (folder, poFolder). Returns the data folder. */
-function seedProfile(home, config = {}) {
+/** a profile that is set up: no PIN question, the first-start folder question already answered, and an invoice design chosen (the Valkyrys one unless opts.template says otherwise).
+ *  `config` adds to config.json (folder, poFolder). opts.template === null writes no data.json at all, so the app shows its first-start design picker. Returns the data folder. */
+function seedProfile(home, config = {}, opts = {}) {
   const dir = path.join(home, APP_DIR);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, "pin.json"), '{"v":1,"skipped":true}');
   fs.writeFileSync(path.join(dir, "config.json"), JSON.stringify({ welcomed: true, ...config }));
+  const data = path.join(dir, "data.json");
+  if (opts.template !== null && !fs.existsSync(data)) {
+    const { DEFAULT_SETTINGS } = require("../electron-app/server.js");
+    fs.writeFileSync(data, JSON.stringify({ "settings/main": { ...DEFAULT_SETTINGS, template: opts.template === undefined ? "valkyrys" : opts.template } }));
+  }
   return dir;
 }
 
-module.exports = { APP_DIR, goTab, setLang, seedProfile };
+/** first start: pick a design card in the picker and press Next (the details step, if any, is up to the test) */
+async function chooseDesign(page, id) {
+  const card = `#tplGrid [data-tpl="${id}"]`;
+  await page.waitForSelector(card, { state: "visible" });
+  await page.click(card);
+  await page.click("#tplNext");
+}
+
+module.exports = { APP_DIR, goTab, setLang, seedProfile, chooseDesign };

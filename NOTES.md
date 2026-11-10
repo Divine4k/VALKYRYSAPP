@@ -23,7 +23,9 @@ Logs: `logs/<test>.log`. Tests need xvfb (the script uses `xvfb-run -a`). Do not
 |---|---|
 | `tool/index.html` | The whole interface: CSS, texts in nl/en/pl (`I18N`), all logic (about 2,300 lines). Source of truth. |
 | `tool/invoice-core.js` | Reading POs/invoices, counting days, building invoices. Runs in the page and in Node. |
-| `tool/invoice-docx.js`, `tool/vendor`, `tool/img`, `tool/fonts` | Word output, libraries, logo, fonts |
+| `tool/invoice-docx.js`, `tool/vendor`, `tool/img`, `tool/fonts` | Word output of the Valkyrys design, libraries, logos, fonts |
+| `tool/invoice-templates.js` | The invoice designs: list to choose from, the person's own details (`senderFor`, `missing`), the Extreme Building PDF drawing and Word filling, `renderPdf` / `buildWord` pick the design by `data.template` |
+| `tool/templates/extreme.docx` | Word file of the Extreme Building design with `[placeholders]`; filled in by `fillExtremeDocx` |
 | `app/shim.js` | Stand-in for the storage/downloads the page expects (database via the local server) |
 | `tools/build_app.py` | tool/ -> `app/web` (CDN libraries replaced by local copies, shim added) |
 | `electron-app/main.js` | Window, PIN lock, folders (config.json), show-in-folder, first-start flag |
@@ -31,7 +33,8 @@ Logs: `logs/<test>.log`. Tests need xvfb (the script uses `xvfb-run -a`). Do not
 | `electron-app/server.js` | Local server on port 47831 (fixed, so the window remembers theme and language): serves the page, keeps data.json |
 | `installer/` | Setup program in plain Go (own Win32 window, nl/en/pl, `/S` silent). `logic.go` texts and file handling (testable anywhere), `win_ops.go`, `win_gui.go` |
 | `tools/build_payload.py` | Windows Electron (`dl/win.zip`) + app -> `installer/payload/app.zip` |
-| `tools/test_*.js/.mjs` | Tests. `tools/test_helpers.js` has goTab, setLang, seedProfile |
+| `tools/test_*.js/.mjs` | Tests. `tools/test_helpers.js` has goTab, setLang, seedProfile (writes a chosen design unless `{template: null}`), chooseDesign |
+| `tools/measure_pdf.mjs`, `tools/render_templates.mjs` | Measure a reference invoice (text baselines, rectangles, images); draw a sample invoice in every design |
 | `realpo/` | The user's real POs (used by test_realpo), `po/` sample PO |
 
 ## Data and settings on the user's computer
@@ -46,6 +49,13 @@ Logs: `logs/<test>.log`. Tests need xvfb (the script uses `xvfb-run -a`). Do not
 - Changing the PO reading? Bump `PARSER_VERSION` in index.html so cached reads are redone.
 - Tests seed their own fake AppData (`seedProfile`), so they skip the PIN and first-start questions. Fixture folders in /tmp are made again before every test by `dev.sh`.
 - When the UI moves, fix `tools/test_helpers.js` first (tab selectors) before touching single tests.
+
+## Invoice designs (templates)
+- Settings `template` (`valkyrys` | `extreme`) and `sender` (the person's details: name, person, street, city, phone, email, iban, btw, kvk) live in `settings/main`. Only what the person typed is in `sender`; the rest comes from the design's defaults. Missing required details block invoices (banner on Invoices, warning in Settings).
+- First start: design picker, then the details form, then the folder question (`firstRun()` in index.html). Installs from before designs existed get `template: "valkyrys"` from `electron-app/server.js`; a fresh install has none, so the picker shows. Tests that need a ready profile use `seedProfile` (design chosen).
+- Each saved invoice stores its `template` and `sender`, so an old invoice is drawn again in the design and with the details it was made with (`recordLook`).
+- The importer (`parseInvoiceText(lines, owners)`) gets the own names/KVKs of every design and the current sender so it never takes the sender for the client.
+- **Adding a design for another person**: get their invoice as a Word file with `[placeholders]` (like `tool/templates/extreme.docx`), convert it to PDF (LibreOffice), run `node tools/measure_pdf.mjs ref.pdf` for positions, then: pictures into `tool/img/`, an entry in `TEMPLATES`, a `render...` function (copy `renderExtreme`), a Word-fill function (copy `fillExtremeDocx`), a thumbnail `tool/img/tpl-ID.png` (from `tools/render_templates.mjs`), texts `tplDesc_ID` in all three languages, assets in `loadAssets()`, a case in `tools/test_parse_generated.mjs`, and check it with `tools/test_templates.js`. Compare the result with the reference side by side (pixel diff).
 
 ## Installer
 - Replaces an installed "Valkyrys Facturen" (shortcuts, entry in Installed apps, listed files); data is left to the app to move.

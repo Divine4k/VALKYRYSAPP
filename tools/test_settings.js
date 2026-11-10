@@ -5,7 +5,8 @@ let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ")
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 const INV = "/tmp/np-inv", PO = "/tmp/po-folder", HOME = "/tmp/el-appdata-set";
 const D = (h = HOME, n = "Valkyrys app") => path.join(h, n);
-const seed = (home, files, dirName = "Valkyrys app") => { fs.rmSync(home, { recursive: true, force: true }); fs.mkdirSync(path.join(home, dirName), { recursive: true }); for (const [n, c] of Object.entries(files)) fs.writeFileSync(path.join(home, dirName, n), typeof c === "string" ? c : JSON.stringify(c)); };
+const seed = (home, files, dirName = "Valkyrys app") => { if (!files["data.json"]) files = { ...files, "data.json": { "settings/main": { ...require("../electron-app/server.js").DEFAULT_SETTINGS, template: "valkyrys" } } }; // the design is chosen already (test_templates covers choosing it)
+  fs.rmSync(home, { recursive: true, force: true }); fs.mkdirSync(path.join(home, dirName), { recursive: true }); for (const [n, c] of Object.entries(files)) fs.writeFileSync(path.join(home, dirName, n), typeof c === "string" ? c : JSON.stringify(c)); };
 const SKIP = '{"v":1,"skipped":true}';
 const launch = async (home) => {
   const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu", "--no-splash"], env: { ...process.env, APPDATA: home, XDG_CONFIG_HOME: home } });

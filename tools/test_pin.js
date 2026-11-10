@@ -16,6 +16,7 @@ const unlockWith = async (page, pin) => { await page.fill("#lkPin1", pin); await
 (async () => {
   fs.rmSync(dataHome, { recursive: true, force: true }); fs.mkdirSync(D, { recursive: true });
   fs.writeFileSync(path.join(D, "config.json"), JSON.stringify({ folder: "/tmp/np-inv" }));
+  fs.writeFileSync(path.join(D, "data.json"), JSON.stringify({ "settings/main": { ...require("../electron-app/server.js").DEFAULT_SETTINGS, template: "valkyrys" } })); // the design is chosen already: only the PIN is asked
   let { app, page } = await launch(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
 
   // ---- first start: make a PIN
