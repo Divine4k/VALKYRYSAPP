@@ -73,13 +73,26 @@ function create(opts) {
     return Buffer.concat(parts);
   }
 
+  // latest.json: raw.githubusercontent.com keeps /main/... cached ~5 min and ignores query strings, so ask the GitHub API for the newest
+  // commit of main (answered fresh) and read latest.json of exactly that commit (a commit URL never goes stale).
+  // If the API fails (offline, rate limit of 60/hour per address) the plain /main URL is used. The signature check is the same either way.
+  async function manifestBuf() {
+    const MAX = 1024 * 1024;
+    if (!process.env.VALKYRYS_UPDATE_URL) try {
+      const r = await net.fetch(`https://api.github.com/repos/${UPDATE_REPO}/commits/main`, { cache: "no-store", headers: { Accept: "application/vnd.github.sha", "User-Agent": "Valkyrys-app" } });
+      const sha = r.ok ? (await r.text()).trim() : "";
+      if (/^[0-9a-f]{40}$/.test(sha)) return await fetchBuf(`https://raw.githubusercontent.com/${UPDATE_REPO}/${sha}/latest.json`, null, MAX);
+    } catch (e) {}
+    return fetchBuf(manifestUrl(), null, MAX);
+  }
+
   function check() {
     if (installing) return Promise.resolve(state());
     if (checking) return checking;
     set("checking");
     checking = (async () => {
       try {
-        const m = JSON.parse((await fetchBuf(manifestUrl(), null, 1024 * 1024)).toString("utf8"));
+        const m = JSON.parse((await manifestBuf()).toString("utf8"));
         if (!verify(m)) throw new Error("signature");
         if (!parseVer(m.version) || typeof m.url !== "string" || !/^[0-9a-f]{64}$/.test(m.sha256 || "") || !(m.size > 0)) throw new Error("manifest");
         try { fs.mkdirSync(opts.dataDir, { recursive: true }); fs.writeFileSync(metaFile, JSON.stringify({ ...readMeta(), lastCheck: new Date().toISOString() })); } catch (e) {}
