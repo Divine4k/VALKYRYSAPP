@@ -83,7 +83,7 @@ async function docxPage(bytes) {
     o.font && `font-family:'${o.font.replace(/['";<>]/g, "")}',Carlito,Calibri,sans-serif`].filter(Boolean).join(";");
   async function drawing(d, rels) {
     const anchor = d.getElementsByTagNameNS("*", "anchor")[0];
-    if (anchor && anchor.getAttribute("behindDoc") === "1") return ""; // backgrounds and watermarks behind the text are left out
+    if (anchor && anchor.getAttribute("behindDoc") === "1") { await behind(anchor, rels); return ""; } // pictures behind the text: drawn on the page's background layer
     let h = "";
     const blip = d.getElementsByTagNameNS("*", "blip")[0] || d.getElementsByTagNameNS("*", "imagedata")[0];
     const rid = blip && (blip.getAttribute("r:embed") || blip.getAttribute("r:id"));
@@ -91,6 +91,24 @@ async function docxPage(bytes) {
     if (src) { const ext = d.getElementsByTagNameNS("*", "extent")[0], w = ext ? Math.round(+ext.getAttribute("cx") / 9525) : 0; h += `<img src="${src}" alt=""${w > 0 ? ` style="width:${w}px"` : ""}>`; }
     for (const tb of d.getElementsByTagNameNS("*", "txbxContent")) h += `<div class="wbox">${await blocks(tb, rels)}</div>`;
     return h;
+  }
+  // a picture behind the text, at its place on the page: offsets from the page or the margins (EMU), or aligned; sizes in % of the page width,
+  // so it stays in place when the page is drawn narrower (container units of the page)
+  const bgs = [];
+  async function behind(anchor, rels) {
+    const blip = anchor.getElementsByTagNameNS("*", "blip")[0], rid = blip && blip.getAttribute("r:embed"), src = rid && rels.has(rid) ? await imgSrc(rels.get(rid)) : "";
+    const ext = kids(anchor).find((c) => c.localName === "extent"); if (!src || !ext || !G.w) return;
+    const px = (emu) => +emu / 9525, w = px(ext.getAttribute("cx")), h = px(ext.getAttribute("cy"));
+    const pos = (n, size, pageLen, m0, m1) => {
+      const p = kids(anchor).find((c) => c.localName === n); if (!p) return 0;
+      const from = p.getAttribute("relativeFrom") || "page", off = kids(p).find((c) => c.localName === "posOffset"), al = kids(p).find((c) => c.localName === "align");
+      const inMargin = !/^(page)$/.test(from), start = inMargin ? m0 : 0, len = inMargin ? pageLen - m0 - m1 : pageLen;
+      if (off) return start + px(off.textContent);
+      const a = al ? al.textContent : ""; return a === "center" ? start + (len - size) / 2 : a === "right" || a === "bottom" ? start + len - size : start;
+    };
+    const x = pos("positionH", w, G.w, G.ml, G.mr), y = pos("positionV", h, G.h || 1123, G.mt, G.mb);
+    const pc = (v) => (v / G.w * 100).toFixed(3) + "cqw";
+    bgs.push(`<img class="wbgi" src="${src}" alt="" style="left:${pc(x)};top:${pc(y)};width:${pc(w)};height:${pc(h)}">`);
   }
   async function runKids(list, o, rels) {
     let h = "";
@@ -163,6 +181,7 @@ async function docxPage(bytes) {
     }
     return h;
   }
+  const G = { w: 0, h: 0, ml: 0, mr: 0, mt: 0, mb: 0 }; // the page (CSS px), for pictures behind the text
   const docRels = await relsOf("word/document.xml"), sect = [...body.children].reverse().find((c) => c.localName === "sectPr");
   const part = async (kind) => { // the default header or footer of the (last) section
     const ref = kids(sect).find((c) => c.localName === kind + "Reference" && (attr(c, "type") || "default") === "default"), target = ref && docRels.get(ref.getAttribute("r:id"));
@@ -170,13 +189,18 @@ async function docxPage(bytes) {
     const h = await blocks(x.documentElement, await relsOf(p));
     return h.replace(/<[^>]+>/g, "").trim() || /<img/.test(h) ? h : ""; // an empty header adds nothing
   };
+  const pgW = tw(attr(child(sect, "pgSz"), "w")), pgH = tw(attr(child(sect, "pgSz"), "h")), mar = child(sect, "pgMar"), ml = tw(attr(mar, "left")), mr = tw(attr(mar, "right"));
+  Object.assign(G, { w: pgW || 0, h: pgH || 0, ml: ml || 0, mr: mr || 0, mt: tw(attr(mar, "top")) || 0, mb: tw(attr(mar, "bottom")) || 0 });
   const head = await part("header"), main = await blocks(body, docRels), foot = await part("footer");
   const page = document.createElement("div"); page.className = "wpage"; page.setAttribute("role", "document");
-  const pgW = tw(attr(child(sect, "pgSz"), "w")), mar = child(sect, "pgMar"), ml = tw(attr(mar, "left")), mr = tw(attr(mar, "right"));
   if (pgW) page.style.maxWidth = `min(${Math.round(pgW)}px, 100%)`;
   if (ml != null && mr != null && window.innerWidth > 640) { page.style.paddingLeft = Math.round(Math.min(ml, 110)) + "px"; page.style.paddingRight = Math.round(Math.min(mr, 110)) + "px"; }
-  page.innerHTML = (head ? `<div class="whf h">${head}</div>` : "") + main + (foot ? `<div class="whf f">${foot}</div>` : "");
-  for (const el of page.querySelectorAll("span[style]")) { // very light text sat on a picture behind it, which is left out: it turns dark, unless a shaded cell is behind it
+  const inner = (head ? `<div class="whf h">${head}</div>` : "") + main + (foot ? `<div class="whf f">${foot}</div>` : "");
+  if (bgs.length) { // the pictures behind the text on their own layer, the page at least as tall as the real one
+    page.classList.add("wbgpage"); if (pgW && pgH) page.style.aspectRatio = `${pgW} / ${pgH}`;
+    page.innerHTML = `<div class="wbgs" aria-hidden="true">${bgs.join("")}</div><div class="wfront">${inner}</div>`;
+  } else page.innerHTML = inner;
+  if (!bgs.length) for (const el of page.querySelectorAll("span[style]")) { // very light text sat on a picture behind it, which is left out: it turns dark, unless a shaded cell is behind it
     const m = /rgb\((\d+), (\d+), (\d+)\)/.exec(el.style.color); if (!m || 0.299 * m[1] + 0.587 * m[2] + 0.114 * m[3] <= 200) continue;
     let p = el, shaded = false; while (p && p !== page && !shaded) { shaded = !!(p.style && p.style.backgroundColor); p = p.parentElement; }
     if (!shaded) el.style.color = "";

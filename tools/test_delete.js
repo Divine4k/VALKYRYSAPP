@@ -1,5 +1,5 @@
 // Deleting an invoice (history × and the bin on a Documents row): the app's record, and if wanted its files (to the Recycle Bin, stubbed here),
-// the PO only on request; refreshing the folders (buttons, coming back to the app); records whose files vanished outside the app (banner).
+// the PO only on request; refreshing the folders (buttons, coming back to the app); records whose files vanished outside the app are removed on their own (the folder is the truth).
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
 const { tmp, goTab, seedProfile, APP_DIR } = require("./test_helpers");
 const PDFLib = require("/home/claude/.npm-global/lib/node_modules/pdf-lib");
@@ -13,6 +13,7 @@ async function makePo(file, po, order, items) {
     ...items.map(([d, p]) => `1 Dagprijs ${d} - Przemyslaw Wodecki - TB/2025-08/006531 ${money(p)} ${money(p)}`), `Totaalbedrag inkooporder ${money(total)}`, "Alle genoemde prijzen zijn exc. btw", "Facturatievoorwaarden:", "KvK nr. 52742938 BTW nr. NL850577950B01 IBAN NL48 INGB0009237048"];
   lines.forEach((t, i) => page.drawText(t, { x: 40, y: 800 - i * 18, size: 10, font: f })); fs.writeFileSync(file, await doc.save());
 }
+const until = async (fn, ms = 8000) => { const t = Date.now(); while (Date.now() - t < ms) { try { if (await fn()) return true; } catch (e) {} await new Promise((r) => setTimeout(r, 200)); } return false; };
 const db = () => { try { return JSON.parse(fs.readFileSync(path.join(dataHome, APP_DIR, "data.json"), "utf8")); } catch (e) { return {}; } };
 const exists = (n) => fs.existsSync(path.join(INV, n));
 const eq2 = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
@@ -134,39 +135,26 @@ const eq2 = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a
   ok(refused.every((r) => r && r.error && !r.ok), "outside / missing paths refused", refused);
   ok(fs.existsSync(path.join(PO, "PO-200001.pdf")), "file outside the folder untouched");
 
-  // ---- 4. coming back to the app re-reads the folder; files deleted in Explorer → "only in app" + banner
+  // ---- 4. the folder is the truth: files deleted in Explorer → coming back to the app removes the record on its own (no banner), its PO is new again
+  await goTab(page, "inv"); await sleep(300); const npBefore = await page.$$eval("#npList li", (l) => l.length);
+  await page.evaluate(() => { window.__staleGraceMs = 0; }); // no grace period for a save under way
+  await goTab(page, "docs"); await sleep(300);
   fs.rmSync(path.join(INV, "VALKYRYS 64-2026.pdf")); fs.rmSync(path.join(INV, "VALKYRYS 64-2026.docx"));
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await page.waitForFunction(() => { const r = document.querySelector('#docsList li[data-nr="64-2026"] .c-nr small'); return !!r; }, null, { timeout: 5000 }).then(() => ok(true, "focus refresh: 64 now 'only in app'"), () => ok(false, "focus refresh: 64 now 'only in app'"));
-  await page.waitForSelector("#staleBarD:not([hidden])", { timeout: 5000 }).catch(() => {});
-  ok(await page.isVisible("#staleBarD") && (await page.textContent("#staleBarD")).includes("64-2026"), "Documents banner names 64-2026");
+  ok(await until(async () => !db()["invoices/64-2026"] && !(await page.$('#docsList li[data-nr="64-2026"]'))), "focus refresh: 64-2026 removed from the app and the list");
+  ok(await until(async () => ((await page.textContent("#toast").catch(() => "")) || "").includes("64-2026")), "a short note names it", await page.textContent("#toast").catch(() => ""));
+  ok(!(await page.isVisible("#staleBarD")) && !(await page.isVisible("#staleBar")), "no banner");
 
-  // ---- 5. the refresh button picks up a file deleted on disk
+  // ---- 5. the refresh button too
   fs.rmSync(path.join(INV, "VALKYRYS 63-2026.pdf")); fs.rmSync(path.join(INV, "VALKYRYS 63-2026.docx"));
-  await page.click("#docsBar [data-refresh]"); await sleep(1500);
-  ok(await page.isVisible('#docsList li[data-nr="63-2026"] .c-nr small'), "refresh button: 63 now 'only in app'");
-  ok((await page.textContent("#staleBarD")).includes("63-2026"), "banner names 63-2026 too");
-  ok(!(await page.$eval("#docsBar [data-refresh]", (b) => b.classList.contains("spin"))), "spinner stops");
-
-  // ---- 6. the banner on the Invoices tab removes the stale records: their POs are new again, numbering drops back
+  await page.click("#docsBar [data-refresh]");
+  ok(await until(async () => !db()["invoices/63-2026"] && !(await page.$('#docsList li[data-nr="63-2026"]'))), "refresh button: 63-2026 removed");
+  ok(db()["invoices/62-2026"], "62-2026 kept (its PDF is still there)");
+  ok(await until(async () => !(await page.$eval("#docsBar [data-refresh]", (b) => b.classList.contains("spin")))), "spinner stops");
   await goTab(page, "inv"); await sleep(400);
-  const st = await page.textContent("#staleBar"); console.log("banner:", st);
-  ok(await page.isVisible("#staleBar") && st.includes("63-2026") && st.includes("64-2026") && !st.includes("62-2026"), "Invoices banner lists 63 and 64 only");
-  const npBefore = await page.$$eval("#npList li", (l) => l.length);
-  await page.click('#staleBar button[data-stale="del"]'); await sleep(1500);
-  ok(!db()["invoices/63-2026"] && !db()["invoices/64-2026"] && db()["invoices/62-2026"], "63 and 64 removed from the app, 62 kept");
-  ok(!(await page.isVisible("#staleBar")), "banner gone");
   const npAfter = await page.$$eval("#npList li .t", (l) => l.map((x) => x.textContent));
   ok(npAfter.length === npBefore + 2 && npAfter.includes("PO-200002") && npAfter.includes("PO-200003"), "their POs are new again", { npBefore, npAfter });
   ok((await page.textContent("#nextNr")) === "63-2026", "next number drops back to 63: " + (await page.textContent("#nextNr")));
-
-  // ---- 7. "Keep" remembers; an older record without savedFiles counts by the folder's range
-  fs.rmSync(path.join(INV, "VALKYRYS 62-2026.pdf")); fs.rmSync(path.join(INV, "VALKYRYS 62-2026.docx"), { force: true }); // (its Word file went in 1b)
-  await page.click("#newPo [data-refresh]"); await sleep(1500);
-  ok(await page.isVisible("#staleBar") && (await page.textContent("#staleBar")).includes("62-2026"), "refresh button: 62 flagged");
-  await page.click('#staleBar button[data-stale="keep"]'); await sleep(800);
-  ok(!(await page.isVisible("#staleBar")) && db()["invoices/62-2026"], "keep: banner gone, record kept");
-  ok(((db()["settings/keptstale"] || {}).list || []).includes("62-2026"), "kept numbers stored");
 
   // ---- 7b. two invoices for one purchase order: 62-2026 (made here for PO-200001) and a file "VALKYRYS 70-2026 PO-200001.pdf"
   fs.writeFileSync(path.join(INV, "VALKYRYS 70-2026 PO-200001.pdf"), "x");

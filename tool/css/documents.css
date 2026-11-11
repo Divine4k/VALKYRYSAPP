@@ -124,3 +124,8 @@ button.mkinv { min-height: 30px; padding: 4px 12px; font-size: 12.5px; white-spa
 .dmeta .dinfo { flex: 1 1 260px; margin: 0; }
 .dmeta .dprog { margin-left: auto; order: 0; }
 .dmeta .sendstart { order: 0; margin: 0; min-height: 38px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 7px; font-size: 14px; }
+/* a Word page with pictures behind the text (e.g. the dark sidebar of a design): they sit on their own layer, placed in the page's own units */
+.wpage.wbgpage { position: relative; overflow: hidden; }
+.wpage .wbgs { position: absolute; inset: 0; z-index: 0; pointer-events: none; container-type: size; } /* the whole page box: cqw = 1% of the page width */
+.wpage .wbgs .wbgi { position: absolute; max-width: none; object-fit: fill; }
+.wpage .wfront { position: relative; z-index: 1; }

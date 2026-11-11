@@ -24,7 +24,8 @@ async function fixtures() {
   await word("VALKYRYS 3-2026.docx", data("3-2026", "10/03/2026", "PO-100004", 475, 2));     // Word only
   fs.writeFileSync(`${INV}/notities.txt`, "x");
 }
-const inv = (nr, datum, po, client, lines) => { const [n, y] = nr.split("-").map(Number); return { factuurnr: nr, nummer: n, jaar: y, po, datum, betaaltermijn: "14 dagen", client: { name: client }, lines, btw: "verlegd", totaal: core.totals(lines, "verlegd").total, dagen: [], createdAt: "2026-01-01T10:00:00Z" }; };
+const inv = (nr, datum, po, client, lines) => { const [n, y] = nr.split("-").map(Number); return { factuurnr: nr, nummer: n, jaar: y, po, datum, betaaltermijn: "14 dagen", client: { name: client }, lines, btw: "verlegd", totaal: core.totals(lines, "verlegd").total, dagen: [], createdAt: FUTURE }; };
+const FUTURE = new Date(Date.now() + 864e5).toISOString(); // records without files are removed after a grace period (a save under way): "just made" keeps the app-only rows for this test
 
 async function launch() {
   const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu", "--no-splash"], env: { ...process.env, APPDATA: HOME, XDG_CONFIG_HOME: HOME } });
@@ -157,6 +158,8 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
   const wtxt = (await page.$eval("#poPages", (p) => p.innerText).catch(() => "")).replace(/\s+/g, " "); console.log("word page:", wtxt.slice(0, 300));
   ok(await page.isVisible("#poPages .wpage"), "Word preview: a page is drawn"); ok(wtxt.includes("3-2026") && wtxt.includes("PO-100004"), "Word preview shows the invoice text");
   ok(await page.$eval("#poPages .wpage", (p) => !!p.querySelector("table td") && !!p.querySelector("img")), "Word preview has the table and the logo");
+  const bg = await page.$eval("#poPages .wpage", (p) => { const i = p.querySelector(".wbgs img"), r = i && i.getBoundingClientRect(), pr = p.getBoundingClientRect(); return i ? { n: p.querySelectorAll(".wbgs img").length, w: r.width, h: r.height, pw: pr.width, ok: i.complete && i.naturalWidth > 0 } : null; });
+  console.log("word background:", JSON.stringify(bg)); ok(bg && bg.ok && bg.w > 20 && bg.h > 100, "Word preview draws the picture behind the text (the dark sidebar)");
   ok(!(await page.isVisible("#poDlgErr")), "no error message");
   eq([await page.textContent("#poDlgTitle"), await page.textContent("#poDlgOpen")], ["Factuur 3-2026 (Word)", "Openen in Word"], "Word title and 'Open in Word'");
   await page.screenshot({ path: "/tmp/docs_word.png" });

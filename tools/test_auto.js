@@ -29,6 +29,7 @@ async function launch() {
   const smtp = await F.startSmtp({ users: { "jan@wp.pl": PASS } });
   const dir = seedProfile(HOME, { folder: INV, poFolder: POF });
   { const d0 = db(dir); d0["invoices/50-2026"] = { factuurnr: "50-2026", nummer: 50, jaar: 2026, po: "PO-006551", datum: "01/06/2026", client: { name: "Piguillet BV" }, lines: [{ desc: "PO-006551", tarief: 400, aantal: 1 }], btw: "verlegd", totaal: 400, dagen: [] }; fs.writeFileSync(path.join(dir, "data.json"), JSON.stringify(d0)); }
+  { const PDFLib = require("/home/claude/.npm-global/lib/node_modules/pdf-lib"), d = await PDFLib.PDFDocument.create(); d.addPage(); fs.mkdirSync(path.join(INV, "oud")); fs.writeFileSync(path.join(INV, "oud", "VALKYRYS 50-2026.pdf"), await d.save()); } // its file is in the folder (a record without one is removed)
   fs.writeFileSync(path.join(dir, "mail.json"), JSON.stringify({ mode: "ask", accounts: [{ id: "acc1", provider: "imap", user: "jan@wp.pl", host: "127.0.0.1", port: imap.port, smtp: { host: "127.0.0.1", port: smtp.port }, enabled: true, pass: "b:" + Buffer.from(PASS).toString("base64") }] }));
 
   let { app, page, errs } = await launch();
@@ -87,7 +88,7 @@ async function launch() {
   await until(() => page.isVisible("#autoStep2"));
   await page.selectOption("#autoClient", "kz"); await page.click("#autoRun");
   ok(await until(async () => /Er is iets na te kijken \(PO-006476\)/.test(await page.textContent("#autoDone")), 30000), "the PO's KVK is not Zeta's: it stops and says which", await page.textContent("#autoDone").catch(() => ""));
-  ok(fs.readdirSync(INV).length === 4 && smtp.sent.length === 1, "nothing saved, nothing sent");
+  ok(fs.readdirSync(INV).filter((n) => n !== "oud").length === 4 && smtp.sent.length === 1, "nothing saved, nothing sent");
   await page.click("#autoClose2");
   ok(await page.isVisible("#cards .po"), "the invoice waits on the Invoices tab to be checked");
   ok(!errs.length, "no page errors", errs);

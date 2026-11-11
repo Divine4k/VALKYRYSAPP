@@ -320,41 +320,32 @@ if (desk) {
   window.addEventListener("focus", onBack); document.addEventListener("visibilitychange", onBack);
 }
 
-// ---- invoices still in the app whose files were deleted from the folder outside it (banner on Invoices and Documents).
-// A record is STALE when: the invoice folder is set, exists and has been read completely; no file in it carries the record's number
-// (state.fileNums: from file names and file contents); and either the record says it was saved into the folder (savedFiles, since 1.1.1),
-// or, for older records without savedFiles, its number is not below the lowest number of its year in the folder (it lies in the range
-// the folder holds). Numbers the person chose to keep (settings/keptstale) are not shown again. Nothing is removed without a click.
+// ---- the invoice folder is the truth: an invoice in the app with no file of its number in the folder (deleted outside the app, or never saved
+// there) is removed from the app by itself, once the folder is set, there, and read completely. Records from the last minute are left alone
+// (a save that the folder listing has not caught up with yet). A missing folder (disk not connected) never removes anything.
+const STALE_GRACE_MS = 60000;
 function staleRecords() {
   if (!desk || !state.folder || !state.folder.exists || !state.folderScanned || state.scan || !state.invoicesLoaded) return [];
-  const kept = state.keptStale || new Set();
+  // a folder without a single invoice file (a new or wrong folder picked) never empties the app
+  if (![...state.fileNums.values()].some((m) => m && m.size)) return [];
+  const now = Date.now();
   return [...state.invoices.values()].filter((i) => {
-    const m = /^(\d+)-(\d{4})$/.exec(i.factuurnr || ""); if (!m || kept.has(i.factuurnr)) return false;
-    const nums = state.fileNums.get(+m[2]) || new Map(); if (nums.has(+m[1])) return false;
-    if (Array.isArray(i.savedFiles) && i.savedFiles.length) return true;
-    return nums.size > 0 && +m[1] >= Math.min(...nums.keys());
+    const m = /^(\d+)-(\d{4})$/.exec(i.factuurnr || ""); if (!m) return false;
+    if (state.cards.some((c) => c.saving)) return false; // something is being saved right now
+    const t = Date.parse(i.createdAt || ""); if (t && now - t < (window.__staleGraceMs ?? STALE_GRACE_MS)) return false; // (tests shorten it)
+    return !(state.fileNums.get(+m[2]) || new Map()).has(+m[1]);
   }).sort((a, b) => a.jaar - b.jaar || a.nummer - b.nummer);
 }
-function renderStale() {
-  const nrs = staleRecords().map((i) => i.factuurnr);
-  const text = nrs.length ? tr(nrs.length === 1 ? "staleOne" : "staleMany", nrs.length, nrs.slice(0, 12).join(", ") + (nrs.length > 12 ? ", …" : "")) : "";
-  document.querySelectorAll(".stalebar").forEach((b) => { b.hidden = !nrs.length; b.querySelector("[data-stale-text]").textContent = text; });
-  state.staleNrs = nrs;
+async function renderStale() {
+  document.querySelectorAll(".stalebar").forEach((b) => { b.hidden = true; });
   document.querySelectorAll("button[data-refresh]").forEach((b) => { b.title = tr("refresh"); });
-}
-document.addEventListener("click", async (e) => {
-  const b = e.target.closest(".stalebar button[data-stale]"); if (!b || state.delBusy) return;
-  const nrs = (state.staleNrs || []).slice(); if (!nrs.length) return;
-  if (b.dataset.stale === "keep") {
-    state.keptStale = new Set([...(state.keptStale || []), ...nrs]);
-    if (state.db) { try { await state.db.doc("settings/keptstale").set({ list: [...state.keptStale] }); } catch (err) {} }
-    render(); return;
-  }
-  state.delBusy = true; let bad = 0;
+  if (state.delBusy || state.staleBusy) return;
+  const gone = staleRecords().map((i) => i.factuurnr); if (!gone.length) return;
+  state.staleBusy = true;
   try {
-    for (const n of nrs) { state.invoices.delete(n); state.sent.delete(n); if (state.db) { try { await state.db.doc("invoices/" + n).delete(); } catch (err) { bad++; } } }
+    for (const n of gone) { state.invoices.delete(n); state.sent.delete(n); state.docs && state.docs.sel && state.docs.sel.delete(n); if (state.db) { try { await state.db.doc("invoices/" + n).delete(); } catch (err) {} } }
     saveSent();
-  } finally { state.delBusy = false; }
+  } finally { state.staleBusy = false; }
   renumber(); render();
-  toast(bad ? tr("delSomeFail") : tr("staleRemoved", nrs.length));
-});
+  toast(tr(gone.length === 1 ? "staleAuto1" : "staleAutoN", gone.slice(0, 8).join(", ") + (gone.length > 8 ? ", …" : "")));
+}

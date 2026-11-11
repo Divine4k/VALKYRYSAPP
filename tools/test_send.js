@@ -31,7 +31,7 @@ async function launch() {
   const dir = seedProfile(HOME, { folder: INV });
   const db = JSON.parse(fs.readFileSync(path.join(dir, "data.json"), "utf8"));
   const lines = [{ desc: "PO-100005", tarief: 400, aantal: 2 }];
-  db["invoices/3-2026"] = { factuurnr: "3-2026", nummer: 3, jaar: 2026, po: "PO-100005", datum: "15/02/2026", betaaltermijn: "14 dagen", client, lines, btw: "verlegd", totaal: 800, dagen: [], createdAt: "2026-02-15T10:00:00Z" }; // only in the app: drawn again
+  db["invoices/3-2026"] = { factuurnr: "3-2026", nummer: 3, jaar: 2026, po: "PO-100005", datum: "15/02/2026", betaaltermijn: "14 dagen", client, lines, btw: "verlegd", totaal: 800, dagen: [], createdAt: new Date(Date.now() + 864e5).toISOString() }; // only in the app (still in its grace period): drawn again
   fs.writeFileSync(path.join(dir, "data.json"), JSON.stringify(db));
 
   // ---- no mail connected: ticking works, sending says to connect first
