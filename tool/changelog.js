@@ -3,6 +3,15 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
+    version: "1.3.10", date: "2026-11-11",
+    items: [
+      { type: "improved",
+        nl: "Mappen op een USB-stick of externe schijf: loskoppelen en weer aansluiten gaat vanzelf goed.",
+        en: "Folders on a USB stick or external drive: unplugging and plugging back in is handled automatically.",
+        pl: "Foldery na pendrive lub dysku zewnętrznym: odłączenie i ponowne podłączenie działa automatycznie." },
+    ],
+  },
+  {
     version: "1.3.8", date: "2026-11-11",
     items: [
       { type: "new",
