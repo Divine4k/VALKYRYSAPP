@@ -27,7 +27,7 @@
   <div class="side-brand"><span class="side-logo" role="img" aria-label="Valkyrys"></span><span class="side-app" data-i18n="title">App</span></div>
   <nav class="sidenav" role="tablist" id="tabs" aria-orientation="vertical" data-i18n-aria="tabsLabel" aria-label="Onderdelen">
       <button type="button" class="navi" role="tab" id="tabStats" data-tab="stats" aria-selected="true" aria-controls="statsView"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-8"/><path d="M21 20H3"/></svg><span class="lbl" data-i18n="tabStats">Statistieken</span></button>
-      <button type="button" class="navi" role="tab" id="tabInv" data-tab="inv" aria-selected="false" aria-controls="viewInv" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg><span class="lbl" data-i18n="tabInvoices">Facturen</span></button>
+      <button type="button" class="navi" role="tab" id="tabInv" data-tab="inv" aria-selected="false" aria-controls="viewInv" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg><span class="lbl" data-i18n="tabInvoices">Facturen</span><span class="newsdot" id="invDot" hidden></span></button>
       <button type="button" class="navi" role="tab" id="tabDocs" data-tab="docs" aria-selected="false" aria-controls="docsView" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 13h8"/></svg><span class="lbl" data-i18n="tabDocs">Documenten</span></button>
   </nav>
   <div class="side-foot">
@@ -43,6 +43,7 @@
     <div id="libError" class="banner err" hidden></div>
     <div class="panel dupbar" id="detBar" role="status" hidden><span class="dtext" id="detBarText"></span><button type="button" id="detBarGo" data-i18n="detBarGo">Gegevens invullen</button></div>
     <div class="panel dupbar stalebar" id="staleBar" role="status" hidden><span class="dtext" data-stale-text></span><button type="button" data-stale="del" data-i18n="staleDel">Uit de app verwijderen</button><button type="button" class="ghost" data-stale="keep" data-i18n="staleKeep">Behouden</button></div>
+    <div id="mailNotes" hidden></div>
     <div class="drop" id="drop">
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 18v-6"/><path d="M9.5 14.5 12 12l2.5 2.5"/></svg>
       <h2 data-i18n="dropTitle">Sleep inkooporders (PDF) hierheen</h2>
@@ -332,7 +333,7 @@
     </div>
   </div>
 </dialog>
-<div id="bars"><div id="mailBars" hidden></div><div id="updBars" hidden></div></div>
+<div id="bars"><div id="updBars" hidden></div></div>
 <dialog id="newsDlg" aria-labelledby="newsTitle">
   <div class="dlg-head"><strong id="newsTitle" data-i18n="newsTitle">Nieuw in Valkyrys app</strong><button type="button" id="newsClose" data-i18n="close">Sluiten</button></div>
   <div class="dlg-body" id="newsList"></div>

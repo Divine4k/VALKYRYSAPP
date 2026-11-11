@@ -56,7 +56,12 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   ok(fs.readdirSync(POF).length === 1, "the other mail is ignored", fs.readdirSync(POF));
   ok(await until(async () => /Gecontroleerd om .*1 inkooporder in je e-mail \(laatste 30 dagen\) · 1 inkooporder opgehaald/.test(await page.textContent("#mailList .mstat"))), "status: checked, 1 fetched", await page.textContent("#mailList .mstat"));
   ok(await until(() => page.evaluate(() => state.poFiles.some((f) => f.name === "PO-008148.pdf"))), "the app read the PO folder again (new POs)");
-  ok(await until(async () => (await page.isVisible("#mailBars [data-mbar=got]")) && /opgehaald: PO-008148/.test(await page.textContent("#mailBars"))), "a notice at the bottom says the PO came in");
+  ok(await until(() => page.isVisible("#invDot")), "a dot on Facturen in the sidebar");
+  await goTab(page, "inv");
+  ok(await until(async () => (await page.isVisible("#mailNotes [data-mnote=got]")) && /Je hebt een nieuwe inkooporder in je mail!/.test(await page.textContent("#mailNotes")) && /PO-008148 staat al in je map/.test(await page.textContent("#mailNotes"))), "Invoices tab: 'Je hebt een nieuwe inkooporder in je mail!'", await page.textContent("#mailNotes"));
+  ok(await page.evaluate(() => { const n = document.querySelector("#mailNotes"), d = document.querySelector("#drop"); return !!(n.compareDocumentPosition(d) & Node.DOCUMENT_POSITION_FOLLOWING); }), "...at the top, above the drop zone");
+  await page.screenshot({ path: "/tmp/mail-note.png" });
+  await goTab(page, "settings"); await page.waitForTimeout(200);
   await page.waitForTimeout(400);
   await page.screenshot({ path: "/tmp/mail-settings.png" });
   await page.$eval("#mailPanel", (el) => el.scrollIntoView()); await page.screenshot({ path: "/tmp/mail-panel.png" });
@@ -70,15 +75,16 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   ok(await saved(path.join(POF, "PO-008149.pdf"), 10000), "check now: the new PO is fetched");
   ok(await until(async () => /2 inkooporders opgehaald/.test(await page.textContent("#mailList .mstat"))), "status counts 2");
 
-  ok(await until(async () => /2 nieuwe inkooporders uit je e-mail opgehaald: PO-008148, PO-008149/.test(await page.textContent("#mailBars"))), "the notice lists both until looked at");
+  ok(await until(async () => /Je hebt nieuwe inkooporders in je mail!.*PO-008148, PO-008149 staan al/.test(await page.textContent("#mailNotes"))), "the notice lists both until looked at");
 
   // the notice is still there after a restart, until "Bekijken"
   await app.close();
   ({ app, page, errs } = await launch());
-  ok(await until(() => page.isVisible("#mailBars [data-mbar=got]")), "after a restart: the notice is shown on opening");
-  await page.click("#mailBars [data-mbar-act=view]");
-  ok(await until(async () => !(await page.isVisible("#mailBars [data-mbar]"))), "Bekijken: notice gone");
-  ok(await page.evaluate(() => state.tab === "inv"), "...and the Invoices tab (new POs) is open");
+  ok(await until(() => page.isVisible("#invDot")), "after a restart: the dot on Facturen is back");
+  await goTab(page, "inv");
+  ok(await until(() => page.isVisible("#mailNotes [data-mnote=got]")), "...and the notice on the Invoices tab");
+  await page.click("#mailNotes [data-mnote-act=ok]");
+  ok(await until(async () => !(await page.isVisible("#mailNotes [data-mnote]")) && !(await page.isVisible("#invDot"))), "'Top, bedankt': notice and dot gone");
   ok(await until(() => JSON.parse(fs.readFileSync(path.join(HOME, APP_DIR, "mail.json"), "utf8")).unseen.length === 0), "...remembered as seen");
   await goTab(page, "settings"); await page.waitForTimeout(300);
 
@@ -89,17 +95,18 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   inbox.push({ uid: 7, date: new Date(), subject: "Inkooporder PO-008150", raw: F.poMail({ po: "008150", pdf }) });
   inbox.push({ uid: 8, date: new Date(), subject: "Inkooporder PO-008151", raw: F.poMail({ po: "008151", pdf }) });
   await page.click("#mailList [data-mcheck]");
-  ok(await until(async () => (await page.isVisible("#mailBars [data-mbar=found]")) && /2 nieuwe inkooporders in je e-mail: PO-008150, PO-008151/.test(await page.textContent("#mailBars"))), "found: a notice asks", await page.textContent("#mailBars"));
+  ok(await until(async () => /PO-008150, PO-008151\. Wil je ze downloaden\?/.test(await page.textContent("#mailNotes"))), "found: the notice asks", await page.textContent("#mailNotes"));
   ok(!fs.existsSync(path.join(POF, "PO-008150.pdf")), "...nothing downloaded yet");
   ok(await page.isVisible("#mailPend") && (await page.$$("#mailPendList li")).length === 2, "...listed in Connections with Downloaden / Negeren");
   await page.$eval("#mailPend", (el) => el.scrollIntoView({ block: "center" })); await page.waitForTimeout(200);
   await page.screenshot({ path: "/tmp/mail-ask.png" });
   await page.click('#mailPendList li:has-text("PO-008151") [data-pign]');
   ok(await until(async () => (await page.$$("#mailPendList li")).length === 1), "Negeren: one left");
-  await page.click("#mailBars [data-mbar-act=dl]");
+  await goTab(page, "inv"); await page.click("#mailNotes [data-mnote-act=dl]");
   ok(await saved(path.join(POF, "PO-008150.pdf"), 10000), "Downloaden from the notice: saved");
   ok(!fs.existsSync(path.join(POF, "PO-008151.pdf")), "the ignored one not");
-  ok(await until(async () => !(await page.isVisible("#mailBars [data-mbar]")) && (await page.isHidden("#mailPend"))), "notice and list gone");
+  ok(await until(async () => !(await page.isVisible("#mailNotes [data-mnote]")) && (await page.isHidden("#mailPend"))), "notice and list gone");
+  await goTab(page, "settings"); await page.waitForTimeout(200);
   ok(await until(async () => /Gedownload: PO-008150/.test(await page.textContent("#toast"))), "toast: downloaded");
 
   // a PO deleted from the folder outside the app comes back at the next check

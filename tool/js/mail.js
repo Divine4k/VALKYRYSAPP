@@ -44,26 +44,29 @@ function renderMail() {
   $("#mailPendList").innerHTML = pend.map((p) => `<li data-key="${esc(p.key)}"><span class="pname">${esc(mailPo(p.name))}${p.at ? `<span class="pwhen">${esc(mailWhen(p.at))}</span>` : ""}</span>`
     + `<button type="button" class="primary" data-pdl>${esc(tr("mailDownload"))}</button><button type="button" class="ghost" data-pign>${esc(tr("mailIgnore"))}</button></li>`).join("");
   $("#mailPendAll").hidden = $("#mailPendIgn").hidden = pend.length < 2;
-  renderMailBars();
+  renderMailNotes();
 }
-// ---- the notice at the bottom of the screen: POs fetched (until looked at), or POs found that wait for "Downloaden"
+// ---- the notice at the top of the Invoices tab ("you have new purchase orders in your email"), and a dot on Facturen in the sidebar
 const mailPo = (n) => String(n).replace(/\.pdf$/i, "");
-const mailNames = (list) => { const n = list.map(mailPo); return n.length > 3 ? n.slice(0, 3).join(", ") + " " + tr("mailMore", n.length - 3) : n.join(", "); };
-const mailGotText = (names) => (names.length === 1 ? tr("mailBarGot1", mailPo(names[0])) : tr("mailBarGotN", names.length, mailNames(names)));
-const mailFoundText = (names) => (names.length === 1 ? tr("mailBarFound1", mailPo(names[0])) : tr("mailBarFoundN", names.length, mailNames(names)));
-function renderMailBars() {
-  const box = $("#mailBars"), st = mailUi.st; if (!box) return;
-  const bars = [];
+const mailNames = (list) => { const n = list.map(mailPo); return n.length > 4 ? n.slice(0, 4).join(", ") + " " + tr("mailMore", n.length - 4) : n.join(", "); };
+const mailGotText = (names) => tr(names.length === 1 ? "mailNoteTitle1" : "mailNoteTitleN") + " " + mailNames(names);
+const mailFoundText = mailGotText;
+const MAIL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
+function renderMailNotes() {
+  const box = $("#mailNotes"), st = mailUi.st; if (!box) return;
+  const notes = [];
   if (MAIL && desk && st) {
     const pend = st.pending || [], unseen = st.unseen || [], psig = pend.map((p) => p.key).join();
-    if (pend.length && mailUi.hideFound !== psig) bars.push({ k: "found", text: mailFoundText(pend.map((p) => p.name)), btns: [["dl", "primary", pend.length > 1 ? "mailDlAll" : "mailDownload"], ["choose", "", "mailBarView"], ["x"]] });
-    if (unseen.length) bars.push({ k: "got", text: mailGotText(unseen), btns: [["view", "primary", "mailBarView"], ["x"]] });
+    if (pend.length && mailUi.hideFound !== psig) notes.push({ k: "found", title: tr(pend.length === 1 ? "mailNoteTitle1" : "mailNoteTitleN"), sub: tr(pend.length === 1 ? "mailNoteAsk1" : "mailNoteAskN", mailNames(pend.map((p) => p.name))),
+      btns: [["dl", "primary", pend.length > 1 ? "mailDlAll" : "mailDownload"], ["ign", "ghost", pend.length > 1 ? "mailIgnAll" : "mailIgnore"], ["x"]] });
+    if (unseen.length) notes.push({ k: "got", title: tr(unseen.length === 1 ? "mailNoteTitle1" : "mailNoteTitleN"), sub: tr(unseen.length === 1 ? "mailNoteGot1" : "mailNoteGotN", mailNames(unseen)), btns: [["ok", "primary", "mailNoteOk"]] });
   }
-  box.hidden = !bars.length; document.body.classList.toggle("mail-on", !!bars.length);
-  const sig = JSON.stringify(bars.map((b) => [b.k, b.text]));
-  if (sig === mailUi.barSig) return; mailUi.barSig = sig; // unchanged: keep focus
-  box.innerHTML = bars.map((b) => `<div class="updbar" role="status" data-mbar="${b.k}"><span class="utext">${esc(b.text)}</span>` +
-    b.btns.map(([a, cls, key]) => a === "x" ? `<button type="button" class="ghost xbtn" data-mbar-act="x" aria-label="${esc(tr("close"))}" title="${esc(tr("close"))}">${X_SVG}</button>` : `<button type="button"${cls ? ` class="${cls}"` : ""} data-mbar-act="${a}">${esc(tr(key))}</button>`).join("") + `</div>`).join("");
+  box.hidden = !notes.length;
+  const dot = $("#invDot"); if (dot) dot.hidden = !notes.length;
+  const sig = JSON.stringify(notes.map((b) => [b.k, b.title, b.sub]));
+  if (sig === mailUi.noteSig) return; mailUi.noteSig = sig; // unchanged: keep focus
+  box.innerHTML = notes.map((b) => `<div class="panel mailnote" role="status" data-mnote="${b.k}"><span class="mnico">${MAIL_SVG}</span><div class="mntext"><p class="mntitle">${esc(b.title)}</p><p class="mnsub">${esc(b.sub)}</p></div><div class="mnact">` +
+    b.btns.map(([a, cls, key]) => a === "x" ? `<button type="button" class="ghost xbtn" data-mnote-act="x" aria-label="${esc(tr("close"))}" title="${esc(tr("close"))}">${X_SVG}</button>` : `<button type="button"${cls ? ` class="${cls}"` : ""} data-mnote-act="${a}">${esc(tr(key))}</button>`).join("") + `</div></div>`).join("");
 }
 function mailSet(st) {
   if (!st || !Array.isArray(st.accounts)) return;
@@ -136,13 +139,13 @@ if (MAIL && desk) {
   });
   $("#mailPendAll").addEventListener("click", () => mailDownload());
   $("#mailPendIgn").addEventListener("click", () => MAIL.ignore(null).catch(() => {}));
-  $("#mailBars").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-mbar-act]"), bar = b && b.closest("[data-mbar]"); if (!b) return;
-    const k = bar.dataset.mbar, act = b.dataset.mbarAct, st = mailUi.st || {};
-    if (k === "got") { MAIL.seen().catch(() => {}); mailSet(Object.assign({}, st, { unseen: [], saved: null, found: null })); if (act === "view") { setTab("inv"); const np = $("#npList"); if (np) np.scrollIntoView({ block: "center" }); } return; }
+  $("#mailNotes").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-mnote-act]"), note = b && b.closest("[data-mnote]"); if (!b) return;
+    const act = b.dataset.mnoteAct, st = mailUi.st || {};
+    if (note.dataset.mnote === "got") { MAIL.seen().catch(() => {}); mailSet(Object.assign({}, st, { unseen: [], saved: null, found: null })); return; }
     if (act === "dl") { b.disabled = true; mailDownload(); return; }
-    if (act === "choose") { setTab("settings"); $("#mailPend").scrollIntoView({ block: "center" }); return; }
-    if (act === "x") { mailUi.hideFound = (st.pending || []).map((p) => p.key).join(); renderMailBars(); }
+    if (act === "ign") { MAIL.ignore(null).catch(() => {}); return; }
+    if (act === "x") { mailUi.hideFound = (st.pending || []).map((p) => p.key).join(); renderMailNotes(); }
   });
   let sureTimer = 0;
   $("#mailList").addEventListener("click", (e) => {

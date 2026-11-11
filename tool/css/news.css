@@ -24,7 +24,7 @@
 .updnotes summary { cursor: pointer; font-weight: 700; font-size: 14px; color: var(--ink); padding: 4px 0; }
 .updnotes .ngrp:first-child { margin-top: 10px; }
 #bars { position: fixed; z-index: 15; left: calc(var(--side-w) + 16px); right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
-#updBars, #mailBars { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+#updBars { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .updbar { pointer-events: auto; width: min(640px, 100%); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 10px 10px 16px; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--r); box-shadow: 0 6px 24px rgba(0, 0, 0, .16); }
 .updbar.warn { background: var(--warn-bg); border-left-color: var(--warn); }
 .updbar .utext { flex: 1 1 220px; font-size: 14px; font-weight: 600; color: var(--ink); }
@@ -32,8 +32,7 @@
 .updbar button { min-height: 34px; padding: 6px 12px; font-size: 13px; }
 .updbar button.xbtn { margin: 0; width: 34px; padding: 0; }
 .updbar .updprog { flex: 1 0 100%; margin: 0 0 2px; max-width: none; }
-body.upd-on #toast, body.mail-on #toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
-body.upd-on.mail-on #toast { bottom: calc(170px + env(safe-area-inset-bottom, 0px)); }
+body.upd-on #toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 html.side-anim #bars { transition: left .18s ease; }
 @media (max-width: 559px) { #bars { left: 8px; right: 8px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); } body.upd-on #toast { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); } }
 @media (prefers-reduced-motion: reduce) { .updprog > span, html.side-anim #bars { transition: none; } }
