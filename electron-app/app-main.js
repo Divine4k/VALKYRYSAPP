@@ -270,6 +270,8 @@ function registerMailIpc() {
   ipcMain.handle("mail:download", guard((e, k) => mail.download(keys(k))));
   ipcMain.handle("mail:ignore", guard((e, k) => mail.ignore(keys(k))));
   ipcMain.handle("mail:seen", guard(() => mail.seen()));
+  ipcMain.handle("mail:send", guard((e, o) => { o = Object(o); return mail.send({ account: String(o.account || ""), to: Array.isArray(o.to) ? o.to.map(String).slice(0, 20) : [], subject: String(o.subject || "").slice(0, 300),
+    text: String(o.text || "").slice(0, 20000), fromName: String(o.fromName || "").slice(0, 120), attachments: Array.isArray(o.attachments) ? o.attachments.slice(0, 60).map((a) => ({ name: String((a && a.name) || "file.pdf").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").slice(0, 150), bytes: a && a.bytes ? Buffer.from(a.bytes) : null })) : [] }); }));
   // the page asks for this when POs came in while the window is not in front: a Windows notification (click = bring the app forward) and a flashing taskbar button
   ipcMain.handle("mail:notify", guard((e, title, body) => {
     if (!win || win.isDestroyed() || win.isFocused()) return false;

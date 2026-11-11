@@ -130,6 +130,34 @@ eq(got, ["PO-000200.pdf"], "Gmail: found in All Mail");
 eq(st.box, '"[Gmail]/Alle berichten"', "...and the mailbox is remembered");
 eq(M.errCode(Object.assign(new Error("[ALERT] Application-specific password required: https://support.google.com/accounts/answer/185833"), { code: "EAUTH" })), "apppass", "Gmail's 'app password required' is recognised");
 
+// ---- sending invoices (SMTP), with a copy in Sent (IMAP APPEND)
+{
+  const smtp = await F.startSmtp({ users: { "jan@wp.pl": 'p@ss "w0rd" ł' }, rejectRcpt: ["nobody@piguillet.nl"] });
+  srv.boxes.Sent = [];
+  const sentSrv = await F.start({ users: { "jan@wp.pl": 'p@ss "w0rd" ł' }, boxes: { INBOX: [], Sent: [] }, sentBox: "Sent" });
+  const dd = JSON.parse(fs.readFileSync(path.join(data, "mail.json"), "utf8")); dd.accounts[0].enabled = true; dd.accounts[0].host = "127.0.0.1"; dd.accounts[0].port = sentSrv.port; dd.accounts[0].smtp = { host: "127.0.0.1", port: smtp.port }; fs.writeFileSync(path.join(data, "mail.json"), JSON.stringify(dd));
+  const ms = M.create({ dataDir: data, poFolder: () => po, plain: true, encrypt: (x) => x, decrypt: (x) => Buffer.from(x.slice(4), "base64").toString() });
+  const acc = ms.state().accounts[0].id, pdfA = pdf(1), pdfB = pdf(2);
+  let r = await ms.send({ account: acc, to: ["facturen@piguillet.nl", "boekhouding@piguillet.nl"], subject: "Facturen 62-2026, 63-2026 – €", text: "Beste,\n\nIn de bijlage de facturen.\nGroet, Bogumił", fromName: "Valkyrys", attachments: [{ name: "VALKYRYS 62-2026.pdf", bytes: pdfA }, { name: "VALKYRYS 63-2026 ł.pdf", bytes: pdfB }] });
+  ok(r.ok && r.copy, "sent, and a copy saved in Sent", r);
+  eq(smtp.sent.length && smtp.sent[0].to, ["facturen@piguillet.nl", "boekhouding@piguillet.nl"], "one mail to both addresses");
+  const got = M.parseMail(smtp.sent[0].data);
+  eq(got.subject, "Facturen 62-2026, 63-2026 – €", "subject (UTF-8) arrives as typed");
+  eq(got.attachments.map((x) => x.name), ["VALKYRYS 62-2026.pdf", "VALKYRYS 63-2026 ł.pdf"], "both PDFs attached, names kept");
+  ok(got.attachments[0].data.equals(pdfA) && got.attachments[1].data.equals(pdfB), "...byte for byte");
+  ok(/Valkyrys/.test(got.from) && /jan@wp\.pl/.test(got.from), "from: the name and the account's address", got.from);
+  ok(sentSrv.boxes.Sent.length === 1 && M.parseMail(sentSrv.boxes.Sent[0].raw).attachments.length === 2, "the copy in Sent is the same mail");
+  ok(smtp.log.includes("AUTH PLAIN ***") && !smtp.log.some((l) => /w0rd/.test(l)), "logged in with AUTH PLAIN");
+  r = await ms.send({ account: acc, to: ["nobody@piguillet.nl"], subject: "x", text: "x", attachments: [{ name: "a.pdf", bytes: pdfA }] });
+  eq([r.error, r.rcpt], ["rcpt", "nobody@piguillet.nl"], "an address the server refuses: 'rcpt' with that address");
+  r = await ms.send({ account: acc, to: ["geen-adres"], subject: "x", text: "x", attachments: [] }); eq(r.error, "to", "not an address: 'to'");
+  r = await ms.send({ account: acc, to: ["a@b.nl"], subject: "x", text: "x", attachments: [{ name: "big.pdf", bytes: Buffer.alloc(19 * 1024 * 1024) }] }); eq(r.error, "size", "too big: 'size'");
+  const ms2 = M.create({ dataDir: data, poFolder: () => po, plain: true, encrypt: (x) => x, decrypt: () => "fout" });
+  r = await ms2.send({ account: acc, to: ["a@b.nl"], subject: "x", text: "x", attachments: [] }); eq(r.error, "auth", "wrong password: 'auth'");
+  eq(M.smtpOf({ provider: "gmail" }), { host: "smtp.gmail.com", port: 465 }, "Gmail SMTP"); eq(M.smtpOf({ provider: "wp" }), { host: "smtp.wp.pl", port: 465 }, "WP SMTP");
+  eq(M.smtpOf({ provider: "imap", host: "imap.poczta.onet.pl" }), { host: "smtp.poczta.onet.pl", port: 465 }, "other: imap.* -> smtp.*");
+  await smtp.close(); await sentSrv.close();
+}
 mf.remove(a.id); eq(mf.state().accounts.length, 0, "disconnect removes the account");
 await srv.close(); await g.close();
 fs.rmSync(dir, { recursive: true, force: true });

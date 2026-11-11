@@ -2,7 +2,7 @@
 "use strict";
 // ------------------------------------------------------------ documents tab: one row per invoice number, with its PDF and Word file in the invoice folder and its purchase order
 const DOC_SORTS = ["nr", "date", "client", "po", "amount"], DOC_FILTERS = ["all", "open", "sent", "noinv", "miss"];
-state.sent = new Set(); state.docs = { sort: "nr", dir: "desc", filter: "all", q: "" };
+state.sent = new Set(); state.docs = { sort: "nr", dir: "desc", filter: "all", q: "", sel: new Set() }; // sel: invoice numbers ticked for sending by email
 const saveSent = () => { if (state.db) { try { state.db.doc("settings/sent").set({ list: [...state.sent] }); } catch (e) {} } };
 const saveDocsPrefs = () => { if (state.db) { try { state.db.doc("settings/docsprefs").set({ sort: state.docs.sort, dir: state.docs.dir, filter: state.docs.filter }); } catch (e) {} } };
 const applyDocsPrefs = (v) => { if (!v) return; if (DOC_SORTS.includes(v.sort)) state.docs.sort = v.sort; if (v.dir === "asc" || v.dir === "desc") state.docs.dir = v.dir; if (DOC_FILTERS.includes(v.filter)) state.docs.filter = v.filter; };
@@ -156,8 +156,11 @@ function renderDocs() {
   $("#docsInfo").innerHTML = info.map((x) => `<span class="nw">${esc(x)}</span>`).join(" · "); $("#docsInfo").hidden = !info.length;
   // the column heads sort too
   const cols = [["nr", "docsByNr"], ["client", "docsByClient"], ["date", "docsByDate"], ["po", "docsByPo"], ["amount", "docsByAmount", "r"]];
-  $("#docsHead").innerHTML = cols.map(([k, key, cls]) => `<button type="button" data-sort="${k}"${cls ? ` class="${cls}"` : ""}${D.sort === k ? ` aria-sort="${D.dir === "asc" ? "ascending" : "descending"}"` : ""}>${esc(tr(key))}${D.sort === k ? `<i aria-hidden="true">${D.dir === "asc" ? "▲" : "▼"}</i>` : ""}</button>`).join("")
+  const selShown = shown.filter((s) => !s.poOnly), allSel = selShown.length > 0 && selShown.every((s) => D.sel.has(s.nr)), someSel = selShown.some((s) => D.sel.has(s.nr));
+  $("#docsHead").innerHTML = `<span class="c-sel"><input type="checkbox" id="docsSelAll"${allSel ? " checked" : ""} aria-label="${esc(tr("docsSelAll"))}" title="${esc(tr("docsSelAll"))}"></span>` + cols.map(([k, key, cls]) => `<button type="button" data-sort="${k}"${cls ? ` class="${cls}"` : ""}${D.sort === k ? ` aria-sort="${D.dir === "asc" ? "ascending" : "descending"}"` : ""}>${esc(tr(key))}${D.sort === k ? `<i aria-hidden="true">${D.dir === "asc" ? "▲" : "▼"}</i>` : ""}</button>`).join("")
     + `<span>${esc(tr("docsColDocs"))}</span><span>${esc(tr("docsSent"))}</span><span></span>`;
+  { const sa = $("#docsSelAll"); if (sa) sa.indeterminate = someSel && !allSel; }
+  renderSendBar();
   // keep the focus on the same control when the list is drawn again
   const a = document.activeElement, keep = a && $("#docsList").contains(a) ? (a.dataset.sent ? `[data-sent="${a.dataset.sent}"]` : a.dataset.mkinv ? `[data-mkinv="${a.dataset.mkinv}"]` : a.dataset.doc && a.dataset.po ? `[data-doc="po"][data-po="${a.dataset.po}"]` : a.dataset.doc ? `[data-doc="${a.dataset.doc}"][data-nr="${a.dataset.nr}"]` : "") : "";
   const showApp = !!(f && f.exists);
@@ -165,6 +168,7 @@ function renderDocs() {
   const poRow = (s) => {
     const off = (kind, label) => `<button type="button" class="dchip k-${kind}" disabled title="${esc(tr("docsMissing", label))}">${label}</button>`;
     return `<li class="drow po-only${s.skipped ? " skipped" : ""}" data-nr="" data-po="${esc(s.po)}" title="${esc(tr("docsPoOnlyTitle"))}">
+        <span class="c-sel"></span>
         <span class="c-nr"><span class="chip warn noinv">${esc(tr("docsNoInvBadge"))}</span>${s.skipped ? `<small>${esc(tr("docsPoSkipped"))}</small>` : ""}</span>
         <span class="c-cl${s.client ? "" : " none"}" title="${esc(s.client)}">${esc(s.client || tr("noClient"))}</span>
         <span class="c-dt">${esc(s.datum || "–")}</span>
@@ -189,7 +193,8 @@ function renderDocs() {
       + (miss.length && canRemake ? `<button type="button" data-remake="${esc(s.nr)}" title="${esc(tr("docsRemakeTitle", miss.map((m) => DOC_LABEL[m]).join(", ")))}">${esc(tr("docsRemake"))}</button>` : "")
       + (miss.length ? `<button type="button" class="ghost" data-missignore="${esc(s.nr)}" title="${esc(tr("docsIgnoreTitle"))}">${esc(tr("docsIgnore"))}</button>` : "") + "</span>" : "";
     const draw = showApp && s.gen && !rel ? `<button type="button" data-draw="${esc(s.nr)}" aria-label="${esc(tr("docsDrawAria", s.nr))}" title="${esc(tr("docsDraw"))}">${ICON_EYE}</button>` : "";
-    return `<li class="drow${s.sent ? " sent" : ""}${miss.length ? " miss" : ""}${dup.length ? " dupinv" : ""}" data-nr="${esc(s.nr)}">
+    return `<li class="drow${s.sent ? " sent" : ""}${miss.length ? " miss" : ""}${dup.length ? " dupinv" : ""}${D.sel.has(s.nr) ? " picked" : ""}" data-nr="${esc(s.nr)}">
+        <span class="c-sel"><input type="checkbox" data-sel="${esc(s.nr)}"${D.sel.has(s.nr) ? " checked" : ""} aria-label="${esc(tr("docsSelAria", s.nr))}"></span>
         <span class="c-nr num">${esc(s.nr)}${showApp && !s.pdf && !s.docx ? `<small>${esc(tr("docsOnlyApp"))}</small>` : ""}</span>
         <span class="c-cl${s.client ? "" : " none"}" title="${esc(s.client)}">${esc(s.client || tr("noClient"))}</span>
         <span class="c-dt">${esc(s.datum || "–")}</span>
@@ -223,6 +228,8 @@ $("#docsList").addEventListener("click", async (e) => {
   else if (c.dataset.doc === "po" && s.poRec && desk) previewPo(s.poRec.f.rel, s.poRec.r.po);
 });
 $("#docsList").addEventListener("change", (e) => {
+  const sb = e.target.closest("input[data-sel]");
+  if (sb) { if (sb.checked) state.docs.sel.add(sb.dataset.sel); else state.docs.sel.delete(sb.dataset.sel); renderDocs(); return; }
   const b = e.target.closest("input[data-sent]"); if (!b) return;
   if (b.checked) state.sent.add(b.dataset.sent); else state.sent.delete(b.dataset.sent);
   saveSent(); renderDocs();
@@ -235,6 +242,11 @@ $("#docsDir").addEventListener("click", () => { state.docs.dir = state.docs.dir 
 $("#docsFilter").addEventListener("click", (e) => { const b = e.target.closest("button[data-f]"); if (b) { state.docs.filter = b.dataset.f; saveDocsPrefs(); renderDocs(); } });
 $("#docsSearch").addEventListener("input", (e) => { state.docs.q = e.target.value; renderDocs(); });
 $("#docsGoSet").addEventListener("click", () => openSettings("folders"));
+$("#docsHead").addEventListener("change", (e) => { // tick all invoices shown (or none)
+  if (e.target.id !== "docsSelAll") return;
+  const shownNrs = [...$("#docsList").querySelectorAll("input[data-sel]")].map((x) => x.dataset.sel);
+  shownNrs.forEach((n) => (e.target.checked ? state.docs.sel.add(n) : state.docs.sel.delete(n))); renderDocs();
+});
 
 // ------------------------------------------------------------ deleting an invoice: the app's record and, if wanted, its files in the folder (to the Recycle Bin).
 // One flow for the × in "Gemaakte facturen" and the bin on a Documents row. The files are the ones docSets() matched to the number.

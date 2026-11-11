@@ -66,6 +66,9 @@ contextBridge.exposeInMainWorld("valkyrysMail", {
   ignore: (keys) => call("mail:ignore", Array.isArray(keys) ? keys.map(String) : null),
   seen: () => call("mail:seen"),                                             // the notice about fetched POs has been read
   notify: (title, body) => call("mail:notify", String(title || ""), String(body || "")),
+  // send one mail with invoices: { account, to: [..], subject, text, fromName, attachments: [{ name, bytes }] }
+  send: (o) => call("mail:send", { account: String((o && o.account) || ""), to: Array.isArray(o && o.to) ? o.to.map(String) : [], subject: String((o && o.subject) || ""), text: String((o && o.text) || ""),
+    fromName: String((o && o.fromName) || ""), attachments: Array.isArray(o && o.attachments) ? o.attachments.map((a) => ({ name: String((a && a.name) || ""), bytes: a && a.bytes })) : [] }),
   onChange: (cb) => {
     if (typeof cb !== "function") return () => {};
     const h = (e, st) => { try { cb(st); } catch (err) {} };

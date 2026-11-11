@@ -14,7 +14,7 @@ function poMail({ po, pdf, subject, file, from = '"Secretariaat | Piguillet" <se
 }
 
 /** start the server: users { "user": "pass" }, boxes { INBOX: [{ uid, date, subject, raw }] }, opts.allMail = name of a \All mailbox (Gmail). -> { port, log, boxes, close } */
-function start({ users, boxes, uidValidity = 777, allMail = "" }) {
+function start({ users, boxes, uidValidity = 777, allMail = "", sentBox = "" }) {
   const log = [];
   const server = net.createServer((s) => {
     let buf = "", authed = false, box = null, pendingLit = null;
@@ -50,7 +50,13 @@ function start({ users, boxes, uidValidity = 777, allMail = "" }) {
       }
       if (cmd.startsWith("LOGOUT")) { reply("* BYE"); reply(tag + " OK bye"); s.end(); return; }
       if (!authed) { reply(tag + " BAD not logged in"); return; }
-      if (cmd.startsWith("LIST")) { for (const k of Object.keys(boxes)) reply(`* LIST (${k === allMail ? "\\HasNoChildren \\All" : "\\HasNoChildren"}) "/" "${k}"`); reply(tag + " OK"); return; }
+      if (cmd.startsWith("APPEND ")) { // a sent copy: APPEND "box" (flags) {n} + the mail
+        const m = /^APPEND ("(?:[^"\\]|\\.)*"|\S+) (?:\([^)]*\) )?([\s\S]*)$/i.exec(cmdRaw); const name = m && unq(m[1]);
+        if (!m || !boxes[name]) { reply(tag + " NO no such mailbox"); return; }
+        const uid = boxes[name].reduce((a, x) => Math.max(a, x.uid), 0) + 1; boxes[name].push({ uid, date: new Date(), subject: "", raw: Buffer.from(m[2], "latin1") });
+        reply(tag + " OK append done"); return;
+      }
+      if (cmd.startsWith("LIST")) { for (const k of Object.keys(boxes)) reply(`* LIST (${k === allMail ? "\\HasNoChildren \\All" : k === sentBox ? "\\HasNoChildren \\Sent" : "\\HasNoChildren"}) "/" "${k}"`); reply(tag + " OK"); return; }
       if (cmd.startsWith("EXAMINE ") || cmd.startsWith("SELECT ")) {
         const name = unq(cmdRaw.slice(cmdRaw.indexOf(" ") + 1)); box = boxes[name];
         if (!box) { reply(tag + " NO no such mailbox"); return; }
@@ -79,4 +85,29 @@ function start({ users, boxes, uidValidity = 777, allMail = "" }) {
   });
   return new Promise((res) => server.listen(0, "127.0.0.1", () => res({ port: server.address().port, log, boxes, close: () => new Promise((r) => server.close(r)) })));
 }
-module.exports = { start, poMail };
+/** a fake SMTP server (plain TCP): EHLO, AUTH PLAIN, MAIL FROM, RCPT TO, DATA, QUIT. Mails it took: sent [{ from, to, data }]. rejectRcpt: addresses it refuses */
+function startSmtp({ users, rejectRcpt = [] }) {
+  const sent = [], log = [];
+  const server = net.createServer((s) => {
+    let buf = "", data = null, authed = false, cur = null;
+    const reply = (t) => s.write(t + "\r\n");
+    reply("220 fake SMTP ready");
+    s.on("data", (d) => {
+      buf += d.toString("latin1");
+      for (;;) {
+        if (data !== null) { const end = buf.indexOf("\r\n.\r\n"); if (end < 0) return; data += buf.slice(0, end); buf = buf.slice(end + 5); cur.data = Buffer.from(data, "latin1"); sent.push(cur); data = null; cur = null; reply("250 queued"); continue; }
+        const i = buf.indexOf("\r\n"); if (i < 0) return; const line = buf.slice(0, i); buf = buf.slice(i + 2);
+        log.push(line.replace(/^AUTH PLAIN .*/i, "AUTH PLAIN ***")); const U = line.toUpperCase();
+        if (U.startsWith("EHLO")) { reply("250-fake"); reply("250 AUTH PLAIN LOGIN"); }
+        else if (U.startsWith("AUTH PLAIN ")) { const [, u, p] = Buffer.from(line.slice(11), "base64").toString("utf8").split("\0"); if (users[u] === p) { authed = true; reply("235 ok"); } else reply("535 5.7.8 Username and Password not accepted"); }
+        else if (U.startsWith("MAIL FROM:")) { if (!authed) { reply("530 auth first"); continue; } cur = { from: line.slice(10).replace(/[<>]/g, ""), to: [] }; reply("250 ok"); }
+        else if (U.startsWith("RCPT TO:")) { const r = line.slice(8).replace(/[<>]/g, ""); if (rejectRcpt.includes(r)) reply("550 5.1.1 no such user"); else { cur.to.push(r); reply("250 ok"); } }
+        else if (U === "DATA") { data = ""; reply("354 go"); }
+        else if (U === "QUIT") { reply("221 bye"); s.end(); }
+        else reply("500 unknown");
+      }
+    });
+  });
+  return new Promise((res) => server.listen(0, "127.0.0.1", () => res({ port: server.address().port, sent, log, close: () => new Promise((r) => server.close(r)) })));
+}
+module.exports = { start, startSmtp, poMail };

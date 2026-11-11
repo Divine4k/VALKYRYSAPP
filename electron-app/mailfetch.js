@@ -66,7 +66,7 @@ class Imap {
     let line = tag + " ";
     for (const p of parts) {
       if (typeof p === "string") { line += p; continue; }
-      const b = Buffer.from(p.lit, "utf8");
+      const b = Buffer.isBuffer(p.lit) ? p.lit : Buffer.from(p.lit, "utf8");
       const go = new Promise((res, rej) => { this.cont = { res, rej }; });
       this.sock.write(line + "{" + b.length + "}\r\n", "latin1"); await go;
       this.sock.write(b); line = "";
@@ -224,6 +224,91 @@ async function checkAccount(acc, pass, st, { have, skip = () => false, save, hol
   } finally { c.close(); }
 }
 
+// ------------------------------------------------------------------ sending: a small SMTP client (implicit TLS, port 465) and the mail itself (MIME)
+const SMTP = { gmail: { host: "smtp.gmail.com", port: 465 }, wp: { host: "smtp.wp.pl", port: 465 } };
+const smtpOf = (acc) => acc.smtp || SMTP[acc.provider] || { host: String(acc.host || "").replace(/^imap\./i, "smtp."), port: 465 };
+const MAX_ATTACH = 18 * 1024 * 1024; // what Gmail and most others still take after base64 (25 MB)
+class Smtp {
+  constructor(sock) {
+    this.sock = sock; this.buf = ""; this.lines = []; this.wait = null; this.closed = null;
+    sock.on("data", (d) => { this.buf += d.toString("latin1"); this.pump(); });
+    sock.on("error", (e) => this.fail(e));
+    sock.on("close", () => this.fail(Object.assign(new Error("connection closed"), { code: "ECONNRESET" })));
+    sock.setTimeout(TIMEOUT_MS, () => { this.fail(Object.assign(new Error("timeout"), { code: "ETIMEDOUT" })); sock.destroy(); });
+  }
+  static open({ host, port, plain }) {
+    return new Promise((res, rej) => {
+      const sock = plain ? net.connect({ host, port }) : tls.connect({ host, port, servername: net.isIP(host) ? undefined : host });
+      const c = new Smtp(sock); c.reply().then((r) => (r.code === 220 ? res(c) : rej(Object.assign(new Error(r.text), { code: "EPROTO" }))), rej);
+    });
+  }
+  fail(e) { if (this.closed) return; this.closed = e; if (this.wait) { const w = this.wait; this.wait = null; w.rej(e); } }
+  // a reply is one or more lines "250-..." ending with "250 ..."
+  pump() {
+    for (;;) {
+      const i = this.buf.indexOf("\r\n"); if (i < 0) return;
+      const line = this.buf.slice(0, i); this.buf = this.buf.slice(i + 2); this.lines.push(line);
+      if (/^\d{3}(?: |$)/.test(line) && this.wait) { const w = this.wait, ls = this.lines; this.wait = null; this.lines = []; w.res({ code: Number(line.slice(0, 3)), text: ls.map((l) => l.slice(4)).join(" ") }); }
+    }
+  }
+  reply() { if (this.closed) return Promise.reject(this.closed); const p = new Promise((res, rej) => { this.wait = { res, rej }; }); this.pump(); return p; }
+  async cmd(line, ok = [250]) {
+    if (this.closed) throw this.closed;
+    this.sock.write(line + "\r\n", "latin1");
+    const r = await this.reply();
+    if (!ok.includes(r.code)) throw Object.assign(new Error(r.text || String(r.code)), { code: "ESMTP", smtp: r.code });
+    return r;
+  }
+  close() { try { if (!this.closed) { this.sock.write("QUIT\r\n"); this.sock.end(); } } catch (e) {} this.closed = this.closed || new Error("closed"); setTimeout(() => { try { this.sock.destroy(); } catch (e) {} }, 2000).unref(); }
+}
+const b64lines = (buf) => buf.toString("base64").replace(/.{76}(?=.)/g, "$&\r\n");
+const encWord = (s) => (/^[\x20-\x7e]*$/.test(s) ? s : "=?UTF-8?B?" + Buffer.from(s, "utf8").toString("base64") + "?=");
+const asciiName = (n) => n.normalize("NFKD").replace(/[^\x20-\x7e]/g, "").replace(/["\\]/g, "") || "file.pdf";
+/** the whole mail: { from: { name, addr }, to: [addr], subject, text, attachments: [{ name, bytes, type }] } -> Buffer */
+function buildMail({ from, to, subject, text, attachments = [], now = new Date() }) {
+  const b = "----=_valkyrys_" + crypto.randomBytes(8).toString("hex");
+  const head = [
+    "From: " + (from.name ? encWord(from.name.replace(/[<>"]/g, "")) + " " : "") + "<" + from.addr + ">", "To: " + to.join(", "), "Subject: " + encWord(subject || ""),
+    "Date: " + now.toUTCString().replace("GMT", "+0000"), "Message-ID: <" + crypto.randomBytes(12).toString("hex") + "@valkyrys.app>", "MIME-Version: 1.0",
+    `Content-Type: multipart/mixed; boundary="${b}"`, "", "--" + b, "Content-Type: text/plain; charset=utf-8", "Content-Transfer-Encoding: base64", "", b64lines(Buffer.from(String(text || "").replace(/\r?\n/g, "\r\n"), "utf8"))];
+  for (const a of attachments) {
+    const n = String(a.name || "file.pdf");
+    head.push("--" + b, `Content-Type: ${a.type || "application/pdf"}; name="${asciiName(n)}"`, "Content-Transfer-Encoding: base64",
+      `Content-Disposition: attachment; filename="${asciiName(n)}"; filename*=utf-8''${encodeURIComponent(n)}`, "", b64lines(Buffer.from(a.bytes)));
+  }
+  head.push("--" + b + "--", "");
+  return Buffer.from(head.join("\r\n"), "utf8");
+}
+const EMAIL_RE = /^[^\s@<>(),;:"]+@[^\s@<>(),;:"]+\.[^\s@<>(),;:"]+$/;
+/** send one mail through an account: SMTP (log in, MAIL FROM, RCPT TO each, DATA) */
+async function smtpSend(acc, pass, mailBuf, to, { plain }) {
+  const w = smtpOf(acc); let c;
+  try { c = await Smtp.open({ host: w.host, port: w.port, plain }); } catch (e) { throw Object.assign(e, { kind: errCode(e) }); }
+  try {
+    await c.cmd("EHLO valkyrys.app");
+    try { await c.cmd("AUTH PLAIN " + Buffer.from("\0" + acc.user + "\0" + pass, "utf8").toString("base64"), [235]); }
+    catch (e) { if (e.code === "ESMTP") { const x = Object.assign(new Error(e.message), { code: "EAUTH" }); throw Object.assign(x, { kind: errCode(x) }); } throw e; }
+    await c.cmd("MAIL FROM:<" + acc.user + ">");
+    for (const r of to) { try { await c.cmd("RCPT TO:<" + r + ">", [250, 251]); } catch (e) { throw Object.assign(e, { kind: "rcpt", rcpt: r }); } }
+    await c.cmd("DATA", [354]);
+    c.sock.write(mailBuf); // base64 bodies and plain headers: no line starts with "."
+    await c.cmd("\r\n.", [250]);
+  } catch (e) { if (!e.kind) e.kind = errCode(e); throw e; } finally { c.close(); }
+}
+/** a copy in the account's "Sent" folder (Gmail does this by itself): IMAP APPEND into the \Sent mailbox, or a usual name */
+async function saveSent(acc, pass, mailBuf, { plain }) {
+  const c = await login(acc, pass, plain);
+  try {
+    let box = "";
+    const r = await c.cmd('LIST "" "*"');
+    for (const u of r.untagged) { const m = /^\* LIST \(([^)]*)\) (?:"[^"]*"|NIL) (.+)$/i.exec(u.text); if (m && /\\Sent\b/i.test(m[1])) { box = u.lits.length ? u.lits[0].toString("utf8") : m[2]; break; } }
+    if (!box) { const names = r.untagged.map((u) => { const m = /^\* LIST \([^)]*\) (?:"[^"]*"|NIL) (.+)$/i.exec(u.text); return m ? m[1].replace(/^"|"$/g, "") : ""; }); box = ["Sent", "Wysłane", "INBOX.Sent", "Sent Items", "Verzonden"].find((n) => names.includes(n)) || ""; }
+    if (!box) return false;
+    await c.ok("APPEND ", boxArg(box), " (\\Seen) ", { lit: mailBuf });
+    return true;
+  } finally { c.close(); }
+}
+
 // ------------------------------------------------------------------ the accounts, the timer, and what the page sees
 // mail.json = { accounts: [...], mode: "ask" (default) | "auto", unseen: [names fetched that the page has not shown yet], pending: [{ key, acc, uid, uv, name, at }] (found, asked first),
 //              skip: [PO numbers deleted through the app or ignored: never fetched again] }
@@ -345,6 +430,24 @@ function create({ dataDir, poFolder, encrypt, decrypt, canRun = () => true, send
     setTimeout(() => check(acc.id).catch(() => {}), 50);
     return { ok: true, account: pub(acc) };
   }
+  /** send invoices: { account, to: [addr], subject, text, fromName, attachments: [{ name, bytes }] } -> { ok } or { error, rcpt } */
+  async function sendMail(o) {
+    const d = read(), acc = d.accounts.find((a) => a.id === o.account) || d.accounts.find((a) => a.enabled !== false);
+    if (!acc) return { error: "noaccount" };
+    const to = [...new Set((o.to || []).map((x) => String(x).trim()).filter(Boolean))];
+    if (!to.length || to.some((x) => !EMAIL_RE.test(x))) return { error: "to", rcpt: to.find((x) => !EMAIL_RE.test(x)) || "" };
+    const atts = (o.attachments || []).filter((a) => a && a.bytes && a.bytes.length);
+    if (atts.reduce((n, a) => n + a.bytes.length, 0) > MAX_ATTACH) return { error: "size" };
+    const mailBuf = buildMail({ from: { name: String(o.fromName || ""), addr: acc.user }, to, subject: String(o.subject || ""), text: String(o.text || ""), attachments: atts });
+    let pass; try { pass = decrypt(acc.pass); } catch (e) { return { error: "auth" }; }
+    busy.add(acc.id); emit();
+    try { await smtpSend(acc, pass, mailBuf, to, { plain }); }
+    catch (e) { return { error: e.kind || errCode(e), rcpt: e.rcpt || "", detail: String(e.message || "").slice(0, 200) }; }
+    finally { busy.delete(acc.id); emit(); }
+    let copy = acc.provider === "gmail"; // Gmail keeps a copy in Sent by itself
+    if (!copy) { try { copy = await saveSent(acc, pass, mailBuf, { plain }); } catch (e) { copy = false; } }
+    return { ok: true, copy, from: acc.user };
+  }
   function remove(id) { change((d) => { d.accounts = d.accounts.filter((a) => a.id !== id); d.pending = d.pending.filter((p) => p.acc !== id); }); emit(); return true; }
   function setEnabled(id, on) { let a; change((d) => { a = d.accounts.find((x) => x.id === id); if (a) { a.enabled = !!on; if (on) a.error = ""; } }); emit(); if (a && on) setTimeout(() => check(id).catch(() => {}), 50); return !!a; }
   /** checks: right at the start (while the splash plays, also before the PIN is entered: it only reads the mail and saves into the PO folder),
@@ -356,7 +459,7 @@ function create({ dataDir, poFolder, encrypt, decrypt, canRun = () => true, send
     return new Promise((res) => { setTimeout(() => { check().catch(() => {}).then(res, res); }, firstMs).unref?.(); });
   }
   function stop() { if (timer) clearInterval(timer); timer = null; }
-  return { state, add, remove, setEnabled, setMode, check, download, ignore, forget, seen, auto, stop };
+  return { state, add, remove, setEnabled, setMode, check, download, ignore, forget, seen, auto, stop, send: sendMail };
 }
 
-module.exports = { create, poNum, parseMail, poFiles, checkAccount, PROVIDERS, Imap, imapDate, errCode, params, words };
+module.exports = { create, poNum, buildMail, smtpOf, Smtp, parseMail, poFiles, checkAccount, PROVIDERS, Imap, imapDate, errCode, params, words };
