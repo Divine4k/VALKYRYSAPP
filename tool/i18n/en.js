@@ -175,4 +175,5 @@ VALK_I18N.en = {
     noPoPlus: "New",
     stabMe: "My details", stabFolders: "Folders", stabMail: "Connections", stabLook: "Appearance", stabPin: "Security", stabUpd: "Updates",
     dropHint: "Drop purchase order PDFs anywhere on this page, or", dropRelease: "Release to add the purchase orders",
+    tDim: "Dim",
 };

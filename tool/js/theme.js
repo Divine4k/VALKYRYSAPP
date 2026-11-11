@@ -19,7 +19,7 @@ function renderThemeUi() {
   const grid = $("#cGrid");
   if (!grid.children.length) {
     grid.innerHTML = COLOR_KEYS.map(([k, label]) => `<label class="cf" for="tc-${k}"><span data-i18n="${label}"></span><span class="cin"><input type="color" id="tc-${k}" data-k="${k}"><input type="text" id="tc-${k}-hex" data-kx="${k}" maxlength="7" spellcheck="false" autocomplete="off" inputmode="text"></span></label>`).join("");
-    $("#tcBase").innerHTML = `<option value="">${esc(tr("tcBasePh"))}</option>` + ["light", "dark", "midnight", "paper", "forest", "contrast"].map((id) => `<option value="${id}">${esc(themeName(id))}</option>`).join("");
+    $("#tcBase").innerHTML = `<option value="">${esc(tr("tcBasePh"))}</option>` + ["light", "dark", "dim", "midnight", "paper", "forest", "contrast"].map((id) => `<option value="${id}">${esc(themeName(id))}</option>`).join("");
   }
   grid.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = tr(el.dataset.i18n); });
   COLOR_KEYS.forEach(([k, label]) => { const h = $(`#tc-${k}-hex`); h.setAttribute("aria-label", tr("tcHex", tr(label))); });

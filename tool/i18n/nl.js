@@ -175,4 +175,5 @@ VALK_I18N.nl = {
     noPoPlus: "Nieuw",
     stabMe: "Mijn gegevens", stabFolders: "Mappen", stabMail: "Verbindingen", stabLook: "Weergave", stabPin: "Beveiliging", stabUpd: "Updates",
     dropHint: "Sleep PDF’s van inkooporders ergens op deze pagina, of", dropRelease: "Laat los om de inkooporders toe te voegen",
+    tDim: "Gedimd",
 };

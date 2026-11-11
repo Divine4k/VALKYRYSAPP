@@ -175,4 +175,5 @@ VALK_I18N.pl = {
     noPoPlus: "Nowa",
     stabMe: "Moje dane", stabFolders: "Foldery", stabMail: "Połączenia", stabLook: "Wygląd", stabPin: "Bezpieczeństwo", stabUpd: "Aktualizacje",
     dropHint: "Przeciągnij PDF-y zamówień w dowolne miejsce tej strony albo", dropRelease: "Upuść, aby dodać zamówienia",
+    tDim: "Przygaszony",
 };

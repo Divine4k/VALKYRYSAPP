@@ -21,8 +21,8 @@ const choose = async (page, id) => { await page.click(`#themeGrid [data-theme-id
     for (const id of ["light", "dark"]) { await page.evaluate((id) => ValkTheme.apply({ id, custom: null }), id); await page.waitForTimeout(150); const c = await logo(); ok(c.logo !== c.side && c.logo === c.ink, `${id}: the logo is drawn in the text colour, visible on the sidebar`, c); }
     await page.evaluate(() => ValkTheme.apply({ id: "auto", custom: null })); await page.waitForTimeout(150); } await goSet(page, "look"); ok(await page.isVisible("#themeBtn") && await page.isVisible("#lang"), "theme button and language list are in Settings"); eq(await page.textContent("#themeBtn"), "Thema", "button label");
   await page.click("#themeBtn"); ok(await page.$eval("#themeDlg", (d) => d.open), "dialog opens");
-  eq(await page.$$eval("#themeGrid [data-theme-id]", (b) => b.map((x) => x.dataset.themeId)), ["auto", "light", "dark", "midnight", "paper", "forest", "contrast", "custom"], "eight themes");
-  eq(await page.$$eval("#themeGrid .tname", (b) => b.map((x) => x.textContent)), ["Automatisch", "Licht", "Donker", "Middernacht", "Papier", "Bos", "Hoog contrast", "Eigen thema"], "Dutch names");
+  eq(await page.$$eval("#themeGrid [data-theme-id]", (b) => b.map((x) => x.dataset.themeId)), ["auto", "light", "dark", "dim", "midnight", "paper", "forest", "contrast", "custom"], "nine themes");
+  eq(await page.$$eval("#themeGrid .tname", (b) => b.map((x) => x.textContent)), ["Automatisch", "Licht", "Donker", "Gedimd", "Middernacht", "Papier", "Bos", "Hoog contrast", "Eigen thema"], "Dutch names");
   eq(await page.$eval('#themeGrid [aria-checked="true"]', (b) => b.dataset.themeId), "auto", "automatic is the default");
   ok(!(await page.isVisible("#customBox")), "custom editor hidden until chosen");
 
@@ -38,12 +38,13 @@ const choose = async (page, id) => { await page.click(`#themeGrid [data-theme-id
   await choose(page, "light"); eq(await css(page, "body", "backgroundColor"), rgb("#F1F2F4"), "Licht");
   await page.emulateMedia({ colorScheme: "dark" }); await page.waitForTimeout(150);
   eq(await css(page, "body", "backgroundColor"), rgb("#F1F2F4"), "Licht stays light when the system is dark"); await page.emulateMedia({ colorScheme: "light" });
-  for (const [id, bg, accent] of [["midnight", "#0A0F1E", "#6C9CFF"], ["paper", "#F3EEE3", "#C4531B"], ["forest", "#0C1410", "#4FD18B"], ["contrast", "#000000", "#FFD500"]]) {
+  for (const [id, bg, accent] of [["dim", "#262624", "#D97757"], ["midnight", "#0A0F1E", "#6C9CFF"], ["paper", "#F3EEE3", "#C4531B"], ["forest", "#0C1410", "#4FD18B"], ["contrast", "#000000", "#FFD500"]]) {
     await choose(page, id);
     eq([await css(page, "body", "backgroundColor"), await v(page, "--accent"), await css(page, "#side", "backgroundColor")], [rgb(bg), accent, rgb(await v(page, "--surface"))], `${id}: page, accent and the sidebar in the surface colour`);
     eq([await css(page, "#side .side-logo", "backgroundColor"), await page.$eval("#side .side-logo", (l) => getComputedStyle(l).maskImage.includes("logo-white.png"))], [rgb(await v(page, "--ink")), true], `${id}: logo shape untouched, drawn in the text colour`);
     await page.waitForTimeout(250); eq(await page.$eval("#tabSettings", (b) => getComputedStyle(b, "::before").backgroundColor), rgb(accent), `${id}: the open Settings item has the accent bar`);
   }
+  await choose(page, "dim"); await page.waitForTimeout(200); await page.click("#themeClose"); await goTab(page, "inv"); await page.screenshot({ path: "/tmp/theme-dim.png" }); await goSet(page, "look"); await page.click("#themeBtn");
   await choose(page, "midnight"); eq(await css(page, "button.primary, #npPick, #folderPick", "backgroundColor"), rgb("#6C9CFF"), "primary buttons use the theme accent");
 
   // ---- own theme: starts from what you see, live colours, warnings
@@ -84,7 +85,7 @@ const choose = async (page, id) => { await page.click(`#themeGrid [data-theme-id
   await setLang(page, "nl");
 
   // ---- contrast audit of the presets (WCAG): text, muted text, button text, state colours
-  const audit = await page.evaluate(() => { const T = ValkTheme, out = []; for (const id of ["midnight", "paper", "forest", "contrast"]) { const t = T.tokens(id), c = T.contrast;
+  const audit = await page.evaluate(() => { const T = ValkTheme, out = []; for (const id of ["dim", "midnight", "paper", "forest", "contrast"]) { const t = T.tokens(id), c = T.contrast;
     out.push([id, ["ink", t.ink, t.bg, 7], ["text", t.text, t.surface, 7], ["muted/bg", t.muted, t.bg, 4.5], ["muted/surface", t.muted, t.surface, 4.5], ["accent text", t.accentInk, t.accent, 4.5], ["accent/surface", t.accent, t.surface, 3],
       ["ok", t.ok, t.okBg, 4.5], ["warn", t.warn, t.warnBg, 4.5], ["err", t.err, t.errBg, 4.5], ["focus", t.focus, t.bg, 3]].slice(0).map((x) => Array.isArray(x) ? [x[0], +c(x[1], x[2]).toFixed(2), x[3]] : x)); } return out; });
   for (const [id, ...rows] of audit) { const bad = rows.filter((r) => r[1] < r[2]); ok(!bad.length, `${id}: contrast ok`, bad); }

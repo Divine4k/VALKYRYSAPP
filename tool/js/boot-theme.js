@@ -1,7 +1,7 @@
 /* Theme engine. Runs before the page is drawn. The black band with the Valkyrys logo and its yellow line are never themed. */
 window.ValkTheme = (function () {
   var KEY = "valkyrys-theme";
-  var IDS = ["auto", "light", "dark", "midnight", "paper", "forest", "contrast", "custom"];
+  var IDS = ["auto", "light", "dark", "dim", "midnight", "paper", "forest", "contrast", "custom"];
   var SEM = {
     light: { ok: "#1D7A4B", okBg: "#E6F3EC", warn: "#8F5200", warnBg: "#FFF2D6", err: "#B3261E", errBg: "#FBE6E5", focus: "#1F5FD1", band: "#111111" },
     dark: { ok: "#67C892", okBg: "#12291C", warn: "#F2B347", warnBg: "#2E230E", err: "#F28B82", errBg: "#351816", focus: "#7AA7FF", band: "#000000" }
@@ -11,6 +11,7 @@ window.ValkTheme = (function () {
     dark: { bg: "#0D0E0F", surface: "#17181A", ink: "#F3F3F4", muted: "#9A9DA4", accent: "#FEBD17" }
   };
   var PRESETS = {
+    dim: { scheme: "dark", bg: "#262624", surface: "#30302E", sunken: "#2B2A28", ink: "#FAF9F5", text: "#E5E3DC", muted: "#B0ADA3", line: "#45443F", accent: "#D97757", accentInk: "#141413" }, // warm, softer dark (like claude.ai)
     midnight: { scheme: "dark", bg: "#0A0F1E", surface: "#121A30", sunken: "#0E1527", ink: "#EEF2FF", text: "#CBD3EA", muted: "#93A0C2", line: "#25314F", accent: "#6C9CFF", accentInk: "#0A0F1E" },
     paper: { scheme: "light", bg: "#F3EEE3", surface: "#FFFCF6", sunken: "#F9F5EC", ink: "#1E1A14", text: "#3B3429", muted: "#6F6556", line: "#E2D8C6", accent: "#C4531B", accentInk: "#FFFFFF" },
     forest: { scheme: "dark", bg: "#0C1410", surface: "#131E18", sunken: "#101A14", ink: "#E8F3EC", text: "#C5D8CC", muted: "#8DA698", line: "#223329", accent: "#4FD18B", accentInk: "#08130D" },
