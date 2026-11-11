@@ -52,3 +52,18 @@ contextBridge.exposeInMainWorld("valkyrysUpdate", {
     return () => ipcRenderer.removeListener("upd:changed", h);
   },
 });
+
+// E-mail connections (Settings › Connections, see mailfetch.js): the page never gets a password back, only the accounts and how their last check went.
+contextBridge.exposeInMainWorld("valkyrysMail", {
+  state: () => call("mail:state"),
+  add: (o) => call("mail:add", { provider: String((o && o.provider) || ""), user: String((o && o.user) || ""), pass: String((o && o.pass) || ""), host: String((o && o.host) || "") }),
+  remove: (id) => call("mail:remove", String(id)),
+  setEnabled: (id, on) => call("mail:enable", String(id), !!on),
+  check: (id) => call("mail:check", id ? String(id) : ""),
+  onChange: (cb) => {
+    if (typeof cb !== "function") return () => {};
+    const h = (e, st) => { try { cb(st); } catch (err) {} };
+    ipcRenderer.on("mail:changed", h);
+    return () => ipcRenderer.removeListener("mail:changed", h);
+  },
+});

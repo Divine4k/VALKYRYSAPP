@@ -150,6 +150,13 @@
         </div>
       </div>
     </div>
+    <div class="panel" id="mailPanel" hidden>
+      <p class="eyebrow" data-i18n="mailTitle">Verbindingen</p>
+      <p class="small" style="margin:0" data-i18n="mailIntro"></p>
+      <p class="chip warn mnopo" id="mailNoPo" hidden data-i18n="mailNoPo"></p>
+      <ul class="mlist" id="mailList" hidden></ul>
+      <div class="frow"><button type="button" class="primary" id="mailAdd" data-i18n="mailAdd">E-mail koppelen…</button></div>
+    </div>
     <div class="panel" id="tplPanel">
       <p class="eyebrow" data-i18n="tplTitle">Factuurontwerp</p>
       <div class="tplcur"><img id="tplCurImg" alt="" width="96"><div><p class="fsub" id="tplCurName"></p><p class="small" id="tplCurDesc"></p><p class="small" id="tplCurHint" data-i18n="tplCurHint"></p><div class="frow"><button type="button" id="tplChange" data-i18n="tplChange">Ontwerp wijzigen…</button></div></div></div>
@@ -285,6 +292,23 @@
     <button type="submit" class="primary" id="pinSave"></button>
   </form>
 </dialog>
+<dialog id="mailDlg" aria-labelledby="mailDlgTitle">
+  <div class="dlg-head"><strong id="mailDlgTitle" data-i18n="mailAddTitle">E-mail koppelen</strong><button type="button" id="mailDlgClose" data-i18n="close">Sluiten</button></div>
+  <form class="dlg-body stack" id="mailForm" autocomplete="off" novalidate>
+    <div class="mprov" role="radiogroup" data-i18n-aria="mailProv" aria-label="E-mail">
+      <label><input type="radio" name="mailProv" value="gmail" checked><span>Gmail</span></label>
+      <label><input type="radio" name="mailProv" value="wp"><span>WP Poczta</span></label>
+      <label><input type="radio" name="mailProv" value="imap"><span data-i18n="mailOther">Andere</span></label>
+    </div>
+    <p class="small mhelp" id="mailHelp"></p>
+    <label class="f" for="mailUser"><span data-i18n="mailUser">E-mailadres</span><input id="mailUser" type="email" autocomplete="off" spellcheck="false"></label>
+    <label class="f" for="mailPass"><span id="mailPassLbl"></span><input id="mailPass" type="password" autocomplete="new-password" spellcheck="false"></label>
+    <label class="f" for="mailHost" id="mailHostWrap" hidden><span data-i18n="mailHost">IMAP-server</span><input id="mailHost" placeholder="imap.example.com" spellcheck="false"></label>
+    <p class="chip error" id="mailErr" hidden role="alert"></p>
+    <p class="small" style="margin:0" data-i18n="mailSafe"></p>
+    <button type="submit" class="primary" id="mailSave" data-i18n="mailConnect">Koppelen</button>
+  </form>
+</dialog>
 <dialog id="themeDlg" aria-labelledby="themeTitle">
   <div class="dlg-head"><strong id="themeTitle" data-i18n="themeTitle">Thema</strong><button type="button" id="themeClose" data-i18n="close">Sluiten</button></div>
   <div class="dlg-body">
@@ -402,6 +426,7 @@
 <script src="js/nav.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/news.js"></script>
+<script src="js/mail.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/invoice-events.js"></script>
 <script src="js/designs.js"></script>

@@ -3,6 +3,15 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
+    version: "1.3.0", date: "2026-11-11",
+    items: [
+      { type: "new",
+        nl: "Inkooporders uit je e-mail: koppel Gmail, WP Poczta of een andere e-maildienst bij Instellingen › Verbindingen. De app haalt mails „Inkooporder PO-…” met de PDF zelf op en zet de PDF in je map met inkooporders, elke 5 minuten zolang de app openstaat. Aan je mail zelf verandert niets.",
+        en: "Purchase orders from your email: connect Gmail, WP Poczta or another email service in Settings › Connections. The app fetches “Inkooporder PO-…” mails with the PDF by itself and puts the PDF in your purchase order folder, every 5 minutes while the app is open. Nothing in your mail itself changes.",
+        pl: "Zamówienia zakupu z poczty: połącz Gmail, WP Pocztę lub inną pocztę w Ustawienia › Połączenia. Aplikacja sama pobiera maile „Inkooporder PO-…” z PDF-em i zapisuje PDF w folderze z zamówieniami zakupu, co 5 minut, gdy aplikacja jest otwarta. W samej poczcie nic się nie zmienia." },
+    ],
+  },
+  {
     version: "1.2.1", date: "2026-11-11",
     items: [
       { type: "improved",

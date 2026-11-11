@@ -245,6 +245,24 @@ function registerUpdateIpc() {
   updater.prune();
   updater.auto();
 }
+// ---- e-mail (Settings › Connections): purchase orders fetched from the mailbox into the PO folder, see mailfetch.js.
+// Passwords are encrypted with Windows' own encryption (safeStorage = DPAPI, bound to this Windows user); only when that is not available (some Linux test setups) plainly encoded.
+let mail = null;
+function registerMailIpc() {
+  const { safeStorage } = require("electron");
+  const enc = (s) => (safeStorage.isEncryptionAvailable() ? "s:" + safeStorage.encryptString(s).toString("base64") : "b:" + Buffer.from(s, "utf8").toString("base64"));
+  const dec = (s) => (String(s).startsWith("s:") ? safeStorage.decryptString(Buffer.from(s.slice(2), "base64")) : Buffer.from(String(s).slice(2), "base64").toString("utf8"));
+  mail = require("./mailfetch").create({ dataDir: app.getPath("userData"), poFolder: () => { const p = folderPath("pos"); return p && isDir(p) ? p : ""; }, encrypt: enc, decrypt: dec,
+    canRun: () => unlocked, plain: process.env.VALKYRYS_MAIL_PLAIN === "1", // plain: the tests' fake server only
+    send: (st) => { if (win && !win.isDestroyed()) win.webContents.send("mail:changed", st); } });
+  const guard = (fn) => async (e, ...a) => { if (!fromApp(e) || !unlocked) throw new Error("not allowed"); return fn(e, ...a); };
+  ipcMain.handle("mail:state", guard(() => mail.state()));
+  ipcMain.handle("mail:add", guard((e, o) => mail.add(Object(o))));
+  ipcMain.handle("mail:remove", guard((e, id) => mail.remove(String(id))));
+  ipcMain.handle("mail:enable", guard((e, id, on) => mail.setEnabled(String(id), !!on)));
+  ipcMain.handle("mail:check", guard((e, id) => mail.check(id ? String(id) : undefined)));
+  mail.auto();
+}
 // an update version counts as good once its page has loaded and stayed up a moment (or the app was closed normally after that);
 // until then the loader treats a next start as "this version crashed" and goes back to the previous one
 let pageLoaded = false;
@@ -281,7 +299,7 @@ function showSplash() {
 app.whenReady().then(() => {
   if (!gotLock) return; // a second launch only wakes the first window; it gets no splash
   Menu.setApplicationMenu(null);
-  registerFolderIpc(() => win); registerPinIpc(); registerUpdateIpc();
+  registerFolderIpc(() => win); registerPinIpc(); registerUpdateIpc(); registerMailIpc();
   const started = Date.now();
   const splash = process.argv.includes("--no-splash") ? null : showSplash();
   const server = createServer(path.join(__dirname, "web"), path.join(app.getPath("userData"), "data.json"), () => unlocked);

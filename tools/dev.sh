@@ -20,7 +20,7 @@ set -u
 SP=$(cd "$(dirname "$0")/.." && pwd); cd "$SP"
 EXE="$SP/el/linux/electron"
 LOGS="$SP/logs"; mkdir -p "$LOGS"
-ELECTRON_TESTS="newpo po stats import folder pin theme podetail realpo dups settings templates electron sequence splash saveas docs news delete clients update_ui update"
+ELECTRON_TESTS="newpo po stats import folder pin theme podetail realpo dups settings templates electron sequence splash saveas docs news delete clients update_ui update mail"
 
 toolchain() { { [ -x "$EXE" ] && [ -f dl/win.zip ]; } || bash tools/get_toolchain.sh; }   # Electron zips come from the "toolchain" branch when missing
 build() { toolchain && python3 -I tools/build_app.py && bash tools/sync_linux.sh; }
@@ -93,7 +93,7 @@ show_res() { local r="$RUN/res/$1"; [ -f "$r" ] || { echo "FAIL ${names[$1]}  (n
 
 units() {
   local f out rc; new_run
-  for f in test_workdates.mjs test_parse_generated.mjs; do
+  for f in test_workdates.mjs test_parse_generated.mjs test_mailfetch.mjs; do
     out=$(node "tools/$f" "$SP/tool" 2>&1); rc=$?; if [ $rc -ne 0 ] || echo "$out" | grep -q '^FAIL'; then echo "FAIL $f"; echo "$out" | grep -m5 '^FAIL' | cut -c1-200; FAILED="$FAILED $f"; else echo "ok   $f"; fi
   done
   node tools/test_core.mjs "$SP/po/PO-008148.pdf" "$SP/tool" "$RUN/core-out.pdf" >/dev/null 2>&1 && echo "ok   test_core.mjs" || { echo "FAIL test_core.mjs"; FAILED="$FAILED test_core.mjs"; }
@@ -119,7 +119,7 @@ page = z.read("resources/app/web/index.html").decode("utf8")
 assert "Valkyrys app.exe" in names, "program missing from the payload"
 for n in ["resources/app/web/index.html"] + [n for n in names if n.startswith(("resources/app/web/js/", "resources/app/web/i18n/")) and n.endswith(".js")]:
     assert "Valkyrys Facturen" not in z.read(n).decode("utf8"), f"old name left in {n}"
-for f in ("main.js", "app-main.js", "updater.js", "preload.js", "server.js", "package.json", "web/index.html", "web/vendor/jszip.min.js", "splash/splash.html", "build/icon.png"): assert f"resources/app/{f}" in names, f
+for f in ("main.js", "app-main.js", "updater.js", "preload.js", "server.js", "mailfetch.js", "package.json", "web/index.html", "web/vendor/jszip.min.js", "splash/splash.html", "build/icon.png"): assert f"resources/app/{f}" in names, f
 assert b"global.valkyrysLoader" in z.read("resources/app/main.js"), "resources/app/main.js is not the loader"
 import json; pj = json.loads(z.read("resources/app/package.json")); ev = json.load(open(f"{sp}/electron-app/package.json"))["version"]
 assert pj["version"] == ev and pj["main"] == "main.js", pj

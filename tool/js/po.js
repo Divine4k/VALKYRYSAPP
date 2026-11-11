@@ -54,6 +54,7 @@ function renderPoFolderSet() {
   pick.dataset.i18n = k; pick.textContent = tr(k); pick.classList.toggle("primary", !f);
   const pe = $("#poFolderPath"); pe.hidden = !f; if (f) { pe.textContent = f.path; pe.title = f.path; pe.classList.toggle("bad", !f.exists); }
   $("#poFolderOpen").hidden = !(f && f.exists); $("#poFolderClear").hidden = !f;
+  if (typeof renderMail === "function") renderMail(); // Connections says when there is no PO folder to fetch into
 }
 
 // ---- the same work day on more than one purchase order: a notice on the statistics, and a list to check them in

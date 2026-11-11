@@ -121,7 +121,7 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   await goTab(page, "docs"); await page.waitForTimeout(200); ok(await page.isVisible("#docsView") && !(await page.isVisible("#viewInv")), "Documents tab opens"); eq(await page.textContent("#pageTitle"), "Documenten", "page title: Documenten");
   await goTab(page, "settings"); await page.waitForTimeout(200);
   ok(await page.isVisible("#settingsView") && !(await page.isVisible("#viewInv")) && !(await page.isVisible("#statsView")), "Settings tab opens");
-  eq(await page.textContent("#tagline"), "Mappen, pincode en weergave.", "its tagline"); eq(await page.textContent("#pageTitle"), "Instellingen", "page title follows the tab");
+  eq(await page.textContent("#tagline"), "Mappen, e-mail, pincode en weergave.", "its tagline"); eq(await page.textContent("#pageTitle"), "Instellingen", "page title follows the tab");
   ok(await page.$eval("#tabSettings", (b) => getComputedStyle(b, "::before").content !== "none"), "Settings item highlighted like a tab while open");
   eq([await page.getAttribute("#tabSettings", "aria-pressed"), await page.$$eval("#tabs [aria-selected=true]", (t) => t.length)], ["true", 0], "the gear button shows it is open, no tab is selected");
   eq(await page.$eval("#settingsView .col", (c) => [...c.children].filter((x) => !x.hidden)[0].id), "lookPanel", "theme and language come first in Settings");
