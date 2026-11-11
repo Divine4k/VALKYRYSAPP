@@ -116,6 +116,12 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   await page.click("#mailList [data-mcheck]");
   ok(await saved(path.join(POF, "PO-008148.pdf"), 10000), "a PO missing from the folder is fetched again");
 
+  // the refresh button at "Nieuwe inkooporders" also checks the mail
+  fs.unlinkSync(path.join(POF, "PO-008148.pdf")); srv.log.length = 0;
+  await goTab(page, "inv"); await page.click("#newPo [data-refresh]");
+  ok(await saved(path.join(POF, "PO-008148.pdf"), 10000) && srv.log.some((l) => / EXAMINE /.test(l)), "refresh at Nieuwe inkooporders: the mail is checked too");
+  await goSet(page, "mail"); await page.waitForTimeout(200);
+
   // switched off, then disconnect (asks once)
   await page.click("#mailList [data-mtog]");
   ok(await until(async () => /Uitgezet/.test(await page.textContent("#mailList .mstat")) && (await page.isDisabled("#mailList [data-mcheck]"))), "switched off");

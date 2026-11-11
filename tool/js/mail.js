@@ -79,6 +79,12 @@ function mailSet(st) {
   }
   if (st.found && st.found.length && away) MAIL.notify(tr("mailNotifTitle"), mailFoundText(st.found)).catch(() => {});
 }
+/** check every switched-on mailbox now (the refresh buttons); resolves when done, never fails */
+function mailCheckAll() {
+  const list = (mailUi.st && mailUi.st.accounts) || [];
+  if (!(MAIL && desk) || !list.some((a) => a.enabled)) return Promise.resolve();
+  return MAIL.check().catch(() => {});
+}
 async function mailDownload(keys) {
   let r; try { r = await MAIL.download(keys || null); } catch (e) { r = { error: "other" }; }
   if (r && r.error && !(r.saved && r.saved.length)) toast(mailErr(r.error));

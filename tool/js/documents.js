@@ -289,7 +289,9 @@ document.querySelectorAll("button[data-refresh]").forEach((b) => { b.hidden = !d
 document.addEventListener("click", async (e) => {
   const b = e.target.closest("button[data-refresh]"); if (!b || !desk || b.classList.contains("spin")) return;
   b.classList.add("spin"); b.setAttribute("aria-busy", "true");
-  try { await Promise.all([refreshAll(), new Promise((r) => setTimeout(r, 450))]); } catch (err) {}
+  // also look in the connected mailboxes, like "Nu controleren" in Settings › Verbindingen (js/mail.js), then read the folders again
+  const mail = typeof mailCheckAll === "function" ? mailCheckAll() : Promise.resolve();
+  try { await Promise.all([mail.then(() => refreshAll()), new Promise((r) => setTimeout(r, 450))]); } catch (err) {}
   b.classList.remove("spin"); b.removeAttribute("aria-busy");
 });
 if (desk) {
