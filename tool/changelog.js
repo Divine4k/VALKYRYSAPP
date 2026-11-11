@@ -3,6 +3,15 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
+    version: "1.3.1", date: "2026-11-11",
+    items: [
+      { type: "improved",
+        nl: "E-mail: ontbreekt er een inkooporder uit de laatste 30 dagen in je map, dan haalt de app hem bij de volgende controle opnieuw op. Alleen inkooporders die je in de app verwijdert of bij „Eerst vragen” negeert, blijven weg. Bij Verbindingen zie je hoeveel inkooporders er in je e-mail staan.",
+        en: "Email: when a purchase order from the last 30 days is missing from your folder, the app fetches it again at the next check. Only purchase orders you delete in the app, or ignore with “Ask first”, stay away. Connections shows how many purchase orders are in your email.",
+        pl: "Poczta: jeśli w folderze brakuje zamówienia z ostatnich 30 dni, aplikacja pobierze je ponownie przy następnym sprawdzeniu. Nie wracają tylko zamówienia usunięte w aplikacji lub pominięte w trybie „Najpierw zapytaj”. W Połączeniach widać, ile zamówień jest w poczcie." },
+    ],
+  },
+  {
     version: "1.3.0", date: "2026-11-11",
     items: [
       { type: "new",

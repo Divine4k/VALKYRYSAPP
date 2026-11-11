@@ -17,7 +17,8 @@ function mailStatus(a) {
   if (!a.enabled) return { cls: "", text: tr("mailOff") };
   if (a.error) return { cls: "bad", text: mailErr(a.error, a.provider) };
   if (!a.lastCheck) return { cls: "", text: tr("mailNever") };
-  return { cls: "ok", text: tr("mailChecked", mailWhen(a.lastCheck)) + (a.found ? " · " + tr(a.found === 1 ? "mailFound1" : "mailFoundN", a.found) : "") };
+  const inMail = typeof a.inMail === "number" ? " · " + tr(a.inMail === 0 ? "mailInMail0" : a.inMail === 1 ? "mailInMail1" : "mailInMailN", a.inMail) : "";
+  return { cls: "ok", text: tr("mailChecked", mailWhen(a.lastCheck)) + inMail + (a.found ? " · " + tr(a.found === 1 ? "mailFound1" : "mailFoundN", a.found) : "") };
 }
 function renderMail() {
   const panel = $("#mailPanel"); if (!panel) return;

@@ -66,8 +66,12 @@ function start({ users, boxes, uidValidity = 777, allMail = "" }) {
         reply("* SEARCH" + list.map((x) => " " + x.uid).join("")); reply(tag + " OK search done"); return;
       }
       if (cmd.startsWith("UID FETCH ")) {
-        const uid = Number(/UID FETCH (\d+)/i.exec(cmdRaw)[1]), x = box.find((y) => y.uid === uid);
-        if (x) { s.write(`* ${box.indexOf(x) + 1} FETCH (UID ${uid} BODY[] {${x.raw.length}}\r\n`); s.write(x.raw); s.write(")\r\n"); }
+        const set = /UID FETCH ([\d,:*]+)/i.exec(cmdRaw)[1].split(",").map(Number), hdr = /HEADER\.FIELDS/i.test(cmdRaw);
+        for (const uid of set) {
+          const x = box.find((y) => y.uid === uid); if (!x) continue;
+          const body = hdr ? Buffer.from("Subject: " + x.subject + "\r\n\r\n", "latin1") : x.raw;
+          s.write(`* ${box.indexOf(x) + 1} FETCH (UID ${uid} BODY[${hdr ? "HEADER.FIELDS (SUBJECT)" : ""}] {${body.length}}\r\n`); s.write(body); s.write(")\r\n");
+        }
         reply(tag + " OK fetch done"); return;
       }
       reply(tag + " BAD unknown");

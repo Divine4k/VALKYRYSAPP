@@ -61,20 +61,27 @@ eq(fs.readFileSync(path.join(po, "PO-000100.pdf"), "utf8"), "already here", "a f
 ok(events.some((e) => e.saved && e.saved.includes("PO-000101.pdf")), "the page is told which files came in", events.map((e) => e.saved));
 let a = mf.state().accounts[0];
 ok(a.lastOk > 0 && !a.error && a.found === 2 && !a.busy, "account state: checked, no error, 2 found", a);
-ok(!srv.log.some((l) => /\b(STORE|SELECT|EXPUNGE|COPY|MOVE|APPEND|DELETE)\b/i.test(l)) && srv.log.some((l) => / EXAMINE /.test(l)) && srv.log.filter((l) => / UID FETCH /.test(l)).every((l) => /BODY\.PEEK\[\]/.test(l)), "read-only: EXAMINE and BODY.PEEK, nothing marked or moved");
+ok(!srv.log.some((l) => /\b(STORE|SELECT|EXPUNGE|COPY|MOVE|APPEND|DELETE)\b/i.test(l)) && srv.log.some((l) => / EXAMINE /.test(l)) && srv.log.filter((l) => / UID FETCH /.test(l)).every((l) => /BODY\.PEEK\[/.test(l)), "read-only: EXAMINE and BODY.PEEK, nothing marked or moved");
 
-// a PO deleted from the folder on purpose is not fetched again; a new mail is
+// a PO missing from the folder is fetched again (with a new mail); one deleted through the app (forget) is not
 fs.unlinkSync(path.join(po, "PO-000102.pdf"));
 mails.push({ uid: 12, date: new Date(now), subject: "Inkooporder PO-000103", raw: F.poMail({ po: "000103", pdf: pdf(103) }) });
 srv.log.length = 0;
 r = await mf.check();
-eq(r.saved, ["PO-000103.pdf"], "next check: only the new mail");
-eq(files(), ["PO-000100.pdf", "PO-000101.pdf", "PO-000103.pdf"], "the deleted PO stays deleted");
-ok(srv.log.some((l) => /UID SEARCH UID 12:\*/.test(l)), "asks only for mails after the last one seen", srv.log);
-r = await mf.check(); eq(r.saved, [], "nothing new: nothing saved");
+eq(r.saved.sort(), ["PO-000102.pdf", "PO-000103.pdf"], "next check: the new mail and the PO missing from the folder");
+ok(srv.log.some((l) => /UID FETCH [\d,]+ \(UID BODY\.PEEK\[HEADER\.FIELDS \(SUBJECT\)\]\)/.test(l)) && srv.log.filter((l) => /BODY\.PEEK\[\]/.test(l)).length === 2, "subjects read in one go, whole mails only for the 2 missing", srv.log);
+eq(mf.state().accounts[0].inMail, 4, "the account knows how many POs are in the mail (30 days)");
+srv.log.length = 0; r = await mf.check(); eq(r.saved, [], "nothing missing: nothing saved");
+ok(!srv.log.some((l) => /BODY\.PEEK\[\]/.test(l)), "...and no whole mail fetched");
+fs.renameSync(path.join(po, "PO-000103.pdf"), path.join(po, "PO-000103 kopie.pdf"));
+fs.mkdirSync(path.join(po, "2026")); fs.renameSync(path.join(po, "PO-000101.pdf"), path.join(po, "2026", "PO-000101.pdf"));
+r = await mf.check(); eq(r.saved, [], "a PO renamed, or moved into a subfolder, counts as there (by PO number)");
+fs.unlinkSync(path.join(po, "PO-000102.pdf")); mf.forget(path.join(po, "PO-000102.pdf"));
+r = await mf.check(); eq(r.saved, [], "deleted through the app: not fetched again");
+ok(!fs.existsSync(path.join(po, "PO-000102.pdf")), "...stays deleted");
 
 // "seen": fetched POs stay listed for the page until it has shown them
-eq(mf.state().unseen, ["PO-000101.pdf", "PO-000102.pdf", "PO-000103.pdf"], "fetched POs are kept as 'unseen' for the notice");
+eq(mf.state().unseen.slice().sort(), ["PO-000101.pdf", "PO-000102.pdf", "PO-000103.pdf"], "fetched POs are kept as 'unseen' for the notice");
 mf.seen(); eq(mf.state().unseen, [], "seen() clears them");
 
 // ask first: found, not saved, until downloaded; ignored ones go away
@@ -83,17 +90,17 @@ mails.push({ uid: 13, date: new Date(now), subject: "Inkooporder PO-000104", raw
 mails.push({ uid: 14, date: new Date(now), subject: "Inkooporder PO-000105", raw: F.poMail({ po: "000105", pdf: pdf(105) }) });
 events.length = 0;
 r = await mf.check();
-eq(r.found, ["PO-000104.pdf", "PO-000105.pdf"], "ask first: the new POs are found");
+eq(r.found.slice().sort(), ["PO-000104.pdf", "PO-000105.pdf"], "ask first: the new POs are found");
 ok(!fs.existsSync(path.join(po, "PO-000104.pdf")), "...but not saved");
-eq(mf.state().pending.map((p) => p.name), ["PO-000104.pdf", "PO-000105.pdf"], "...and wait in 'pending'");
+eq(mf.state().pending.map((p) => p.name).sort(), ["PO-000104.pdf", "PO-000105.pdf"], "...and wait in 'pending'");
 ok(events.some((e) => e.found && e.found.length === 2), "the page is told what was found");
 r = await mf.check(); eq(r.found, [], "checking again does not offer them twice");
-const [p104, p105] = mf.state().pending;
+const [p104, p105] = mf.state().pending.slice().sort((a, b) => a.name.localeCompare(b.name));
 r = await mf.download([p104.key]);
 eq(r.saved, ["PO-000104.pdf"], "download one");
 ok(fs.readFileSync(path.join(po, "PO-000104.pdf")).equals(pdf(104)), "...the right PDF");
 eq(mf.state().pending.map((p) => p.name), ["PO-000105.pdf"], "...the other still waits");
-ok(srv.log.filter((l) => / UID FETCH /.test(l)).every((l) => /BODY\.PEEK\[\]/.test(l)), "download is read-only too");
+ok(srv.log.filter((l) => / UID FETCH /.test(l)).every((l) => /BODY\.PEEK\[/.test(l)), "download is read-only too");
 mf.ignore([p105.key]); eq(mf.state().pending, [], "ignore removes it");
 r = await mf.check(); eq(r.found, [], "an ignored PO is not offered again");
 mails.push({ uid: 15, date: new Date(now), subject: "Inkooporder PO-000106", raw: F.poMail({ po: "000106", pdf: pdf(106) }) });
@@ -116,7 +123,7 @@ await mf3.check(); eq(mf3.state().accounts[0].error, "auth", "password no longer
 // Gmail: looks in the \All mailbox (mails a filter moved out of the inbox), found with LIST
 const g = await F.start({ users: { "x@gmail.com": "app" }, boxes: { INBOX: [], "[Gmail]/Alle berichten": [{ uid: 5, date: new Date(now), subject: "Inkooporder PO-000200", raw: F.poMail({ po: "000200", pdf: pdf(200) }) }] }, allMail: "[Gmail]/Alle berichten" });
 const got = [], st = {};
-const res = await M.checkAccount({ provider: "gmail", user: "x@gmail.com", host: "127.0.0.1", port: g.port }, "app", st, { plain: true, exists: () => false, save: async (n) => got.push(n) });
+const res = await M.checkAccount({ provider: "gmail", user: "x@gmail.com", host: "127.0.0.1", port: g.port }, "app", st, { plain: true, have: () => false, save: async (n) => { got.push(n); return true; } });
 eq(got, ["PO-000200.pdf"], "Gmail: found in All Mail");
 eq(st.box, '"[Gmail]/Alle berichten"', "...and the mailbox is remembered");
 eq(M.errCode(Object.assign(new Error("[ALERT] Application-specific password required: https://support.google.com/accounts/answer/185833"), { code: "EAUTH" })), "apppass", "Gmail's 'app password required' is recognised");

@@ -54,7 +54,7 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   ok(await saved(f1, 15000), "PO PDF saved into the PO folder");
   ok(fs.existsSync(f1) && fs.readFileSync(f1).equals(pdf), "...the same bytes as attached");
   ok(fs.readdirSync(POF).length === 1, "the other mail is ignored", fs.readdirSync(POF));
-  ok(await until(async () => /Gecontroleerd om .*1 inkooporder opgehaald/.test(await page.textContent("#mailList .mstat"))), "status: checked, 1 fetched", await page.textContent("#mailList .mstat"));
+  ok(await until(async () => /Gecontroleerd om .*1 inkooporder in je e-mail \(laatste 30 dagen\) · 1 inkooporder opgehaald/.test(await page.textContent("#mailList .mstat"))), "status: checked, 1 fetched", await page.textContent("#mailList .mstat"));
   ok(await until(() => page.evaluate(() => state.poFiles.some((f) => f.name === "PO-008148.pdf"))), "the app read the PO folder again (new POs)");
   ok(await until(async () => (await page.isVisible("#mailBars [data-mbar=got]")) && /opgehaald: PO-008148/.test(await page.textContent("#mailBars"))), "a notice at the bottom says the PO came in");
   await page.waitForTimeout(400);
@@ -101,6 +101,12 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   ok(!fs.existsSync(path.join(POF, "PO-008151.pdf")), "the ignored one not");
   ok(await until(async () => !(await page.isVisible("#mailBars [data-mbar]")) && (await page.isHidden("#mailPend"))), "notice and list gone");
   ok(await until(async () => /Gedownload: PO-008150/.test(await page.textContent("#toast"))), "toast: downloaded");
+
+  // a PO deleted from the folder outside the app comes back at the next check
+  await page.click('#mailMode label:has(input[value="auto"])'); await page.waitForTimeout(300);
+  fs.unlinkSync(path.join(POF, "PO-008148.pdf"));
+  await page.click("#mailList [data-mcheck]");
+  ok(await saved(path.join(POF, "PO-008148.pdf"), 10000), "a PO missing from the folder is fetched again");
 
   // switched off, then disconnect (asks once)
   await page.click("#mailList [data-mtog]");

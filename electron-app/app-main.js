@@ -144,7 +144,8 @@ function registerFolderIpc(getWin) {
     const p = folderPath(kind); const full = p && isDir(p) && typeof rel === "string" && inside(p, rel);
     if (!full || !SAVE_EXT.test(full)) return { error: "path" };
     try { if (!fs.lstatSync(full).isFile()) return { error: "missing" }; } catch (err) { return { error: "missing" }; }
-    try { await shell.trashItem(full); return { ok: true }; } catch (err) { return { error: String((err && err.message) || "trash") }; }
+    // a PO deleted here on purpose is not fetched from e-mail again (mailfetch.js forget)
+    try { await shell.trashItem(full); if (kind === "pos" && mail) try { mail.forget(full); } catch (err) {} return { ok: true }; } catch (err) { return { error: String((err && err.message) || "trash") }; }
   }));
   ipcMain.handle("app:welcomed", guard(() => readConfig().welcomed === true)); // the first-start question about the folders has been asked
   ipcMain.handle("app:welcomed-set", guard(() => { writeConfig(Object.assign(readConfig(), { welcomed: true })); return true; }));
