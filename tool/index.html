@@ -119,11 +119,19 @@
   </nav>
   <section class="col" id="setCol" role="tabpanel" aria-label="Instellingen">
     <div class="panel" id="lookPanel" data-stab="look">
-      <p class="eyebrow" data-i18n="lookTitle">Weergave</p>
+      <p class="eyebrow" data-i18n="themeTitle">Thema</p>
+      <p class="small" style="margin:0" data-i18n="themeIntroShort">Kies de kleuren van de app.</p>
       <div class="frow look">
         <button type="button" id="themeBtn" class="langsel themebtn" aria-haspopup="dialog" aria-controls="themeDlg"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7.2" r="1"/><circle cx="15" cy="7.5" r="1"/></svg><span data-i18n="themeBtn">Thema</span></button>
+      </div>
+    </div>
+    <div class="panel" id="langPanel" data-stab="look">
+      <p class="eyebrow" data-i18n="langTitle">Taal</p>
+      <p class="small" style="margin:0" data-i18n="langIntro">De taal van de app. Je facturen blijven in het Nederlands.</p>
+      <div class="frow look">
         <select id="lang" class="langsel" aria-label="Taal / Language / Język"></select>
       </div>
+    </div>
     </div>
     <div class="panel" id="updPanel" data-stab="upd" hidden>
       <p class="eyebrow" data-i18n="updTitle">Updates</p>

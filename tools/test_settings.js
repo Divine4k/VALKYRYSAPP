@@ -129,6 +129,11 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   for (const [stab, sel, what] of [["folders", "#setFolders", "folders"], ["pin", "#pinPanel", "PIN"], ["look", "#lookPanel", "appearance"], ["look", "#themeBtn", "theme button"], ["look", "#lang", "language list"], ["folders", "#folderPick", "invoice folder button"], ["folders", "#poFolderPick", "PO folder button"], ["mail", "#mailPanel", "connections"]]) {
     await page.click(`#stab-${stab}`); ok(await page.isVisible(sel) && (await page.$$eval("#setCol > .panel", (p) => p.filter((x) => x.offsetParent).map((x) => x.dataset.stab))).every((k) => k === stab), `Settings › ${stab} has: ${what} (and only its own panels)`);
   }
+  const lay = await page.evaluate(() => { const t = document.querySelector("#setTabs").getBoundingClientRect(), c = document.querySelector("#setCol").getBoundingClientRect(), v = document.querySelector("#settingsView").getBoundingClientRect(); return { below: c.top >= t.bottom, sameLeft: Math.abs(c.left - t.left) < 2, wide: c.width > v.width * 0.6 }; });
+  ok(lay.below && lay.sameLeft && lay.wide, "the panels are under the tabs, in the wide column", lay);
+  await page.click("#stab-look"); eq(await page.$$eval("#setCol > .panel.cur", (p) => p.filter((x) => !x.hidden).map((x) => x.id)), ["lookPanel", "langPanel"], "Weergave: theme and language each in their own box");
+  ok(await page.$eval("#themeBtn", (b) => !!b.closest("#lookPanel")) && await page.$eval("#lang", (b) => !!b.closest("#langPanel")), "...theme button in the one, language list in the other");
+  await page.screenshot({ path: "/tmp/settings-look.png" });
   await page.focus("#stab-folders"); await page.keyboard.press("ArrowRight"); eq(await page.$eval("#setTabs [aria-selected=true]", (t) => t.dataset.stab), "mail", "arrow keys move through the Settings tabs");
   await page.click("#stab-folders");
   eq(await page.textContent("#folderPath"), INV, "invoice folder shown"); eq(await page.textContent("#poFolderPath"), PO, "PO folder shown");

@@ -70,3 +70,6 @@
 .stabs button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .stabs .newsdot { margin-left: 2px; }
 #setCol > .panel[data-stab]:not(.cur) { display: none !important; }
+/* Settings: tabs and panels both in the wide column (the narrow one stays empty, as before the tabs) */
+#settingsView > .stabs, #settingsView > #setCol { grid-column: 1; }
+#settingsView > .stabs { margin: 0; }

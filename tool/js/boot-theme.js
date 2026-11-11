@@ -11,7 +11,7 @@ window.ValkTheme = (function () {
     dark: { bg: "#0D0E0F", surface: "#17181A", ink: "#F3F3F4", muted: "#9A9DA4", accent: "#FEBD17" }
   };
   var PRESETS = {
-    dim: { scheme: "dark", bg: "#262624", surface: "#30302E", sunken: "#2B2A28", ink: "#FAF9F5", text: "#E5E3DC", muted: "#B0ADA3", line: "#45443F", accent: "#D97757", accentInk: "#141413" }, // warm, softer dark (like claude.ai)
+    dim: { scheme: "dark", bg: "#1C1C1C", surface: "#262626", sunken: "#212121", ink: "#EFEFEF", text: "#D9D9D9", muted: "#A0A0A0", line: "#363636", accent: "#FEBD17", accentInk: "#111111" }, // neutral, softer dark (like claude.ai), the Valkyrys yellow
     midnight: { scheme: "dark", bg: "#0A0F1E", surface: "#121A30", sunken: "#0E1527", ink: "#EEF2FF", text: "#CBD3EA", muted: "#93A0C2", line: "#25314F", accent: "#6C9CFF", accentInk: "#0A0F1E" },
     paper: { scheme: "light", bg: "#F3EEE3", surface: "#FFFCF6", sunken: "#F9F5EC", ink: "#1E1A14", text: "#3B3429", muted: "#6F6556", line: "#E2D8C6", accent: "#C4531B", accentInk: "#FFFFFF" },
     forest: { scheme: "dark", bg: "#0C1410", surface: "#131E18", sunken: "#101A14", ink: "#E8F3EC", text: "#C5D8CC", muted: "#8DA698", line: "#223329", accent: "#4FD18B", accentInk: "#08130D" },

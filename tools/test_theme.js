@@ -38,7 +38,7 @@ const choose = async (page, id) => { await page.click(`#themeGrid [data-theme-id
   await choose(page, "light"); eq(await css(page, "body", "backgroundColor"), rgb("#F1F2F4"), "Licht");
   await page.emulateMedia({ colorScheme: "dark" }); await page.waitForTimeout(150);
   eq(await css(page, "body", "backgroundColor"), rgb("#F1F2F4"), "Licht stays light when the system is dark"); await page.emulateMedia({ colorScheme: "light" });
-  for (const [id, bg, accent] of [["dim", "#262624", "#D97757"], ["midnight", "#0A0F1E", "#6C9CFF"], ["paper", "#F3EEE3", "#C4531B"], ["forest", "#0C1410", "#4FD18B"], ["contrast", "#000000", "#FFD500"]]) {
+  for (const [id, bg, accent] of [["dim", "#1C1C1C", "#FEBD17"], ["midnight", "#0A0F1E", "#6C9CFF"], ["paper", "#F3EEE3", "#C4531B"], ["forest", "#0C1410", "#4FD18B"], ["contrast", "#000000", "#FFD500"]]) {
     await choose(page, id);
     eq([await css(page, "body", "backgroundColor"), await v(page, "--accent"), await css(page, "#side", "backgroundColor")], [rgb(bg), accent, rgb(await v(page, "--surface"))], `${id}: page, accent and the sidebar in the surface colour`);
     eq([await css(page, "#side .side-logo", "backgroundColor"), await page.$eval("#side .side-logo", (l) => getComputedStyle(l).maskImage.includes("logo-white.png"))], [rgb(await v(page, "--ink")), true], `${id}: logo shape untouched, drawn in the text colour`);
