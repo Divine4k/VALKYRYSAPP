@@ -200,7 +200,7 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
     ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `fits a ${w}px window`);
     ok(await page.evaluate(() => { const t = [...document.querySelectorAll("#tabs [role=tab], #tabSettings")]; return t.every((b) => b.scrollWidth <= b.clientWidth + 1 && b.getBoundingClientRect().right <= window.innerWidth); }), `all three tabs and the gear button fit at ${w}px`);
   }
-  await page.waitForTimeout(300); { const [a, b] = [await page.locator("#tabs .seg-ind").boundingBox(), await page.locator("#tabDocs").boundingBox()]; ok(a && b && Math.abs(a.x - b.x) <= 2 && Math.abs(a.width - b.width) <= 2, "indicator under Documenten on a phone", { a, b }); }
+  ok(await page.$eval("#tabDocs", (b) => b.getAttribute("aria-selected") === "true" && getComputedStyle(b, "::before").content !== "none" && b.getBoundingClientRect().bottom <= innerHeight), "Documenten highlighted in the bottom bar on a phone");
   await page.screenshot({ path: "/tmp/docs_phone.png", fullPage: true });
   console.log("errors:", allErrs()); ok(errs.length === 0, "no page errors");
   await app.close();

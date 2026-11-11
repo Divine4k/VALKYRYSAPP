@@ -184,12 +184,11 @@ const eq2 = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a
   ok(((db()["settings/keptdupinv"] || {}).list || []).some((k) => k.startsWith("PO-200001|")), "ignored in settings/keptdupinv", db()["settings/keptdupinv"]);
   await page.fill("#docsSearch", ""); fs.rmSync(path.join(INV, "VALKYRYS 70-2026 PO-200001.pdf")); await page.click("#docsBar [data-refresh]"); await sleep(1200);
 
-  // ---- 8. the Statistics source line has a refresh button that works
+  // ---- 8. no 'read from' line (and so no refresh button) on the Statistics: coming back to the app refreshes on its own
   await goTab(page, "stats"); await sleep(300);
-  ok(await page.isVisible("#srcRow [data-refresh]"), "refresh button on the Statistics source line");
-  await page.click("#srcRow [data-refresh]"); await sleep(800);
-  ok(!(await page.$eval("#srcRow [data-refresh]", (b) => b.classList.contains("spin"))), "stats refresh done");
-  ok((await page.getAttribute("#srcRow [data-refresh]", "aria-label")) === "Vernieuwen", "aria-label Vernieuwen");
+  ok(!(await page.$("#srcRow, #srcPath, #srcDot, #srcSettings")) && !(await page.$("#statsView [data-refresh]")), "no 'read from' line or refresh button on the Statistics");
+  await page.evaluate(() => window.dispatchEvent(new Event("focus"))); await sleep(1200);
+  ok(!(await page.isVisible("#statsGoSettings")), "folder set and found: no button to Settings on the Statistics");
   console.log("errors:", errs); ok(!errs.length, "no page errors");
   await app.close();
   if (fails) process.exitCode = 1;

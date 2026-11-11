@@ -22,7 +22,7 @@ const foot = async (page) => page.$$eval("#stTable tfoot td", (t) => t.map((x) =
   page.on("console", (m) => console.log("console:", m.type(), m.text()));
   await page.click("#tabStats"); await page.waitForTimeout(6000);
   console.log(await page.evaluate(() => ({ body: document.querySelector("#statsBody").hidden, empty: document.querySelector("#statsEmpty").hidden, scan: document.querySelector("#scanNote").hidden, scanTxt: document.querySelector("#scanNote").textContent, src: document.querySelector("#statSource") && document.querySelector("#statSource").innerHTML.slice(0,300), emptyTxt: document.querySelector("#statsEmpty").textContent.slice(0,200), ls: localStorage.getItem("valkyrys-stats") })));
-  console.log(await page.evaluate(async () => { const f = await window.valkyrys.getFolder(); const l = await window.valkyrys.listFiles(); return { f, n: l.length, info: document.querySelector("#folderInfo") && document.querySelector("#folderInfo").textContent.slice(0,200), srcPath: document.querySelector("#srcPath").textContent }; }));
+  console.log(await page.evaluate(async () => { const f = await window.valkyrys.getFolder(); const l = await window.valkyrys.listFiles(); return { f, n: l.length, info: document.querySelector("#folderInfo") && document.querySelector("#folderInfo").textContent.slice(0,200), statsEmpty: document.querySelector("#statsEmpty").textContent }; }));
   console.log("errs", errs);
   await app.close(); process.exit(0);
 })();

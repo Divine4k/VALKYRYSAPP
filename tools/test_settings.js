@@ -61,8 +61,9 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   ok(await open(page), "welcome window again on a new profile"); await page.click("#wsLater"); await page.waitForTimeout(400);
   ok(!(await open(page)), "'Later' closes it"); c = cfg(); eq([c.welcomed, c.folder, c.poFolder], [true, undefined, undefined], "nothing chosen, but it is not asked again");
   ok(await page.isVisible("#statsEmpty"), "statistics say there is nothing yet");
-  eq(await page.textContent("#srcSettings"), "Map instellen", "the line under the tabs offers to set a folder"); ok(await page.$eval("#srcSettings", (b) => b.classList.contains("primary")), "...as the main button");
-  await page.click("#srcSettings"); await page.waitForTimeout(200);
+  ok(!(await page.$("#srcRow, #srcPath, #srcDot, #srcSettings")), "no 'read from' line under the statistics bar any more");
+  eq(await page.textContent("#statsGoSettings"), "Map instellen", "the empty statistics offer to set a folder"); ok(await page.$eval("#statsGoSettings", (b) => b.classList.contains("primary")), "...as the main button");
+  await page.click("#statsGoSettings"); await page.waitForTimeout(200);
   ok(await page.isVisible("#settingsView") && await page.isVisible("#setFolders") && !(await page.isVisible("#statsView")), "it opens Settings");
   await app.close();
   ({ app, page } = await launch(HOME)); ok(!(await open(page)), "after 'Later' the next start does not ask"); await app.close();
@@ -92,21 +93,27 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   // ================= the tabs and the Settings tab (a profile that is set up)
   seed(HOME, { "pin.json": SKIP, "config.json": { folder: INV, poFolder: PO, welcomed: true } });
   ({ app, page, errs, pick } = await launch(HOME));
-  eq(await page.title(), "Valkyrys app", "window title"); eq(await page.textContent("#appbar .brand-app"), "App", "app bar: Valkyrys logo + App");
-  eq(await page.$eval("#appbar .brand img", (i) => i.getAttribute("src")), "img/logo-white.png", "app bar: white logo");
+  eq(await page.title(), "Valkyrys app", "window title"); eq(await page.textContent("#side .side-app"), "App", "sidebar: Valkyrys logo + App");
+  ok(await page.evaluate(() => !document.querySelector("#appbar, .appbar, .seg-ind")), "no black bar on top any more, no sliding pill");
+  ok(await page.$eval("#side .side-logo", (l) => getComputedStyle(l).maskImage.includes("logo-white.png") && l.getAttribute("aria-label") === "Valkyrys"), "sidebar: logo drawn from the logo file (mask), named for screen readers");
+  { const [s, w] = [await page.locator("#side").boundingBox(), await page.evaluate(() => [innerWidth, innerHeight])];
+    ok(s && s.x === 0 && s.y === 0 && s.width >= 200 && s.width <= 240 && s.height >= w[1] - 1, "sidebar on the left, full height, ~220px wide", s); }
+  ok(await page.$eval("#pageTitle", (h) => h.getBoundingClientRect().left >= document.querySelector("#side").getBoundingClientRect().right), "page content sits right of the sidebar");
+  eq(await page.$eval("#tabs", (n) => [n.getAttribute("role"), n.getAttribute("aria-orientation"), n.closest("#side") !== null]), ["tablist", "vertical", true], "the tabs are a vertical list in the sidebar");
+  { const ys = await page.$$eval("#side .navi", (b) => b.map((x) => [x.id, Math.round(x.getBoundingClientRect().top)]));
+    eq(ys.map((y) => y[0]), ["tabStats", "tabInv", "tabDocs", "newsBtn", "tabSettings"], "sidebar order: three tabs, then What's new and Settings");
+    ok(ys.every((y, i) => !i || y[1] > ys[i - 1][1]) && ys[3][1] > 600, "stacked top to bottom, What's new and Settings at the bottom", ys); }
   eq(await page.textContent("#pageTitle"), "Statistieken", "page title: the selected tab");
   eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => [x.dataset.tab, x.textContent.trim(), x.getAttribute("aria-selected")])), [["stats", "Statistieken", "true"], ["inv", "Facturen", "false"], ["docs", "Documenten", "false"]], "tabs: Statistieken (selected), Facturen, Documenten");
-  eq(await page.$eval("#tabSettings", (b) => [b.closest("#tabs") === null, b.getAttribute("role"), b.getAttribute("aria-label"), b.getAttribute("aria-pressed"), b.textContent.trim(), b.previousElementSibling && b.previousElementSibling.id]), [true, null, "Instellingen", "false", "", "newsBtn"], "Settings is a gear button next to What's new, outside the tabs");
+  eq(await page.$eval("#tabSettings", (b) => [b.closest("#tabs") === null, b.getAttribute("role"), b.getAttribute("aria-label"), b.getAttribute("aria-pressed"), b.textContent.trim(), b.previousElementSibling && b.previousElementSibling.id]), [true, null, "Instellingen", "false", "Instellingen", "newsBtn"], "Settings is a gear item after What's new, outside the tabs");
   ok(await page.isVisible("#statsView") && !(await page.isVisible("#viewInv")) && !(await page.isVisible("#settingsView")), "the app opens on the statistics");
   eq(await page.textContent("#tagline"), "Je omzet en facturen in cijfers.", "its tagline");
-  ok(await page.$eval("#appbar", (h) => !h.querySelector("#themeBtn, #lang, select, button:not([role=tab]):not(#newsBtn):not(#tabSettings)")), "the app bar has no theme button or language list, only the tabs, What's new and Settings");
-  ok(await page.evaluate(() => !document.querySelector("#srcPick, #srcOpen, #srcClear")), "the read-from line has no folder buttons any more");
-  eq(await page.textContent("#srcSettings"), "Wijzigen", "it links to Settings instead");
-  { const r = await page.$eval("#srcRow", (e) => { const b = e.getBoundingClientRect(), cs = getComputedStyle(e); return { h: Math.round(b.height), bg: cs.backgroundColor, border: cs.borderTopWidth, wrap: [...e.children].filter((c) => c.offsetParent).every((c) => Math.abs(c.getBoundingClientRect().top + c.offsetHeight / 2 - (b.top + b.height / 2)) < 4) }; });
-    ok(r.h <= 32 && r.border === "0px" && r.bg === "rgba(0, 0, 0, 0)" && r.wrap, "the read-from line is one small line, no panel", r); }
-  ok(await page.isVisible("#srcDot") && !(await page.$eval("#srcDot", (d) => d.classList.contains("bad"))), "a green dot: the folder is there");
-  ok(await page.isVisible("#srcPath") && (await page.textContent("#srcPath")) === INV, "and still says where the figures come from: " + (await page.textContent("#srcPath")));
-  await page.click('#statSource [data-src="pos"]'); await page.waitForTimeout(400); eq(await page.textContent("#srcPath"), PO, "PO source: the PO folder");
+  ok(await page.$eval("#side", (h) => !h.querySelector("#themeBtn, #lang, select, button:not([role=tab]):not(#newsBtn):not(#tabSettings)")), "the sidebar has no theme button or language list, only the tabs, What's new and Settings");
+  { const sel = await page.$eval("#tabStats", (b) => { const c = getComputedStyle(b), o = getComputedStyle(document.querySelector("#tabInv")); return [c.backgroundColor !== o.backgroundColor, getComputedStyle(b, "::before").content !== "none"]; });
+    eq(sel, [true, true], "the selected tab is highlighted (tint + accent bar)"); }
+  ok(await page.evaluate(() => !document.querySelector("#srcRow, #srcPath, #srcDot, #srcSettings, #srcPick, #srcOpen, #srcClear")), "no 'read from' line on the statistics: the folders are in Settings");
+  ok(!(await page.isVisible("#statsGoSettings")), "folders set and found: no button to Settings on the statistics");
+  await page.click('#statSource [data-src="pos"]'); await page.waitForTimeout(400); ok(!(await page.isVisible("#statsGoSettings")), "PO source with its folder: no button to Settings either");
   await goTab(page, "inv"); ok(await page.isVisible("#viewInv"), "Invoices tab opens");
   ok(!(await page.isVisible("#pinPanel")), "PIN is not on the Invoices tab");
   ok(await page.isVisible("#settingsBox") && await page.$eval("#settingsBox", (d) => d.tagName === "DETAILS" && d.closest("#viewInv") !== null && d.open), "invoice details are a fold-out in the Invoices sidebar, open while no client is set");
@@ -115,9 +122,7 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   await goTab(page, "settings"); await page.waitForTimeout(200);
   ok(await page.isVisible("#settingsView") && !(await page.isVisible("#viewInv")) && !(await page.isVisible("#statsView")), "Settings tab opens");
   eq(await page.textContent("#tagline"), "Mappen, pincode en weergave.", "its tagline"); eq(await page.textContent("#pageTitle"), "Instellingen", "page title follows the tab");
-  // the pill (.seg-ind) slides under the selected tab
-  await page.waitForTimeout(300); { const [a, b] = [await page.locator("#tabs .seg-ind").boundingBox(), await page.locator("#tabSettings").boundingBox()];
-    ok(await page.$eval("#tabs .seg-ind", (i) => getComputedStyle(i).opacity === "0"), "no tab pill while Settings is open"); }
+  ok(await page.$eval("#tabSettings", (b) => getComputedStyle(b, "::before").content !== "none"), "Settings item highlighted like a tab while open");
   eq([await page.getAttribute("#tabSettings", "aria-pressed"), await page.$$eval("#tabs [aria-selected=true]", (t) => t.length)], ["true", 0], "the gear button shows it is open, no tab is selected");
   eq(await page.$eval("#settingsView .col", (c) => [...c.children].filter((x) => !x.hidden)[0].id), "lookPanel", "theme and language come first in Settings");
   for (const [sel, what] of [["#setFolders", "folders"], ["#pinPanel", "PIN"], ["#lookPanel", "appearance"], ["#themeBtn", "theme button"], ["#lang", "language list"], ["#folderPick", "invoice folder button"], ["#poFolderPick", "PO folder button"]]) ok(await page.isVisible(sel), "Settings has: " + what);
@@ -129,7 +134,13 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   // change the PO folder here and see it on the statistics
   fs.rmSync("/tmp/po-other", { recursive: true, force: true }); fs.mkdirSync("/tmp/po-other"); await pick("/tmp/po-other");
   await page.click("#poFolderPick"); await page.waitForTimeout(800); eq(await page.textContent("#poFolderPath"), "/tmp/po-other", "PO folder changed in Settings"); eq(cfg().poFolder, "/tmp/po-other", "...and remembered");
-  await goTab(page, "stats"); await page.click('#statSource [data-src="pos"]'); await page.waitForTimeout(500); eq(await page.textContent("#srcPath"), "/tmp/po-other", "the statistics read from the new PO folder");
+  await goTab(page, "stats"); await page.click('#statSource [data-src="pos"]'); await page.waitForTimeout(500); eq(await page.textContent("#statsEmpty"), "Geen inkooporders gevonden in deze map.", "the statistics read from the new (empty) PO folder"); ok(!(await page.isVisible("#statsGoSettings")), "...the folder is set, so no button to Settings");
+  // the PO folder disappears: the statistics warn in their empty state (no permanent line) and offer a way to Settings
+  fs.rmSync("/tmp/po-other", { recursive: true, force: true }); await page.evaluate(() => window.dispatchEvent(new Event("focus"))); await page.waitForTimeout(1500);
+  eq(await page.textContent("#statsEmpty"), "Deze map is niet gevonden. Is de schijf aangesloten? Kies de map opnieuw.", "missing PO folder: said in the statistics");
+  ok(await page.$eval("#statsEmpty", (e) => e.classList.contains("bad")), "...as a warning");
+  eq(await page.textContent("#statsGoSettings"), "Naar instellingen", "...with a button to Settings"); await page.click("#statsGoSettings"); await page.waitForTimeout(200);
+  ok(await page.isVisible("#settingsView") && !(await page.isVisible("#statsView")), "which opens Settings");
   await goTab(page, "settings"); await page.click("#poFolderClear"); await page.waitForTimeout(500);
   ok(!(await page.isVisible("#poFolderPath")) && (await page.textContent("#poFolderPick")) === "Kies map…", "disconnecting the PO folder works from Settings");
   await pick(PO); await page.click("#poFolderPick"); await page.waitForTimeout(600);
@@ -154,11 +165,29 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   eq(await page.getAttribute("#tabSettings", "aria-pressed"), "false", "gear button no longer pressed");
   await page.keyboard.press("ArrowRight"); await page.keyboard.press("ArrowRight"); await page.waitForTimeout(150);
   eq(await page.$eval("#tabs [aria-selected=true]", (t) => t.dataset.tab), "docs", "two more arrows reach Documents");
-  await page.waitForTimeout(300); { const [a, b] = [await page.locator("#tabs .seg-ind").boundingBox(), await page.locator("#tabDocs").boundingBox()];
-    ok(a && b && Math.abs(a.x - b.x) <= 2 && Math.abs(a.width - b.width) <= 2, "indicator sits under Documenten", { ind: a, tab: b }); }
+  ok(await page.evaluate(() => document.activeElement && document.activeElement.id === "tabDocs"), "focus follows the selected tab");
   await page.keyboard.press("ArrowLeft"); await page.waitForTimeout(100); eq(await page.$eval("#tabs [aria-selected=true]", (t) => t.dataset.tab), "inv", "arrow left goes back to Facturen");
-  await page.keyboard.press("End"); await page.waitForTimeout(150);
+  await page.keyboard.press("ArrowUp"); await page.waitForTimeout(100); eq(await page.$eval("#tabs [aria-selected=true]", (t) => t.dataset.tab), "stats", "arrow up goes to the tab above (vertical list)");
+  await page.keyboard.press("ArrowUp"); await page.waitForTimeout(100); eq(await page.$eval("#tabs [aria-selected=true]", (t) => t.dataset.tab), "docs", "arrow up from the first wraps to the last");
+  await page.keyboard.press("ArrowDown"); await page.waitForTimeout(100); eq(await page.$eval("#tabs [aria-selected=true]", (t) => t.dataset.tab), "stats", "arrow down wraps to the first");
+  await page.keyboard.press("Home"); await page.keyboard.press("End"); await page.waitForTimeout(150);
   eq(await page.$eval("#tabs [aria-selected=true]", (t) => t.dataset.tab), "docs", "End reaches Documents, the last work tab");
+  await page.keyboard.press("Home"); await page.waitForTimeout(100); eq(await page.$eval("#tabs [aria-selected=true]", (t) => t.dataset.tab), "stats", "Home reaches the first tab");
+  // narrow windows: an icon rail at 800px (labels as tooltips), a bar at the bottom at 420px
+  await page.setViewportSize({ width: 800, height: 900 }); await page.waitForTimeout(300);
+  { const r = await page.evaluate(() => { const s = document.querySelector("#side").getBoundingClientRect(), b = [...document.querySelectorAll("#side .navi")];
+      return { w: s.width, h: s.height, labelsHidden: b.every((x) => x.querySelector(".lbl").getBoundingClientRect().width <= 1), titles: b.map((x) => x.title), names: b.map((x) => x.getAttribute("aria-label") || x.textContent.trim()), content: document.querySelector("#pageTitle").getBoundingClientRect().left >= s.right, fits: document.documentElement.scrollWidth <= innerWidth + 1 }; });
+    ok(r.w >= 56 && r.w <= 80 && r.labelsHidden && r.content && r.fits, "800px: the sidebar is an icon rail, the page beside it", r);
+    eq(r.titles, ["Statistieken", "Facturen", "Documenten", "Nieuw", "Instellingen"], "800px: labels as tooltips");
+    ok(r.names.every((n) => n.length > 2), "800px: every item keeps a name for screen readers", r.names); }
+  await page.click("#tabInv"); eq(await page.textContent("#pageTitle"), "Facturen", "800px: the rail switches tabs");
+  await page.setViewportSize({ width: 420, height: 860 }); await page.waitForTimeout(300);
+  { const r = await page.evaluate(() => { const s = document.querySelector("#side").getBoundingClientRect(), b = [...document.querySelectorAll("#side .navi")].map((x) => x.getBoundingClientRect());
+      return { bottom: Math.round(s.bottom) === innerHeight, wide: s.width >= document.documentElement.clientWidth - 1, row: b.every((x) => Math.abs(x.top - b[0].top) < 2), big: b.every((x) => x.width >= 60 && x.height >= 44), fits: document.documentElement.scrollWidth <= innerWidth + 1 }; });
+    eq(r, { bottom: true, wide: true, row: true, big: true, fits: true }, "420px: a bar at the bottom with five items, big enough to tap, nothing too wide"); }
+  await page.click("#tabDocs"); eq(await page.textContent("#pageTitle"), "Documenten", "420px: the bottom bar switches tabs"); await page.click("#tabStats");
+  await page.setViewportSize({ width: 1280, height: 1000 }); await page.waitForTimeout(200);
+  ok(await page.$eval("#tabStats", (b) => !b.title), "wide again: no tooltips on the labelled items");
   // the Settings tab on a phone
   await goTab(page, "settings"); await page.setViewportSize({ width: 390, height: 800 }); await page.waitForTimeout(300);
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), "Settings fits a phone-width window");

@@ -266,42 +266,54 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .det button { min-height: 28px; padding: 3px 9px; font-size: 12px; }
 .det-wrap { overflow-x: auto; }
 .det tfoot td { font-weight: 900; color: var(--ink); border-top: 2px solid var(--ink); }
-.appbar { position: sticky; top: 0; z-index: 10; background: var(--band); color: var(--band-text); border-bottom: 1px solid rgba(255, 255, 255, .06); }
-.appbar-in { max-width: 1140px; margin: 0 auto; min-height: 60px; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; flex-wrap: wrap; }
-.brand { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
-.brand img { height: 22px; width: auto; display: block; }
-.brand-app { padding-left: 12px; border-left: 1px solid rgba(255, 255, 255, .18); color: var(--band-muted); font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; line-height: 18px; }
-.appbar .seg { position: relative; display: inline-flex; border: 0; overflow: visible; gap: 2px; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04); max-width: 100%; }
-.appbar .seg-ind { position: absolute; top: 4px; left: 0; bottom: 4px; width: 0; border-radius: 999px; background: var(--accent); box-shadow: 0 1px 3px rgba(0, 0, 0, .35); opacity: 0; transition: transform .2s ease, width .2s ease; pointer-events: none; }
-.appbar .seg-ind.on { opacity: 1; }
-.appbar .seg [role=tab] { position: relative; z-index: 1; border: 0; border-left: 0; background: transparent; min-height: 36px; padding: 0 16px; border-radius: 999px; color: var(--band-muted); font-size: 14px; font-weight: 700; gap: 8px; white-space: nowrap; transition: color .2s ease; }
-.appbar .seg [role=tab]:hover { color: var(--band-text); border-color: transparent; }
-.appbar .seg [role=tab][aria-selected="true"] { color: var(--accent-ink); }
-.appbar .seg [role=tab] svg { flex: 0 0 auto; display: block; }
-.appbar .seg [role=tab]:focus-visible { outline: 2px solid var(--band-text); outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { .appbar .seg-ind, .appbar .seg [role=tab] { transition: none; } }
-@media (max-width: 640px) { .appbar .seg { width: 100%; } .appbar .seg [role=tab] { flex: 1 1 0; min-width: 0; flex-direction: column; gap: 2px; padding: 5px 4px; min-height: 48px; font-size: 11.5px; border-radius: 14px; } .appbar .seg-ind { border-radius: 14px; } .appbar .seg [role=tab] span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; } }
-/* "What's new" button: right after the tabs (the tabs take the free space so both sit on the right) */
-.appbar-in > #tabs { margin-left: auto; }
-.appbar .newsbtn { position: relative; flex: 0 0 auto; margin-left: -12px; display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 14px 0 11px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: transparent; color: var(--band-muted); font-size: 13px; font-weight: 700; white-space: nowrap; cursor: pointer; transition: color .2s ease, border-color .2s ease, background-color .2s ease; }
-.appbar .newsbtn:hover { color: var(--band-text); border-color: rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .06); }
-.appbar .newsbtn:focus-visible { outline: 2px solid var(--band-text); outline-offset: 2px; }
-.appbar .newsbtn svg { flex: 0 0 auto; display: block; }
-.appbar .newsbtn.unseen { color: var(--band-text); }
-.newsdot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--band); }
+/* Navigation: sidebar on the left (logo, the three work tabs, What's new + Settings at the bottom); an icon rail below 900px, a bar at the bottom below 560px */
+:root { --side-w: 224px; }
+body { padding-left: var(--side-w); }
+#toast { left: calc(50% + var(--side-w) / 2); }
+@media (min-width: 560px) { body .pagehead-in, body .sv, body > main { padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px)); } }
+.side { position: fixed; top: 0; bottom: 0; left: 0; z-index: 10; width: var(--side-w); display: flex; flex-direction: column; gap: 4px; padding: 22px 12px max(14px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); background: var(--surface); border-right: 1px solid var(--line); overflow-y: auto; overscroll-behavior: contain; }
+.side-brand { display: flex; align-items: center; gap: 10px; min-height: 28px; padding: 0 10px 22px; }
+.side-logo { display: block; flex: 0 0 auto; height: 22px; aspect-ratio: 1365 / 318; background: var(--ink); -webkit-mask: url(img/logo-white.png) left center / contain no-repeat; mask: url(img/logo-white.png) left center / contain no-repeat; }
+.side-app { padding-left: 10px; border-left: 1px solid var(--line); color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; line-height: 16px; }
+.sidenav, .side-foot { display: flex; flex-direction: column; gap: 2px; }
+.side-foot { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); }
+.navi { position: relative; width: 100%; min-height: 40px; padding: 0 12px; justify-content: flex-start; gap: 12px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 14px; font-weight: 700; text-align: left; white-space: nowrap; transition: background-color .15s ease, color .15s ease; }
+.navi:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); }
+.navi svg { flex: 0 0 auto; display: block; width: 18px; height: 18px; }
+.navi .lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.navi:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.navi[aria-selected="true"], .navi[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--ink); }
+.navi[aria-selected="true"]::before, .navi[aria-pressed="true"]::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
+.navi.setbtn svg { transition: transform .4s ease; }
+.navi.setbtn:hover svg { transform: rotate(45deg); }
+.navi.newsbtn.unseen { color: var(--ink); }
+.newsdot { flex: 0 0 auto; margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px color-mix(in srgb, var(--ink) 18%, transparent); }
 .newsdot[hidden] { display: none; }
-@media (max-width: 1000px) { .appbar .newsbtn { padding: 0; width: 36px; justify-content: center; } .appbar .newsbtn .nlabel { display: none; } }
-/* Settings: a round gear button right after "What's new", apart from the work tabs */
-.appbar .setbtn { flex: 0 0 auto; margin-left: -16px; display: inline-flex; align-items: center; width: 36px; min-height: 36px; height: 36px; padding: 0; justify-content: center; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .14); background: transparent; color: var(--band-muted); cursor: pointer; transition: color .2s ease, border-color .2s ease, background-color .2s ease, transform .3s ease; }
-.appbar .setbtn svg { display: block; flex: 0 0 auto; transition: transform .4s ease; }
-.appbar .setbtn:hover { color: var(--band-text); border-color: rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .06); }
-.appbar .setbtn:hover svg { transform: rotate(45deg); }
-.appbar .setbtn:focus-visible { outline: 2px solid var(--band-text); outline-offset: 2px; }
-.appbar .setbtn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .35); }
-@media (prefers-reduced-motion: reduce) { .appbar .setbtn, .appbar .setbtn svg { transition: none; } .appbar .setbtn:hover svg { transform: none; } }
-@media (max-width: 560px) { .appbar .newsbtn, .appbar .setbtn { order: 1; } .appbar .newsbtn { margin-left: auto; } .appbar-in > #tabs { order: 2; margin-left: 0; } }
-/* when the tabs no longer fit next to the logo (set by fitNewsBtn), the buttons stay up next to the logo and the tabs get their own row */
-.appbar-in.nb-wrap .newsbtn, .appbar-in.nb-wrap .setbtn { order: 1; } .appbar-in.nb-wrap .newsbtn { margin-left: auto; } .appbar-in.nb-wrap > #tabs { order: 2; margin-left: 0; }
+@media (prefers-reduced-motion: reduce) { .navi, .navi.setbtn svg { transition: none; } .navi.setbtn:hover svg { transform: none; } }
+@media (max-width: 899px) {
+  :root { --side-w: 72px; }
+  .side { padding-inline: 12px; align-items: center; }
+  .side-brand { padding: 0 0 20px; justify-content: center; }
+  .side-logo { height: 28px; width: 36px; aspect-ratio: auto; -webkit-mask-size: auto 100%; mask-size: auto 100%; }
+  .side-app { display: none; }
+  .sidenav, .side-foot { align-items: center; width: 100%; }
+  .navi { width: 48px; min-height: 44px; padding: 0; justify-content: center; }
+  .navi .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .newsdot { position: absolute; top: 9px; right: 10px; margin: 0; }
+}
+@media (max-width: 559px) {
+  :root { --side-w: 0px; }
+  body { padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
+  #toast { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  .side { top: auto; right: 0; width: auto; flex-direction: row; align-items: stretch; gap: 4px; padding: 6px max(6px, env(safe-area-inset-right, 0px)) max(6px, env(safe-area-inset-bottom, 0px)) max(6px, env(safe-area-inset-left, 0px)); border-right: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .side-brand { display: none; }
+  .sidenav, .side-foot { flex-direction: row; align-items: stretch; width: auto; flex: 3 1 0; min-width: 0; }
+  .side-foot { flex: 2 1 0; margin: 0; padding: 0 0 0 4px; border-top: 0; border-left: 1px solid var(--line); }
+  .navi { flex: 1 1 0; min-width: 0; width: auto; min-height: 54px; flex-direction: column; gap: 3px; padding: 4px 2px; font-size: 11px; border-radius: 10px; }
+  .navi .lbl { position: static; width: auto; height: auto; clip: auto; max-width: 100%; }
+  .navi[aria-selected="true"]::before, .navi[aria-pressed="true"]::before { left: 32%; right: 32%; top: 0; bottom: auto; width: auto; height: 3px; border-radius: 0 0 3px 3px; }
+  .newsdot { top: 7px; right: calc(50% - 15px); }
+}
 #newsDlg { width: min(600px, calc(100% - 24px)); }
 #newsDlg .dlg-body { background: var(--surface); padding: 6px 18px 4px; }
 .nrel { padding: 14px 0 12px; border-top: 1px solid var(--line); }
@@ -358,22 +370,11 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .bc.now .bx { color: var(--ink); font-weight: 900; }
 .bc:hover .bar:not(.zero) { filter: brightness(.94); }
 @media (max-width: 640px) { .bv, .bn { display: none; } .chart { gap: 3px; } .bz { height: 190px; } }
-/* "Read from <folder>": one quiet line under the statistics bar */
-.srcrow { display: flex; align-items: center; gap: 6px; min-height: 28px; margin-top: -6px; padding: 0 2px; font-size: 12.5px; color: var(--muted); min-width: 0; }
-.srcrow[hidden] { display: none; }
-.srcrow .srcico { flex: 0 0 auto; display: block; opacity: .8; }
-.srcrow .lbl { flex: 0 0 auto; white-space: nowrap; }
-.srcrow .srcpath { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); font-weight: 700; }
-.srcrow .srcpath.dim { color: var(--muted); font-weight: 400; font-style: italic; }
-.srcrow .srcpath.bad { color: var(--err); }
-.srcdot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); margin: 0 2px; }
-.srcdot.bad { background: var(--err); }
-.srcdot[hidden] { display: none; }
-.srcrow button.srclink { flex: 0 0 auto; min-height: 24px; padding: 0 4px; border: 0; background: none; border-radius: 4px; font-size: 12.5px; font-weight: 700; color: var(--ink); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; white-space: nowrap; }
-.srcrow button.srclink:hover { text-decoration-color: currentColor; }
-.srcrow button.srclink.primary { padding: 0 10px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); text-decoration: none; }
-.srcrow button.srclink:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
-.srcrow button.refresh { flex: 0 0 auto; min-height: 26px; width: 26px; height: 26px; }
+/* statistics empty state: what is missing, and a button to Settings when a folder is needed */
+.statsempty { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.statsempty[hidden] { display: none; }
+.statsempty .empty { margin: 0; }
+.statsempty .empty.bad { color: var(--err); }
 .fpath.dim { color: var(--muted); font-style: italic; }
 /* settings tab */
 .fset { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
@@ -465,7 +466,7 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .dinfo { margin: 0; font-size: 13px; color: var(--muted); }
 .dtable { padding: 0; }
 .dhead, .drow { display: grid; grid-template-columns: minmax(80px, .8fr) minmax(120px, 1.6fr) 92px minmax(92px, 1fr) 104px 192px 116px 68px; gap: 12px; align-items: center; padding: 0 16px; }
-.dhead { position: sticky; top: var(--bar-h, 60px); z-index: 2; min-height: 40px; background: var(--sunken); border-bottom: 1px solid var(--line); border-radius: var(--r) var(--r) 0 0; }
+.dhead { position: sticky; top: 0; z-index: 2; min-height: 40px; background: var(--sunken); border-bottom: 1px solid var(--line); border-radius: var(--r) var(--r) 0 0; }
 .dhead button, .dhead span { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .dhead button { background: none; border: 0; padding: 0; min-height: 40px; justify-content: flex-start; gap: 4px; border-radius: 0; }
 .dhead button:hover, .dhead button[aria-sort] { color: var(--ink); border: 0; }
@@ -789,19 +790,18 @@ window.ValkTheme = (function () {
 })();
 </script>
 
-<header class="appbar" id="appbar">
-  <div class="appbar-in">
-    <div class="brand"><img src="img/logo-white.png" alt="Valkyrys"><span class="brand-app" data-i18n="title">App</span></div>
-    <nav class="seg" role="tablist" id="tabs" data-i18n-aria="tabsLabel" aria-label="Onderdelen">
-      <span class="seg-ind" aria-hidden="true"></span>
-      <button type="button" role="tab" id="tabStats" data-tab="stats" aria-selected="true" aria-controls="statsView"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-8"/><path d="M21 20H3"/></svg><span data-i18n="tabStats">Statistieken</span></button>
-      <button type="button" role="tab" id="tabInv" data-tab="inv" aria-selected="false" aria-controls="viewInv" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg><span data-i18n="tabInvoices">Facturen</span></button>
-      <button type="button" role="tab" id="tabDocs" data-tab="docs" aria-selected="false" aria-controls="docsView" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 13h8"/></svg><span data-i18n="tabDocs">Documenten</span></button>
-    </nav>
-    <button type="button" class="newsbtn" id="newsBtn" aria-haspopup="dialog" aria-controls="newsDlg" data-i18n-aria="newsBtnAria" aria-label="Nieuw in deze versie"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/><path d="M5 2.5l.6 1.4L7 4.5l-1.4.6L5 6.5l-.6-1.4L3 4.5l1.4-.6z"/></svg><span class="nlabel" data-i18n="newsBtn">Nieuw</span><span class="newsdot" id="newsDot" hidden></span></button>
-    <button type="button" class="setbtn" id="tabSettings" data-tab="settings" aria-pressed="false" aria-controls="settingsView" data-i18n-aria="tabSettings" aria-label="Instellingen"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+<aside class="side" id="side">
+  <div class="side-brand"><span class="side-logo" role="img" aria-label="Valkyrys"></span><span class="side-app" data-i18n="title">App</span></div>
+  <nav class="sidenav" role="tablist" id="tabs" aria-orientation="vertical" data-i18n-aria="tabsLabel" aria-label="Onderdelen">
+      <button type="button" class="navi" role="tab" id="tabStats" data-tab="stats" aria-selected="true" aria-controls="statsView"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-8"/><path d="M21 20H3"/></svg><span class="lbl" data-i18n="tabStats">Statistieken</span></button>
+      <button type="button" class="navi" role="tab" id="tabInv" data-tab="inv" aria-selected="false" aria-controls="viewInv" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6"/><path d="M9 17h4"/></svg><span class="lbl" data-i18n="tabInvoices">Facturen</span></button>
+      <button type="button" class="navi" role="tab" id="tabDocs" data-tab="docs" aria-selected="false" aria-controls="docsView" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 13h8"/></svg><span class="lbl" data-i18n="tabDocs">Documenten</span></button>
+  </nav>
+  <div class="side-foot">
+    <button type="button" class="navi newsbtn" id="newsBtn" aria-haspopup="dialog" aria-controls="newsDlg" data-i18n-aria="newsBtnAria" aria-label="Nieuw in deze versie"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/><path d="M5 2.5l.6 1.4L7 4.5l-1.4.6L5 6.5l-.6-1.4L3 4.5l1.4-.6z"/></svg><span class="lbl nlabel" data-i18n="newsBtn">Nieuw</span><span class="newsdot" id="newsDot" hidden></span></button>
+    <button type="button" class="navi setbtn" id="tabSettings" data-tab="settings" aria-pressed="false" aria-controls="settingsView" data-i18n-aria="tabSettings" aria-label="Instellingen"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="lbl" data-i18n="tabSettings">Instellingen</span></button>
   </div>
-</header>
+</aside>
 <div class="pagehead"><div class="pagehead-in"><h1 id="pageTitle">Statistieken</h1><p id="tagline" data-i18n="statsTagline">Je omzet en facturen in cijfers.</p></div></div>
 
 <main id="viewInv" role="tabpanel" aria-labelledby="tabInv" hidden>
@@ -985,15 +985,10 @@ window.ValkTheme = (function () {
     <span class="dtext" id="dupText"></span>
     <button type="button" id="dupOpen" data-i18n="dupView">Bekijk</button>
   </div>
-  <div class="srcrow" id="srcRow" hidden>
-    <svg class="srcico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-    <span class="lbl" data-i18n="srcFrom">Gelezen uit</span>
-    <span class="srcpath" id="srcPath"></span>
-    <span class="srcdot" id="srcDot" role="img"></span>
-    <button type="button" class="srclink" id="srcSettings" data-i18n="srcChange">Wijzigen</button>
-    <button type="button" class="ghost refresh" data-refresh data-i18n-aria="refresh" aria-label="Vernieuwen" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg></button>
+  <div class="statsempty" id="statsEmptyBox" hidden>
+    <p class="empty" id="statsEmpty" hidden></p>
+    <button type="button" class="primary" id="statsGoSettings" hidden data-i18n="srcSet">Map instellen</button>
   </div>
-  <p class="empty" id="statsEmpty" hidden></p>
   <p class="small" id="scanNote" role="status" hidden></p>
   <div id="statsBody" class="col">
     <div class="kpihead">
@@ -1170,7 +1165,7 @@ window.ValkTheme = (function () {
       foldersTitle: "Mappen", foldersIntro: "Kies waar je facturen en inkooporders staan. De statistieken en de lijst met nieuwe inkooporders worden hieruit gelezen.",
       folderPo: "Map met inkooporders", folderIntroPo: "Kies de map met de inkooporders (PDF’s) die je van je klant krijgt. Hieruit komen de nieuwe inkooporders en de statistieken.",
       folderIntroInv: "Stel bij Instellingen de map in waar je facturen bewaard worden.", openSettings: "Naar instellingen",
-      lookTitle: "Weergave", setInvoices: "Facturen en klant", srcChange: "Wijzigen", srcChangeTitle: "Map wijzigen bij Instellingen", srcFound: "Map gevonden", srcSet: "Map instellen",
+      lookTitle: "Weergave", setInvoices: "Facturen en klant", srcSet: "Map instellen",
       welcomeTitle: "Welkom bij Valkyrys app", welcomeText: "Stel eerst je mappen in. De app leest hieruit je facturen en inkooporders, voor de statistieken en de lijst met nieuwe inkooporders. Je kunt ze later altijd wijzigen bij Instellingen.",
       welcomeInv: "1. Map met facturen", welcomeInvHint: "Hier worden je afgemaakte facturen bewaard.", welcomePo: "2. Map met inkooporders", welcomePoHint: "De PDF’s die je van je klant krijgt.", welcomeNone: "Nog niet gekozen", welcomeDone: "Klaar", welcomeLater: "Later",
       dupView: "Bekijk", dupBanner: "Let op: {0} op meer dan één inkooporder.", dupBannerSame: "Inkooporders in meerdere bestanden: {0}.", dupTitle: "Dubbele dagen op inkooporders", dupDlgTitle: "Inkooporders controleren",
@@ -1274,7 +1269,7 @@ window.ValkTheme = (function () {
       npSkipped: "{0} overgeslagen.", npMore: "Toon alle {0}", npLess: "Toon minder", npOrdered: "besteld {0}", npAdded: "{0} toegevoegd aan de lijst hieronder.", npFail: "Deze inkooporder kon niet worden geladen.",
       npUnread: "{0} PDF’s in de map zijn niet als inkooporder gelezen: {1}", npOpen: "Open map",
       newsBtn: "Nieuw", newsBtnAria: "Wat is er nieuw", newsUnseen: "Wat is er nieuw (nieuwe wijzigingen)", newsTitle: "Wat is er nieuw", newsNew: "Nieuw", newsImproved: "Verbeterd", newsFixed: "Opgelost", newsVersion: "Versie {0}", newsLatest: "Deze versie", newsFoot: "Na elke update zie je hier wat er veranderd is.",
-      themeBtn: "Thema", themeTitle: "Thema", themeIntro: "Kies hoe de app eruitziet. Het Valkyrys-logo en de zwarte balk bovenaan blijven altijd zoals ze zijn.",
+      themeBtn: "Thema", themeTitle: "Thema", themeIntro: "Kies hoe de app eruitziet. Het Valkyrys-logo blijft altijd zoals het is.",
       tAuto: "Automatisch", tLight: "Licht", tDark: "Donker", tMidnight: "Middernacht", tPaper: "Papier", tForest: "Bos", tContrast: "Hoog contrast", tCustom: "Eigen thema",
       tcTitle: "Eigen kleuren", tcBg: "Achtergrond", tcSurface: "Kaarten en vlakken", tcInk: "Tekst", tcAccent: "Accent (knoppen, grafiek)", tcHex: "{0}, kleurcode", tcBase: "Beginnen met de kleuren van", tcBasePh: "Kies een thema…",
       twText: "Let op: de tekst is moeilijk te lezen op deze achtergrond.", twAccent: "Let op: het accent valt bijna weg tegen de achtergrond.", tAutoHint: "Volgt de instelling van je computer (licht of donker)",
@@ -1288,8 +1283,7 @@ window.ValkTheme = (function () {
       srcInvoices: "Facturen", srcPos: "Inkooporders",
       byWeek: "Per week", basis: "Op basis van",
       basisWork: "Werkdatum", basisOrder: "Orderdatum",
-      srcFrom: "Gelezen uit", srcInvNone: "Alleen facturen die je in de app hebt gemaakt",
-      srcPosNone: "Kies de map met de inkooporders (PDF’s) die je van Piguillet krijgt", folderDialogPo: "Kies de map met je inkooporders",
+      folderDialogPo: "Kies de map met je inkooporders",
       folderSetPo: "Map met inkooporders ingesteld.", statsEmptyPo: "Kies bij Instellingen de map met je inkooporders: dan worden ze meegeteld.",
       statsEmptyPo2: "Geen inkooporders gevonden in deze map.", kOrdered: "Orderwaarde (excl. BTW)",
       kOrders: "Inkooporders", kAvgOrder: "gem. {0} per PO",
@@ -1336,7 +1330,7 @@ window.ValkTheme = (function () {
       foldersTitle: "Folders", foldersIntro: "Choose where your invoices and purchase orders are. The statistics and the list of new purchase orders are read from them.",
       folderPo: "Purchase order folder", folderIntroPo: "Choose the folder with the purchase orders (PDFs) you get from your client. New purchase orders and the statistics come from it.",
       folderIntroInv: "Set the folder where your invoices are kept under Settings.", openSettings: "Go to settings",
-      lookTitle: "Appearance", setInvoices: "Invoices and client", srcChange: "Change", srcChangeTitle: "Change the folder in Settings", srcFound: "Folder found", srcSet: "Set folder",
+      lookTitle: "Appearance", setInvoices: "Invoices and client", srcSet: "Set folder",
       welcomeTitle: "Welcome to Valkyrys app", welcomeText: "Start by setting up your folders. The app reads your invoices and purchase orders from them, for the statistics and the list of new purchase orders. You can change them any time under Settings.",
       welcomeInv: "1. Invoice folder", welcomeInvHint: "Your finished invoices are kept here.", welcomePo: "2. Purchase order folder", welcomePoHint: "The PDFs you get from your client.", welcomeNone: "Not chosen yet", welcomeDone: "Done", welcomeLater: "Later",
       dupView: "View", dupBanner: "Heads-up: {0} on more than one purchase order.", dupBannerSame: "Purchase orders in more than one file: {0}.", dupTitle: "Duplicate days on purchase orders", dupDlgTitle: "Check purchase orders",
@@ -1440,7 +1434,7 @@ window.ValkTheme = (function () {
       npSkipped: "{0} skipped.", npMore: "Show all {0}", npLess: "Show fewer", npOrdered: "ordered {0}", npAdded: "{0} added to the list below.", npFail: "This purchase order could not be loaded.",
       npUnread: "{0} PDFs in the folder were not read as purchase orders: {1}", npOpen: "Open folder",
       newsBtn: "What's new", newsBtnAria: "What's new", newsUnseen: "What's new (new changes)", newsTitle: "What's new", newsNew: "New", newsImproved: "Improved", newsFixed: "Fixed", newsVersion: "Version {0}", newsLatest: "This version", newsFoot: "After every update you can see here what has changed.",
-      themeBtn: "Theme", themeTitle: "Theme", themeIntro: "Choose how the app looks. The Valkyrys logo and the black bar at the top always stay as they are.",
+      themeBtn: "Theme", themeTitle: "Theme", themeIntro: "Choose how the app looks. The Valkyrys logo always stays as it is.",
       tAuto: "Automatic", tLight: "Light", tDark: "Dark", tMidnight: "Midnight", tPaper: "Paper", tForest: "Forest", tContrast: "High contrast", tCustom: "Custom",
       tcTitle: "Your own colours", tcBg: "Background", tcSurface: "Cards and panels", tcInk: "Text", tcAccent: "Accent (buttons, chart)", tcHex: "{0}, colour code", tcBase: "Start from the colours of", tcBasePh: "Choose a theme…",
       twText: "Careful: the text is hard to read on this background.", twAccent: "Careful: the accent almost disappears against the background.", tAutoHint: "Follows your computer’s setting (light or dark)",
@@ -1454,8 +1448,7 @@ window.ValkTheme = (function () {
       srcInvoices: "Invoices", srcPos: "Purchase orders",
       byWeek: "By week", basis: "Based on",
       basisWork: "Work date", basisOrder: "Order date",
-      srcFrom: "Read from", srcInvNone: "Only invoices you made in the app",
-      srcPosNone: "Choose the folder with the purchase orders (PDFs) you get from Piguillet", folderDialogPo: "Choose the folder with your purchase orders",
+      folderDialogPo: "Choose the folder with your purchase orders",
       folderSetPo: "Purchase order folder set.", statsEmptyPo: "Choose the folder with your purchase orders under Settings: they will be counted.",
       statsEmptyPo2: "No purchase orders found in this folder.", kOrdered: "Order value (excl. VAT)",
       kOrders: "Purchase orders", kAvgOrder: "avg. {0} per PO",
@@ -1502,7 +1495,7 @@ window.ValkTheme = (function () {
       foldersTitle: "Foldery", foldersIntro: "Wybierz, gdzie są Twoje faktury i zamówienia zakupu. Statystyki i lista nowych zamówień są odczytywane z tych folderów.",
       folderPo: "Folder z zamówieniami zakupu", folderIntroPo: "Wybierz folder z zamówieniami zakupu (PDF), które dostajesz od klienta. Stąd pochodzą nowe zamówienia i statystyki.",
       folderIntroInv: "Ustaw w Ustawieniach folder, w którym przechowujesz faktury.", openSettings: "Przejdź do ustawień",
-      lookTitle: "Wygląd", setInvoices: "Faktury i klient", srcChange: "Zmień", srcChangeTitle: "Zmień folder w Ustawieniach", srcFound: "Folder znaleziony", srcSet: "Ustaw folder",
+      lookTitle: "Wygląd", setInvoices: "Faktury i klient", srcSet: "Ustaw folder",
       welcomeTitle: "Witaj w Valkyrys app", welcomeText: "Zacznij od ustawienia folderów. Aplikacja odczytuje z nich Twoje faktury i zamówienia zakupu, na potrzeby statystyk i listy nowych zamówień. Zawsze możesz je zmienić w Ustawieniach.",
       welcomeInv: "1. Folder z fakturami", welcomeInvHint: "Tu przechowywane są Twoje gotowe faktury.", welcomePo: "2. Folder z zamówieniami zakupu", welcomePoHint: "Pliki PDF, które dostajesz od klienta.", welcomeNone: "Jeszcze nie wybrano", welcomeDone: "Gotowe", welcomeLater: "Później",
       dupView: "Pokaż", dupBanner: "Uwaga: {0} na więcej niż jednym zamówieniu zakupu.", dupBannerSame: "Zamówienia zakupu w kilku plikach: {0}.", dupTitle: "Powtórzone dni na zamówieniach zakupu", dupDlgTitle: "Sprawdź zamówienia zakupu",
@@ -1606,7 +1599,7 @@ window.ValkTheme = (function () {
       npSkipped: "Pominięte: {0}.", npMore: "Pokaż wszystkie ({0})", npLess: "Pokaż mniej", npOrdered: "zamówiono {0}", npAdded: "Dodano do listy poniżej: {0}.", npFail: "Nie udało się wczytać tego zamówienia.",
       npUnread: "Pliki PDF w folderze nieodczytane jako zamówienia: {0}: {1}", npOpen: "Otwórz folder",
       newsBtn: "Co nowego", newsBtnAria: "Co nowego", newsUnseen: "Co nowego (nowe zmiany)", newsTitle: "Co nowego", newsNew: "Nowość", newsImproved: "Ulepszenie", newsFixed: "Poprawka", newsVersion: "Wersja {0}", newsLatest: "Ta wersja", newsFoot: "Po każdej aktualizacji zobaczysz tu, co się zmieniło.",
-      themeBtn: "Motyw", themeTitle: "Motyw", themeIntro: "Wybierz wygląd aplikacji. Logo Valkyrys i czarny pasek u góry zawsze pozostają bez zmian.",
+      themeBtn: "Motyw", themeTitle: "Motyw", themeIntro: "Wybierz wygląd aplikacji. Logo Valkyrys zawsze pozostaje bez zmian.",
       tAuto: "Automatyczny", tLight: "Jasny", tDark: "Ciemny", tMidnight: "Północ", tPaper: "Papier", tForest: "Las", tContrast: "Wysoki kontrast", tCustom: "Własny",
       tcTitle: "Własne kolory", tcBg: "Tło", tcSurface: "Karty i panele", tcInk: "Tekst", tcAccent: "Akcent (przyciski, wykres)", tcHex: "{0}, kod koloru", tcBase: "Zacznij od kolorów motywu", tcBasePh: "Wybierz motyw…",
       twText: "Uwaga: tekst jest trudny do odczytania na tym tle.", twAccent: "Uwaga: akcent prawie znika na tle.", tAutoHint: "Zgodnie z ustawieniem komputera (jasny lub ciemny)",
@@ -1620,8 +1613,7 @@ window.ValkTheme = (function () {
       srcInvoices: "Faktury", srcPos: "Zamówienia zakupu",
       byWeek: "Tygodniowo", basis: "Na podstawie",
       basisWork: "Data pracy", basisOrder: "Data zamówienia",
-      srcFrom: "Odczytano z", srcInvNone: "Tylko faktury wystawione w aplikacji",
-      srcPosNone: "Wybierz folder z zamówieniami zakupu (PDF), które dostajesz od Piguillet", folderDialogPo: "Wybierz folder z zamówieniami zakupu",
+      folderDialogPo: "Wybierz folder z zamówieniami zakupu",
       folderSetPo: "Folder z zamówieniami ustawiony.", statsEmptyPo: "Wybierz w Ustawieniach folder z zamówieniami zakupu: zostaną policzone.",
       statsEmptyPo2: "Nie znaleziono zamówień zakupu w tym folderze.", kOrdered: "Wartość zamówień (bez VAT)",
       kOrders: "Zamówienia zakupu", kAvgOrder: "śr. {0} na zamówienie",
@@ -3175,14 +3167,8 @@ window.ValkTheme = (function () {
   }
 
   function renderSrc() {
-    const row = $("#srcRow"); row.hidden = !desk; $("#statSource").hidden = !desk; if (!desk) return;
+    $("#statSource").hidden = !desk; if (!desk) return;
     $("#statSource").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.src === state.statSource)));
-    const po = state.statSource === "pos", f = po ? state.poFolder : state.folder, pe = $("#srcPath");
-    pe.textContent = f ? f.path : tr(po ? "srcPosNone" : "srcInvNone"); pe.title = f ? f.path : "";
-    pe.classList.toggle("bad", !!(f && !f.exists)); pe.classList.toggle("dim", !f);
-    const dot = $("#srcDot"), dk = !f ? "" : f.exists ? "srcFound" : "folderMissing"; // small status dot: green = folder found, red = not found, none without a folder
-    dot.hidden = !f; dot.classList.toggle("bad", !!(f && !f.exists)); dot.title = dk ? tr(dk) : ""; if (dk) dot.setAttribute("aria-label", tr(dk)); else dot.removeAttribute("aria-label");
-    const b = $("#srcSettings"), k = f ? "srcChange" : "srcSet"; b.dataset.i18n = k; b.textContent = tr(k); b.title = tr("srcChangeTitle"); b.classList.toggle("primary", !f);
   }
   function renderScanInfo() {
     const po = state.statSource === "pos", sc = po ? state.poScan : state.scan, un = po ? state.poUnread : state.unread;
@@ -3284,9 +3270,13 @@ window.ValkTheme = (function () {
     const ys = $("#statYear"); ys.innerHTML = years.map((y) => `<option value="${y}"${y === sel ? " selected" : ""}>${y}</option>`).join(""); ys.disabled = mode === "year";
     renderSrc(); renderScanInfo(); renderDup();
     const scanning = po ? state.poScan : state.scan;
-    const emptyKey = po ? (!state.poFolder ? "statsEmptyPo" : !state.poFolder.exists ? "folderMissing" : "statsEmptyPo2") : "statsEmpty";
-    $("#statsEmpty").textContent = tr(emptyKey);
-    $("#statsEmpty").hidden = list.length > 0 || !!scanning; $("#statsBody").hidden = !list.length; $("#statCsv").hidden = !list.length;
+    // no permanent "read from" line: folders live in Settings. The empty state says what is missing and, when a folder is needed or not found, offers a button to Settings
+    const f = po ? state.poFolder : state.folder, missing = !!(desk && f && !f.exists);
+    const emptyKey = missing ? "folderMissing" : po ? (!f ? "statsEmptyPo" : "statsEmptyPo2") : "statsEmpty";
+    const showEmpty = !scanning && (missing || !list.length), goKey = missing ? "openSettings" : desk && !f && !list.length ? "srcSet" : "";
+    const em = $("#statsEmpty"); em.textContent = tr(emptyKey); em.hidden = !showEmpty; em.classList.toggle("bad", missing);
+    const go = $("#statsGoSettings"); go.hidden = !showEmpty || !goKey; if (goKey) { go.dataset.i18n = goKey; go.textContent = tr(goKey); }
+    $("#statsEmptyBox").hidden = !showEmpty; $("#statsBody").hidden = !list.length; $("#statCsv").hidden = !list.length;
     $("#statMode").hidden = $("#statYear").closest("label").hidden = !list.length;
     if (!list.length) return;
 
@@ -3407,22 +3397,13 @@ window.ValkTheme = (function () {
 
   const TABS = ["stats", "inv", "docs", "settings"], WORK_TABS = ["stats", "inv", "docs"], TAGLINE = { stats: "statsTagline", inv: "tagline", docs: "docsTagline", settings: "settingsTagline" };
   const TABKEY = { stats: "tabStats", inv: "tabInvoices", docs: "tabDocs", settings: "tabSettings" };
-  // Page title follows the selected tab; the pill (.seg-ind) slides under the selected button.
+  // Page title follows the selected tab. In the icon rail (narrow window, labels hidden) the sidebar items get their label as a tooltip.
+  const RAIL = window.matchMedia("(max-width: 899px) and (min-width: 560px)");
   function syncTabHead() {
     $("#pageTitle").textContent = tr(TABKEY[state.tab] || "tabStats");
-    document.documentElement.style.setProperty("--bar-h", ($("#appbar").offsetHeight || 60) + "px"); // sticky heads sit right under the app bar
-    const sb = $("#tabSettings"); sb.title = tr("tabSettings");
-    const ind = document.querySelector("#tabs .seg-ind"), b = document.querySelector(`#tabs [data-tab="${state.tab}"]`);
-    if (ind && !b) { ind.classList.remove("on"); return; } // Settings (the gear button) is not one of the tabs: no pill
-    if (!ind || !b.offsetWidth) return;
-    const was = ind.classList.contains("on");
-    if (!was) ind.style.transition = "none"; // coming back from Settings: the pill appears in place instead of sliding from the old tab
-    ind.style.width = b.offsetWidth + "px"; ind.style.transform = `translateX(${b.offsetLeft}px)`;
-    if (!was) { void ind.offsetWidth; ind.style.transition = ""; requestAnimationFrame(() => ind.classList.add("on")); }
+    document.querySelectorAll("#side .navi").forEach((b) => { const k = b.id === "newsBtn" ? "newsBtn" : TABKEY[b.dataset.tab]; if (RAIL.matches) b.title = tr(k); else b.removeAttribute("title"); });
   }
-  window.addEventListener("resize", syncTabHead);
-  if (window.ResizeObserver) new ResizeObserver(() => syncTabHead()).observe($("#tabs")); // the tabs also change size without a window resize (a scroll bar appears, the bar wraps)
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(syncTabHead);
+  if (RAIL.addEventListener) RAIL.addEventListener("change", syncTabHead);
   function setTab(t) {
     state.tab = TABS.includes(t) ? t : "stats";
     const work = WORK_TABS.includes(state.tab); // with Settings open no tab is selected; the first tab stays reachable with Tab
@@ -3437,13 +3418,14 @@ window.ValkTheme = (function () {
   }
   $("#tabs").addEventListener("click", (e) => { const b = e.target.closest("[role=tab]"); if (b) setTab(b.dataset.tab); });
   $("#tabs").addEventListener("keydown", (e) => {
-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
+    if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) return;
     const T = WORK_TABS, cur = (e.target.closest("[role=tab]") || {}).dataset?.tab || state.tab, i = Math.max(0, T.indexOf(cur)); // the arrows go round the three work tabs only
-    const next = e.key === "Home" ? T[0] : e.key === "End" ? T[T.length - 1] : T[(i + (e.key === "ArrowLeft" ? -1 : 1) + T.length) % T.length];
+    const back = e.key === "ArrowUp" || e.key === "ArrowLeft";
+    const next = e.key === "Home" ? T[0] : e.key === "End" ? T[T.length - 1] : T[(i + (back ? -1 : 1) + T.length) % T.length];
     setTab(next); document.querySelector(`#tabs [data-tab="${next}"]`).focus(); e.preventDefault();
   });
   $("#tabSettings").addEventListener("click", () => setTab("settings"));
-  $("#srcSettings").addEventListener("click", () => setTab("settings"));
+  $("#statsGoSettings").addEventListener("click", () => setTab("settings"));
   $("#dupOpen").addEventListener("click", openDup);
   $("#dupDlgClose").addEventListener("click", () => $("#dupDlg").close());
   $("#dupBody").addEventListener("click", async (e) => {
@@ -3552,12 +3534,6 @@ window.ValkTheme = (function () {
   $("#newsBtn").addEventListener("click", () => { renderNews(); const d = $("#newsDlg"); if (!d.open) d.showModal(); $("#newsList").scrollTop = 0; markNewsSeen(); });
   $("#newsClose").addEventListener("click", () => $("#newsDlg").close());
   $("#newsDlg").addEventListener("click", (e) => { if (e.target === $("#newsDlg")) $("#newsDlg").close(); });
-  function fitNewsBtn() {
-    const bar = $("#appbar .appbar-in"); if (!bar) return; bar.classList.remove("nb-wrap");
-    const top = (s) => bar.querySelector(s).getBoundingClientRect().top, b = top(".brand");
-    if (top("#newsBtn") > b + 20 || top("#tabSettings") > b + 20 || top("#tabs") > b + 20) bar.classList.add("nb-wrap");
-  }
-  if (window.ResizeObserver) { const ro = new ResizeObserver(() => requestAnimationFrame(fitNewsBtn)); ro.observe($("#appbar")); ro.observe($("#tabs")); }
   $("#themeGrid").addEventListener("click", (e) => {
     const b = e.target.closest("[data-theme-id]"); if (!b) return;
     const id = b.dataset.themeId;

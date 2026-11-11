@@ -1,7 +1,20 @@
-// "What's new" in the app: one entry per release, newest first. Shown in the "Nieuw" window in the app bar.
+// "What's new" in the app: one entry per release, newest first. Shown in the "Nieuw" window (bottom of the sidebar).
 // Every user-visible change: add an item to the top entry (nl, en, pl). On release, start a new entry and bump electron-app/package.json.
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
+  {
+    version: "1.1.4", date: "2026-11-11",
+    items: [
+      { type: "improved",
+        nl: "Nieuwe navigatie: de zwarte balk bovenaan is weg. Statistieken, Facturen en Documenten staan nu in een zijbalk links, met Nieuw en Instellingen onderaan. In een smal venster wordt de zijbalk een rij pictogrammen.",
+        en: "New navigation: the black bar at the top is gone. Statistics, Invoices and Documents are now in a sidebar on the left, with What's new and Settings at the bottom. In a narrow window the sidebar becomes a row of icons.",
+        pl: "Nowa nawigacja: czarny pasek u góry zniknął. Statystyki, Faktury i Dokumenty są teraz na pasku bocznym po lewej, a Co nowego i Ustawienia na dole. W wąskim oknie pasek boczny zmienia się w kolumnę ikon." },
+      { type: "improved",
+        nl: "Statistieken: de regel „Gelezen uit” is weg. De mappen stel je in bij Instellingen; ontbreekt er een map of is die niet gevonden, dan zegt de statistiek dat en brengt een knop je naar Instellingen.",
+        en: "Statistics: the “Read from” line is gone. You set the folders in Settings; if a folder is missing or not found, the statistics say so and a button takes you to Settings.",
+        pl: "Statystyki: wiersz „Odczytano z” zniknął. Foldery ustawiasz w Ustawieniach; jeśli brakuje folderu lub nie został znaleziony, statystyki o tym informują, a przycisk przenosi do Ustawień." },
+    ],
+  },
   {
     version: "1.1.3", date: "2026-11-10",
     items: [

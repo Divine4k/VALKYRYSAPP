@@ -27,13 +27,13 @@ const bars = (page) => page.$$eval("#chart .bc", (b) => b.map((x) => [x.querySel
   await goTab(page, "stats"); await page.waitForTimeout(300);
   ok(await page.isVisible("#statSource"), "source switch visible (Facturen / Inkooporders)");
   eq(await page.$$eval("#statMode button", (b) => b.map((x) => x.textContent)), ["Per week", "Per maand", "Per kwartaal", "Per jaar"], "week is the first period option");
-  console.log("invoice source says:", await page.textContent("#srcPath"));
+  ok(!(await page.$("#srcRow, #srcPath, #srcDot, #srcSettings")), "no 'read from' line on the statistics (the folders are in Settings)");
   await page.click('#statSource [data-src="pos"]'); await page.waitForTimeout(300);
-  ok((await page.textContent("#srcPath")).includes("Piguillet"), "PO source asks for a folder: " + (await page.textContent("#srcPath")));
   eq(await page.textContent("#statsEmpty"), "Kies bij Instellingen de map met je inkooporders: dan worden ze meegeteld.", "empty message for the PO source");
+  eq(await page.textContent("#statsGoSettings"), "Map instellen", "...with a button to set the folder in Settings");
   ok(await page.isVisible("#poBasisLbl"), "basis (work date / order date) selector visible for POs");
   await pick(app, PO); await goTab(page, "settings"); await page.click("#poFolderPick"); await goTab(page, "stats"); await waitStats(page);
-  eq(await page.textContent("#srcPath"), PO, "chosen PO folder shown");
+  ok(!(await page.isVisible("#statsEmpty")) && !(await page.isVisible("#statsGoSettings")), "PO folder chosen: no empty message, no button to Settings");
   // ---- 2026, per month (work-date basis)
   await page.click('#statMode [data-mode="month"]'); await page.selectOption("#statYear", "2026"); await page.waitForTimeout(300);
   let k = await kv(page); console.log(k);
@@ -94,8 +94,8 @@ const bars = (page) => page.$$eval("#chart .bc", (b) => b.map((x) => [x.querySel
     ok(L.some((l) => l.startsWith('"PO-100003";"28/01/2026";"29/01/2026"') && l.endsWith(";4;1800,00") || l.startsWith('"PO-100003";"28/01/2026";"29/01/2026"')), "PO-100003 line"); }
   // ---- other source keeps its own state; folders are separate
   await page.click('#statSource [data-src="invoices"]'); await page.waitForTimeout(300);
-  eq(await page.textContent("#srcPath"), "Alleen facturen die je in de app hebt gemaakt", "invoice source: no invoice folder chosen, the PO folder is not used");
-  ok(await page.isVisible("#statsEmpty"), "invoice source is empty (no invoices)");
+  ok(await page.isVisible("#statsEmpty"), "invoice source is empty (no invoices): no invoice folder chosen, the PO folder is not used");
+  eq(await page.textContent("#statsGoSettings"), "Map instellen", "...and it offers to set the invoice folder in Settings");
   ok(!(await page.isVisible("#poBasisLbl")), "basis selector hidden again");
   await goTab(page, "settings"); ok(!(await page.isVisible("#folderPath")) && await page.isVisible("#poFolderPath"), "in Settings the invoice folder is still unset and the PO folder is set"); await goTab(page, "stats");
   // ---- restart: choices and results are remembered
@@ -117,7 +117,7 @@ const bars = (page) => page.$$eval("#chart .bc", (b) => b.map((x) => [x.querySel
   ok((await page.textContent("#chartTitle")).startsWith("Wartość zamówień tygodniowo"), "Polish chart title: " + (await page.textContent("#chartTitle")));
   await setLang(page, "nl"); await page.waitForTimeout(200);
   await goTab(page, "settings"); await page.click("#poFolderClear"); await page.waitForTimeout(600); await goTab(page, "stats");
-  ok(await page.isVisible("#statsEmpty") && (await page.textContent("#srcPath")).includes("Piguillet"), "disconnecting the PO folder returns to the prompt");
+  ok(await page.isVisible("#statsEmpty") && (await page.textContent("#statsEmpty")).includes("Instellingen") && await page.isVisible("#statsGoSettings"), "disconnecting the PO folder returns to the prompt");
   console.log("errors:", errs); ok(!errs.length, "no page errors");
   await app.close(); console.log(fails ? "FAILED: " + fails : "ALL PASSED"); process.exit(fails ? 1 : 0);
 })().catch((e) => { console.error("FAIL", e.stack || e.message); process.exit(1); });

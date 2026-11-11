@@ -1,4 +1,4 @@
-// "What's new": button in the app bar, dot until opened, dialog follows the language, remembered after a restart; a fresh install gets no dot.
+// "What's new": button at the bottom of the sidebar, dot until opened, dialog follows the language, remembered after a restart; a fresh install gets no dot.
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
 const { goTab, setLang, seedProfile, APP_DIR } = require("./test_helpers");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
@@ -19,15 +19,15 @@ const items = (page) => page.$$eval("#newsList .nrel:first-child li", (l) => l.m
   fs.rmSync(dataHome, { recursive: true, force: true }); const dir = seedProfile(dataHome);
   let { app, page } = await launch(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
   await page.emulateMedia({ colorScheme: "light" });
-  ok(await page.isVisible("#appbar #newsBtn"), "button in the app bar");
-  eq(await page.$eval("#appbar .appbar-in", (h) => [...h.children].map((c) => c.id || c.className)), ["brand", "tabs", "newsBtn", "tabSettings"], "button comes after the tabs, the Settings gear after it");
-  const r = await page.evaluate(() => { const t = document.querySelector("#tabs").getBoundingClientRect(), b = document.querySelector("#newsBtn").getBoundingClientRect(); return { sameRow: Math.abs((t.top + t.bottom) / 2 - (b.top + b.bottom) / 2) < 2, gap: Math.round(b.left - t.right) }; });
-  ok(r.sameRow && r.gap > 0 && r.gap < 20, "button sits right next to the tabs", r);
+  ok(await page.isVisible("#side #newsBtn"), "button in the sidebar");
+  eq(await page.$eval("#side .side-foot", (h) => [...h.children].map((c) => c.id)), ["newsBtn", "tabSettings"], "at the bottom of the sidebar, the Settings gear after it");
+  const r = await page.evaluate(() => { const t = document.querySelector("#tabs").getBoundingClientRect(), b = document.querySelector("#newsBtn").getBoundingClientRect(); return { below: b.top > t.bottom, sameColumn: Math.abs(b.left - t.left) < 2 && Math.abs(b.width - t.width) < 2, nearBottom: innerHeight - b.bottom < 120 }; });
+  ok(r.below && r.sameColumn && r.nearBottom, "button sits under the tabs, near the bottom of the sidebar", r);
   eq(await page.textContent("#newsBtn .nlabel"), "Nieuw", "Dutch label");
   ok(await page.isVisible("#newsDot"), "dot shows for unseen notes");
   eq(await page.getAttribute("#newsBtn", "aria-label"), "Wat is er nieuw (nieuwe wijzigingen)", "aria-label says there is something new");
   ok(!(await page.$eval("#newsDlg", (d) => d.open)), "nothing opens by itself");
-  if (shots) await page.screenshot({ path: "/tmp/news_appbar.png", clip: { x: 0, y: 0, width: 1280, height: 80 } });
+  if (shots) await page.screenshot({ path: "/tmp/news_sidebar.png" });
 
   // ---- open
   const TYPES = ["new", "improved", "fixed"].filter((t) => CL[0].items.some((i) => i.type === t)); // the groups the newest release has
@@ -39,7 +39,7 @@ const items = (page) => page.$$eval("#newsList .nrel:first-child li", (l) => l.m
   eq(await page.$$eval("#newsList .nrel:first-child .ntag", (g) => g.map((x) => x.textContent)), TYPES.map((t) => ({ new: "Nieuw", improved: "Verbeterd", fixed: "Opgelost" })[t]), "Dutch tags");
   const order = ["new", "improved", "fixed"].flatMap((t) => CL[0].items.filter((i) => i.type === t));
   eq(await items(page), order.map((i) => i.nl), "newest items in Dutch");
-  ok((await page.textContent("#newsList .nrel:first-child h3")).includes("Versie " + latest) && (await page.textContent("#newsList .nrel:first-child h3")).includes("10 november 2026"), "version + Dutch date heading");
+  ok((await page.textContent("#newsList .nrel:first-child h3")).includes("Versie " + latest) && (await page.textContent("#newsList .nrel:first-child h3")).includes("11 november 2026"), "version + Dutch date heading");
   eq(await page.textContent("#newsVer"), "Versie " + latest, "version in the footer");
   ok(!(await page.isVisible("#newsDot")), "dot gone after opening");
   if (shots) { await page.screenshot({ path: "/tmp/news_light.png" }); await page.emulateMedia({ colorScheme: "dark" }); await page.waitForTimeout(200); await page.screenshot({ path: "/tmp/news_dark.png" }); await page.emulateMedia({ colorScheme: "light" }); }
@@ -51,7 +51,7 @@ const items = (page) => page.$$eval("#newsList .nrel:first-child li", (l) => l.m
   eq(await page.textContent("#newsBtn .nlabel"), "Co nowego", "Polish label");
   await setLang(page, "en"); await page.waitForTimeout(200);
   eq([await page.textContent("#newsTitle"), (await items(page)).slice(-1)[0], await page.textContent("#newsVer")], ["What's new", order.slice(-1)[0].en, "Version " + latest], "English");
-  ok((await page.textContent("#newsList .nrel:first-child h3")).includes("10 November 2026"), "English date");
+  ok((await page.textContent("#newsList .nrel:first-child h3")).includes("11 November 2026"), "English date");
   await setLang(page, "nl"); await page.waitForTimeout(150);
 
   // ---- close: button and Esc
