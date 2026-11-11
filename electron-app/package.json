@@ -1,6 +1,6 @@
 {
   "name": "valkyrys-app",
-  "version": "1.3.8",
+  "version": "1.3.9",
   "description": "Valkyrys app: make invoices from purchase orders",
   "main": "main.js",
   "author": "Valkyrys",
