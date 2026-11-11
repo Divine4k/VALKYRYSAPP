@@ -31,7 +31,7 @@ button.danger:hover { background: #A8231A; border-color: #A8231A; color: #FFFFFF
 .c-warn .tagw { white-space: nowrap; }
 .drow.miss { background: color-mix(in srgb, var(--warn-bg) 30%, transparent); }
 button.dchip.miss:disabled { color: var(--warn); border-color: var(--warn); opacity: .9; }
-button.refresh { min-height: 32px; width: 32px; padding: 0; color: var(--muted); }
+button.refresh { min-height: 34px; width: 34px; padding: 0; color: var(--text); display: inline-grid; place-items: center; }
 button.refresh:hover { color: var(--ink); border-color: var(--line); }
 button.xbtn { min-height: 34px; width: 34px; padding: 0; border-radius: 50%; flex: 0 0 auto; margin: -4px -6px 0 0; }
 button.xbtn:hover { color: var(--ink); background: var(--sunken); border-color: transparent; }
