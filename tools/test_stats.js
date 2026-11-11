@@ -37,7 +37,42 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
   eq(k[3][1], "Beste maand: Maart (€ 4.800)", "best month");
   eq(await page.$$eval("#chart .bc", (b) => b.length), 12, "12 monthly bars");
   eq(await page.$$eval("#chart .bar:not(.zero)", (b) => b.length), 5, "5 months with revenue (Jan, Feb, Mar, Apr, Oct)");
-  eq(await page.$$eval("#chart .bc", (b) => b.map((x) => x.querySelector(".bv") ? x.querySelector(".bv").textContent : "")), ["€ 3.200", "€ 2.000", "€ 4.800", "€ 1.000", "", "", "", "", "", "€ 2.400", "", ""], "bar labels per month");
+  eq(await page.$$eval("#chart .bc", (b) => b.map((x) => x.querySelector(".bv") ? x.querySelector(".bv").textContent : "")), ["", "", "€ 4.800", "", "", "", "", "", "", "", "", ""], "value label above the highest bar only (March)");
+  // chart: y-scale, average line, current period
+  const grid = await page.$$eval("#chartGrid .yl", (l) => l.map((x) => [+x.dataset.v, x.textContent, parseFloat(getComputedStyle(x).top)]));
+  console.log("gridlines:", grid);
+  ok(grid.length >= 3 && grid.length <= 4, "3-4 gridlines", grid.length);
+  ok(grid.every((g, i) => !i || (g[0] > grid[i - 1][0] && g[2] < grid[i - 1][2])), "gridline values go up, lines go up the chart", grid);
+  ok(grid.every((g) => /^€ [\d.]+$/.test(g[1])) && grid.at(-1)[0] >= 4800, "gridline labels in euros, top one reaches the highest bar", grid.map((g) => g[1]));
+  eq(await page.textContent("#chartAvg"), "Ø € 1.218 per maand", "average line: 13.400 over the 11 months so far (same as the tile)");
+  ok(await page.isVisible("#chartAvg") && Math.abs(+(await page.getAttribute("#chartAvg", "data-v")) - 13400 / 11) < 0.01, "average line value matches the computed average");
+  const avgY = await page.$eval("#chartAvg", (a) => a.getBoundingClientRect().top), gy = await page.$$eval("#chartGrid .yl", (l) => l.map((x) => x.getBoundingClientRect().top));
+  const bot = await page.$eval("#chart .bz", (z) => z.getBoundingClientRect().bottom);
+  ok(avgY < bot && avgY > gy[0] - (bot - gy[0]) * 0.1 - 1 && avgY > gy.at(-1), "average line drawn at its height on the scale", { avgY, gy, bot });
+  eq(await page.$$eval("#chart .bc.now .bnow", (b) => b.map((x) => x.textContent)), ["nu"], "current month has the 'nu' marker");
+  // tooltip on hover
+  await page.hover("#chart .bc:nth-child(2)"); await page.waitForTimeout(150);
+  ok(await page.isVisible("#chartTip"), "tooltip shows on hover");
+  eq(await page.$$eval("#chartTip > div", (d) => d.map((x) => x.textContent)), ["Februari 2026", "€ 2.000,00 excl. btw", "€ 2.420,00 incl. btw", "1 factuur · 5 werkdagen", "Klik voor de details"], "month tooltip with VAT");
+  const inBox = () => page.evaluate(() => { const b = document.querySelector("#chartBox").getBoundingClientRect(), t = document.querySelector("#chartTip").getBoundingClientRect(); return t.left >= b.left - 0.5 && t.right <= b.right + 0.5 && t.top >= b.top - 0.5 && t.bottom <= b.bottom + 0.5; });
+  ok(await inBox(), "tooltip inside the chart");
+  await page.hover("#chart .bc:nth-child(3)"); await page.waitForTimeout(150); ok(await inBox(), "tooltip of the highest bar inside the chart");
+  await page.hover("#chart .bc:nth-child(12)"); await page.waitForTimeout(150);
+  eq(await page.$$eval("#chartTip > div", (d) => d.map((x) => x.textContent)), ["December 2026", "Niets in deze periode"], "empty month tooltip"); ok(await inBox(), "tooltip at the right edge inside the chart");
+  await page.mouse.move(5, 5); await page.waitForTimeout(150); ok(!(await page.isVisible("#chartTip")), "tooltip hides when the pointer leaves");
+  // click a bar: the same dialog as the table row
+  await page.click("#chart .bc:nth-child(3)"); await page.waitForSelector("#perDlg[open]");
+  eq(await page.textContent("#perDlgTitle"), "Maart 2026", "clicking the March bar opens the March period"); ok((await page.textContent("#perSum")).includes("€ 4.800,00"), "...with its figures");
+  await page.click("#perDlgClose"); await page.waitForTimeout(150);
+  // keyboard: one tab stop, arrows move, Enter opens
+  eq(await page.$$eval('#chart .bc[tabindex="0"]', (b) => b.map((x) => x.dataset.i)), ["10"], "one tab stop in the chart (the current month)");
+  await page.focus('#chart .bc[tabindex="0"]'); await page.keyboard.press("Home"); await page.keyboard.press("ArrowRight"); await page.waitForTimeout(150);
+  eq(await page.evaluate(() => document.activeElement.dataset.i), "1", "Home + ArrowRight moves to February");
+  ok(await page.isVisible("#chartTip") && (await page.textContent("#chartTip .tt")) === "Februari 2026", "tooltip follows the keyboard focus");
+  eq(await page.getAttribute("#chart .bc:nth-child(2)", "aria-label"), "Februari 2026, € 2.000,00 excl. btw, € 2.420,00 incl. btw, 1 factuur · 5 werkdagen", "aria-label per bar");
+  await page.keyboard.press("Enter"); await page.waitForSelector("#perDlg[open]"); eq(await page.textContent("#perDlgTitle"), "Februari 2026", "Enter opens the period"); await page.click("#perDlgClose"); await page.waitForTimeout(150);
+  await page.keyboard.press("Escape"); await page.waitForTimeout(100); ok(!(await page.isVisible("#chartTip")), "Escape hides the tooltip");
+  await page.click("#chartTitle"); await page.waitForTimeout(100);
   eq(await page.$$eval("#chart .bc.now .bx", (b) => b.map((x) => x.textContent)), ["Nov"], "current month marked (Nov)");
   const foot = async () => page.$$eval("#stTable tfoot td", (t) => t.map((x) => x.textContent));
   eq(await foot(), ["Totaal", "6", "31", "€ 13.400,00", "€ 630,00", "€ 14.030,00"], "table totals (VAT of 21% invoices incl. the one without lines)");
@@ -51,7 +86,10 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
   // quarter
   await page.click('#statMode [data-mode="quarter"]'); await page.waitForTimeout(200);
   eq(await page.$$eval("#chart .bc .bx", (b) => b.map((x) => x.textContent)), ["Q1", "Q2", "Q3", "Q4"], "quarter labels");
-  eq(await page.$$eval("#chart .bc", (b) => b.map((x) => x.querySelector(".bv") ? x.querySelector(".bv").textContent : "")), ["€ 10.000", "€ 1.000", "", "€ 2.400"], "quarter revenue");
+  eq(await page.$$eval("#chart .bc", (b) => b.map((x) => x.querySelector(".bv") ? x.querySelector(".bv").textContent : "")), ["€ 10.000", "", "", ""], "quarter: label on the highest bar");
+  eq(await page.$$eval("#chart .bar", (b) => b.map((x) => x.classList.contains("zero") ? 0 : Math.round(x.getBoundingClientRect().height))).then((h) => h.map((v) => v > 0)), [true, true, false, true], "quarter bars");
+  ok((await page.$$eval("#chartGrid .yl", (l) => l.map((x) => x.textContent))).every((t) => /^€ [\d,]+k$/.test(t)), "compact labels when the scale reaches 10.000", await page.$$eval("#chartGrid .yl", (l) => l.map((x) => x.textContent)));
+  eq(await page.textContent("#chartAvg"), "Ø € 3.350 per kwartaal", "quarter average over the 4 quarters so far");
   eq(await page.$$eval("#stTable tbody tr:nth-child(1) td", (t) => t.map((x) => x.textContent)), ["Q1", "4", "25", "€ 10.000,00", "€ 420,00", "€ 10.420,00"], "Q1 row (for the VAT return)");
   await page.screenshot({ path: "/tmp/stats-quarter.png", fullPage: true });
   // year
@@ -155,6 +193,27 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
   ok((await page.textContent("#perDlg")).includes(top), "clicking a sorted row opens that period (" + top + ")"); await page.click("#perDlgClose");
   await page.click('#statMode [data-mode="week"]'); await page.waitForTimeout(200);
   eq((await ariaSort())[3], "descending", "sort kept in week mode");
+  // week chart: month names under the first week of each month, tooltip with the week's dates
+  eq(await page.$$eval("#chart .bm > span", (m) => m.map((x) => x.textContent)), ["Jan", "Feb", "Mrt", "Apr", "Mei", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"], "month names in week mode");
+  eq(await page.$$eval("#chart .bc", (c) => c.findIndex((x) => x.querySelector(".bm").textContent === "Feb")), 4, "Feb under the week that holds 1 Feb (week 5)");
+  await page.hover("#chart .bc:nth-child(6)"); await page.waitForTimeout(150);
+  eq(await page.$$eval("#chartTip > div", (d) => d.map((x) => x.textContent)), ["Week 6 · 2–8 Feb", "€ 2.000,00 excl. btw", "€ 2.420,00 incl. btw", "1 factuur · 5 werkdagen", "Klik voor de details"], "week 6 tooltip");
+  { const tot = num((await foot())[3]), weeks = await page.$$eval("#chart .bc", (c) => c.findIndex((x) => x.classList.contains("now")) + 1);
+    eq(await page.textContent("#chartAvg"), `Ø € ${Math.round(tot / weeks).toLocaleString("nl-NL")} per week`, `week average: ${tot} over ${weeks} weeks so far`);
+    eq(await page.textContent("#chartAvg"), "Ø " + (await page.textContent('#kpis [data-k="avg"] .v')) + " per week", "week average line = 'average per week' tile"); }
+  eq(await page.$$eval("#chart .bc.now .bnow", (b) => b.length), 1, "current week marked");
+  await page.click("#chart .bc:nth-child(6)"); await page.waitForSelector("#perDlg[open]");
+  eq(await page.textContent("#perDlgTitle"), "Week 6 (2–8 Feb)", "clicking a week bar opens that week"); await page.click("#perDlgClose"); await page.waitForTimeout(150);
+  await page.mouse.move(5, 5);
+  for (const [scheme, f] of [["dark", "/tmp/chart_dark.png"], ["light", "/tmp/chart_light.png"]]) {
+    await page.emulateMedia({ colorScheme: scheme }); await page.waitForTimeout(150); await (await page.$("#chartBox")).screenshot({ path: f });
+  }
+  await page.focus("#chart .bc:nth-child(5)"); await page.keyboard.press("ArrowRight"); await page.waitForTimeout(200); // the screenshot moves the pointer away, so show the tooltip with the keyboard
+  ok(await page.isVisible("#chartTip") && (await page.textContent("#chartTip .tt")) === "Week 6 · 2–8 Feb", "tooltip on keyboard focus in week mode");
+  await (await page.$("#chartBox")).screenshot({ path: "/tmp/chart_hover.png" }); await page.keyboard.press("Escape");
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.evaluate(() => ValkTheme.apply({ id: "paper", custom: null })); await page.waitForTimeout(150); await (await page.$("#chartBox")).screenshot({ path: "/tmp/chart_paper.png" });
+  await page.evaluate(() => ValkTheme.apply({ id: "auto", custom: null }));
   v = (await col(4)).map(num); ok(sorted(v, "desc"), "weeks sorted by amount", v); eq(await lastRow(), "Totaal", "total row last in week mode");
   await page.click('#statMode [data-mode="month"]'); await page.waitForTimeout(200);
   // per-client table
@@ -174,6 +233,10 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
   // narrow window
   await page.setViewportSize({ width: 420, height: 900 }); await page.waitForTimeout(300);
   const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth); ok(over <= 1, "no horizontal page scroll at phone width (" + over + "px)");
+  await page.click('#statMode [data-mode="week"]'); await page.waitForTimeout(200);
+  { const o = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth); ok(o <= 1, "week chart: no horizontal scroll at phone width (" + o + "px)"); }
+  await page.$eval("#chartBox", (b) => b.scrollIntoView({ block: "center" })); await page.waitForTimeout(100); await (await page.$("#chartBox")).screenshot({ path: "/tmp/chart_narrow.png" });
+  await page.click('#statMode [data-mode="month"]'); await page.waitForTimeout(200);
   await page.screenshot({ path: "/tmp/stats-narrow.png", fullPage: true });
   console.log("errors:", errs); ok(!errs.length, "no page errors");
   await app.close(); console.log(fails ? "FAILED: " + fails : "ALL PASSED");

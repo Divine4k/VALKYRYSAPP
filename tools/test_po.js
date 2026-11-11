@@ -20,7 +20,9 @@ const launch = async () => {
 const pick = (app, p) => app.evaluate((_, p) => { globalThis.__pick = p; }, p);
 const waitStats = async (page, ms = 60000) => { await page.waitForSelector("#statsBody:not([hidden])", { timeout: ms }); await page.waitForFunction(() => document.querySelector("#scanNote").hidden, null, { timeout: ms }); };
 const kv = (page) => page.$$eval("#kpis .kpi", (k) => k.map((x) => [x.querySelector(".eyebrow").textContent, x.querySelector(".v").textContent, x.querySelector(".s").textContent.trim()]));
-const bars = (page) => page.$$eval("#chart .bc", (b) => b.map((x) => [x.querySelector(".bx").textContent, x.querySelector(".bv") ? x.querySelector(".bv").textContent : ""]));
+// [x label, value of the bar] - the value comes from the bar's accessible name ("<period>, € 1.234,00 excl. btw, ..."); only the highest bar prints it
+const bars = (page) => page.$$eval("#chart .bc", (b) => b.map((x) => { const m = /, € ([\d.]+),\d\d /.exec(x.getAttribute("aria-label")); return [x.querySelector(".bx").textContent, m ? "€ " + Math.round(+m[1].replace(/\./g, "") + 0).toLocaleString("nl-NL") : ""]; }));
+const hiLabel = (page) => page.$$eval("#chart .bv", (v) => v.map((x) => x.textContent));
 (async () => {
   fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome);
   let { app, page } = await launch(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
@@ -41,7 +43,9 @@ const bars = (page) => page.$$eval("#chart .bc", (b) => b.map((x) => [x.querySel
   eq([k[0][0], k[0][1], k[1][0], k[1][1]], ["Orderwaarde (excl. BTW)", eur0(sum(y26)), "Inkooporders", String(pos(y26))], "2026 tiles: order value / POs (labels switch to PO wording)");
   eq(k[2][1], String(y26.length), "days = one per line");
   const mo = (m) => y26.filter((i) => parse(i.date).m === m);
-  eq((await bars(page)).map((b) => b[1]), Array.from({ length: 12 }, (_, m) => (mo(m).length ? eur0(sum(mo(m))) : "")), "monthly bars split a PO over the months its days fall in");
+  { const per = Array.from({ length: 12 }, (_, m) => sum(mo(m)));
+    eq((await bars(page)).map((b) => b[1]), per.map((v) => (v ? eur0(v) : "")), "monthly bars split a PO over the months its days fall in");
+    eq(await hiLabel(page), [eur0(Math.max(...per))], "value label on the highest month only"); }
   eq(await page.$$eval("#stTable thead th", (t) => t.map((x) => x.textContent)), ["Periode", "Inkooporders", "Dagen", "Waarde (excl. BTW)"], "PO table has no VAT columns");
   eq(await page.$$eval("#stTable tbody tr:nth-child(1) td, #stTable tbody tr:nth-child(2) td", (t) => t.map((x) => x.textContent)).then((a) => a.slice(0, 8)), ["Januari", String(pos(mo(0))), String(mo(0).length), eur2(sum(mo(0))), "Februari", String(pos(mo(1))), String(mo(1).length), eur2(sum(mo(1)))], "Jan and Feb rows (PO-100003 counts in both)");
   eq((await page.$$eval("#stTable tfoot td", (t) => t.map((x) => x.textContent))), ["Totaal", String(pos(y26)), String(y26.length), eur2(sum(y26))], "total row counts each PO once");
@@ -115,6 +119,9 @@ const bars = (page) => page.$$eval("#chart .bc", (b) => b.map((x) => [x.querySel
   ok(enRows.some((r) => r.startsWith("Week 46 · 9–15 Nov")) && enRows.every((r) => r.startsWith("Week ")), "English week range: " + enRows.join(" | "));
   await setLang(page, "pl"); await page.waitForTimeout(200);
   ok((await page.textContent("#chartTitle")).startsWith("Wartość zamówień tygodniowo"), "Polish chart title: " + (await page.textContent("#chartTitle")));
+  { const lab = await page.$eval("#chart .bc.has", (c) => c.getAttribute("aria-label")); ok(/^Tydzień \d+ · .+, € [\d.]+,\d\d netto, \d+ zamówie(nie|nia|ń) · [\d,]+ (dzień roboczy|dni robocze|dni roboczych)$/.test(lab), "Polish bar label in PO wording: " + lab);
+    ok(/^Ø € [\d.]+ tygodniowo$/.test(await page.textContent("#chartAvg")), "Polish average label: " + (await page.textContent("#chartAvg")));
+    eq(await page.textContent("#chart .bc.now .bnow"), "teraz", "Polish 'now' marker"); }
   await setLang(page, "nl"); await page.waitForTimeout(200);
   await goTab(page, "settings"); await page.click("#poFolderClear"); await page.waitForTimeout(600); await goTab(page, "stats");
   ok(await page.isVisible("#statsEmpty") && (await page.textContent("#statsEmpty")).includes("Instellingen") && await page.isVisible("#statsGoSettings"), "disconnecting the PO folder returns to the prompt");

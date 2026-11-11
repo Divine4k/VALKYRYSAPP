@@ -3,6 +3,15 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
+    version: "1.2.1", date: "2026-11-11",
+    items: [
+      { type: "improved",
+        nl: "De grafiek bij Statistieken zegt meer: een lichte schaal in euro’s, een stippellijn met het gemiddelde per periode, het bedrag boven de hoogste staaf en een markering bij de huidige periode. Per week staan de maanden eronder. Wijs een staaf aan (of ga er met de pijltjestoetsen langs) voor de periode, het bedrag, het aantal facturen en de dagen; klik erop voor de details, net als in de tabel.",
+        en: "The chart in Statistics tells you more: a light scale in euros, a dashed line with the average per period, the amount above the highest bar and a marker at the current period. By week, the months are shown underneath. Point at a bar (or move along them with the arrow keys) for the period, amount, number of invoices and days; click it for the details, just like in the table.",
+        pl: "Wykres w Statystykach mówi więcej: delikatna skala w euro, przerywana linia ze średnią na okres, kwota nad najwyższym słupkiem i oznaczenie bieżącego okresu. W widoku tygodniowym pod spodem widać miesiące. Wskaż słupek (lub przechodź po nich strzałkami), aby zobaczyć okres, kwotę, liczbę faktur i dni; kliknij, aby zobaczyć szczegóły, tak jak w tabeli." },
+    ],
+  },
+  {
     version: "1.2.0", date: "2026-11-11",
     items: [
       { type: "new",

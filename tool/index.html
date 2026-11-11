@@ -386,17 +386,42 @@ html.side-anim #updBars { transition: left .18s ease; }
 .kpimenu input[type="checkbox"] { width: auto; min-height: 0; margin: 2px 0 0; accent-color: var(--accent); flex: 0 0 auto; }
 .kpimenu .kfoot { border-top: 1px solid var(--line); margin-top: 6px; padding-top: 8px; display: flex; justify-content: flex-end; }
 .kpimenu .kfoot button { min-height: 32px; padding: 4px 10px; font-size: 13px; }
-.chart { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; margin-top: 10px; }
-.bc { display: flex; flex-direction: column; align-items: stretch; min-width: 0; text-align: center; }
-.bz { height: 232px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; border-bottom: 1px solid var(--line); }
-.bv { font-size: 11.5px; font-weight: 700; color: var(--ink); white-space: nowrap; padding-bottom: 3px; }
-.bar { width: min(100%, 64px); background: var(--accent); border-radius: 4px 4px 0 0; }
-.bar.zero { background: var(--line); height: 2px; border-radius: 0; }
+/* statistics bar chart: faint y-gridlines with euro labels in a gutter on the left, a dashed average line, one value label (the highest bar), tooltip on hover/focus */
+.chartbox { position: relative; --ph: 232px; --pt: 22px; --yw: 48px; padding: var(--pt) 0 0 var(--yw); margin-top: 10px; }
+.chartbox.dense { --ph: 200px; }
+.chart { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; position: relative; }
+.yl { position: absolute; left: var(--yw); right: 0; top: calc(var(--pt) + var(--ph) * (1 - var(--f))); border-top: 1px solid var(--line); pointer-events: none; }
+.yl span { position: absolute; right: calc(100% + 8px); top: -8px; font-size: 11px; line-height: 16px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cavg { position: absolute; left: var(--yw); right: 0; top: calc(var(--pt) + var(--ph) * (1 - var(--f))); border-top: 1.5px dashed color-mix(in srgb, var(--ink) 55%, transparent); pointer-events: none; z-index: 2; }
+.cavg span { position: absolute; right: 0; bottom: 3px; font-size: 11px; font-weight: 700; line-height: 15px; color: var(--text); background: color-mix(in srgb, var(--surface) 85%, transparent); padding: 0 4px; border-radius: 4px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cavg.below span { bottom: auto; top: 3px; }
+.cavg span.u { position: static; padding: 0; background: none; font-weight: 400; }
+.bc { display: flex; flex-direction: column; align-items: stretch; min-width: 0; text-align: center; outline: none; }
+.bc.has { cursor: pointer; }
+.bz { position: relative; height: var(--ph); display: flex; flex-direction: column; justify-content: flex-end; align-items: center; border-bottom: 1px solid var(--line); border-radius: 4px 4px 0 0; }
+.bc.now .bz { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.bnow { position: absolute; left: 50%; top: calc(-1 * var(--pt) + 3px); transform: translateX(-50%); font-size: 10.5px; font-weight: 700; letter-spacing: .04em; line-height: 14px; color: var(--muted); white-space: nowrap; }
+.bv { font-size: 11.5px; font-weight: 700; color: var(--ink); white-space: nowrap; padding-bottom: 3px; line-height: 14px; }
+.bv.l { align-self: flex-start; } .bv.r { align-self: flex-end; }
+.bar { width: min(100%, 64px); min-height: 3px; background: var(--accent); border-radius: 4px 4px 0 0; }
+.bar.zero { background: var(--line); height: 2px; min-height: 0; border-radius: 0; }
 .bx { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
 .bn { font-size: 11.5px; color: var(--muted); }
+.bm { display: block; height: 15px; margin-top: 2px; font-size: 11.5px; line-height: 15px; color: var(--muted); text-align: left; white-space: nowrap; }
+.bm > span { display: inline-block; padding-left: 3px; border-left: 1px solid var(--line); }
 .bc.now .bx { color: var(--ink); font-weight: 900; }
-.bc:hover .bar:not(.zero) { filter: brightness(.94); }
-@media (max-width: 640px) { .bv, .bn { display: none; } .chart { gap: 3px; } .bz { height: 190px; } }
+.bc:hover .bar:not(.zero), .bc.on .bar:not(.zero) { background: color-mix(in srgb, var(--accent) 80%, var(--ink)); }
+.bc:hover .bar.zero, .bc.on .bar.zero { background: var(--muted); }
+.bc:focus-visible .bz { outline: 2px solid var(--focus); outline-offset: 2px; }
+.ctip { position: absolute; z-index: 5; left: 0; top: 0; pointer-events: none; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .2); padding: 8px 11px; font-size: 12.5px; line-height: 1.4; white-space: nowrap; }
+.ctip .tt { color: var(--ink); font-weight: 700; font-size: 12.5px; }
+.ctip .tv { color: var(--ink); font-weight: 900; font-size: 15px; font-variant-numeric: tabular-nums; }
+.ctip .tv small, .ctip .ti small { font-weight: 400; font-size: 12px; color: var(--muted); }
+.ctip .ti, .ctip .tn { font-variant-numeric: tabular-nums; }
+.ctip .tn, .ctip .th { color: var(--muted); }
+.ctip .th { font-size: 11.5px; margin-top: 3px; }
+@media (prefers-reduced-motion: no-preference) { .bar { transition: background-color .12s; } .ctip { transition: opacity .1s; } }
+@media (max-width: 640px) { .bn { display: none; } .chart { gap: 3px; } .chartbox { --ph: 190px; } .chart.dense .bx { display: none; } .bm.alt > span { visibility: hidden; } .cavg span.u { display: none; } }
 /* statistics empty state: what is missing, and a button to Settings when a folder is needed */
 .statsempty { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .statsempty[hidden] { display: none; }
@@ -456,9 +481,8 @@ html.side-anim #updBars { transition: left .18s ease; }
 .wact { margin-top: 18px; }
 @media (max-width: 560px) { .wstep { flex-direction: column; align-items: stretch; } }
 .chart.dense { gap: 2px; }
-.chart.dense .bv, .chart.dense .bn { display: none; }
-.chart.dense .bz { height: 200px; }
-.chart.dense .bx { font-size: 11px; min-height: 16px; }
+.chart.dense .bn { display: none; }
+.chart.dense .bx { font-size: 10.5px; min-height: 15px; margin-top: 4px; opacity: .85; }
 .tablewrap { overflow-x: auto; }
 .stbl { width: 100%; border-collapse: collapse; font-size: 14px; }
 .stbl th { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 0 10px 8px; white-space: nowrap; }
@@ -1053,7 +1077,7 @@ window.ValkTheme = (function () {
       <div class="kpimenu" id="kpiMenu" role="group" hidden></div>
     </div>
     <div class="kpis" id="kpis"></div>
-    <div class="panel"><p class="eyebrow" id="chartTitle"></p><div class="chart" id="chart" role="img"></div></div>
+    <div class="panel"><p class="eyebrow" id="chartTitle"></p><div class="chartbox" id="chartBox"><div id="chartGrid" aria-hidden="true"></div><div class="chart" id="chart" role="group"></div><div class="cavg" id="chartAvg" hidden><span></span></div><div class="ctip" id="chartTip" role="tooltip" hidden></div></div></div>
     <div class="panel"><div class="tablewrap"><table class="stbl" id="stTable"></table></div></div>
     <div class="panel" id="clientPanel" hidden><p class="eyebrow" data-i18n="byClient">Per klant</p><div class="tablewrap"><table class="stbl" id="clTable"></table></div></div>
     <p class="small" id="statsNote"></p>
@@ -1348,6 +1372,8 @@ window.ValkTheme = (function () {
       kOrders: "Inkooporders", kAvgOrder: "gem. {0} per PO",
       week: "Week", whatRevenue: "Omzet",
       whatOrdered: "Orderwaarde", unitWeek: "per week",
+      chAvg: "Ø {0} {1}", chAvgHint: "Gemiddelde over de verstreken periodes, lege periodes meegeteld", chNow: "nu", chEx: "excl. btw", chInc: "incl. btw", chNone: "Niets in deze periode", chClick: "Klik voor de details",
+      chInv1: "factuur", chInvF: "facturen", chInvM: "facturen", chPo1: "inkooporder", chPoF: "inkooporders", chPoM: "inkooporders", chK: "k",
       unitMonth: "per maand", unitQuarter: "per kwartaal",
       unitYear: "per jaar", kAvgWeek: "Gemiddeld per week",
       kBestWeek: "Beste week: {0} ({1})", tOrders: "Inkooporders",
@@ -1514,6 +1540,8 @@ window.ValkTheme = (function () {
       kOrders: "Purchase orders", kAvgOrder: "avg. {0} per PO",
       week: "Week", whatRevenue: "Revenue",
       whatOrdered: "Order value", unitWeek: "per week",
+      chAvg: "Ø {0} {1}", chAvgHint: "Average over the elapsed periods, empty periods included", chNow: "now", chEx: "excl. VAT", chInc: "incl. VAT", chNone: "Nothing in this period", chClick: "Click for details",
+      chInv1: "invoice", chInvF: "invoices", chInvM: "invoices", chPo1: "purchase order", chPoF: "purchase orders", chPoM: "purchase orders", chK: "k",
       unitMonth: "per month", unitQuarter: "per quarter",
       unitYear: "per year", kAvgWeek: "Average per week",
       kBestWeek: "Best week: {0} ({1})", tOrders: "Purchase orders",
@@ -1680,6 +1708,8 @@ window.ValkTheme = (function () {
       kOrders: "Zamówienia zakupu", kAvgOrder: "śr. {0} na zamówienie",
       week: "Tydzień", whatRevenue: "Przychód",
       whatOrdered: "Wartość zamówień", unitWeek: "tygodniowo",
+      chAvg: "Ø {0} {1}", chAvgHint: "Średnia z minionych okresów, łącznie z pustymi", chNow: "teraz", chEx: "netto", chInc: "brutto", chNone: "Brak w tym okresie", chClick: "Kliknij, aby zobaczyć szczegóły",
+      chInv1: "faktura", chInvF: "faktury", chInvM: "faktur", chPo1: "zamówienie", chPoF: "zamówienia", chPoM: "zamówień", chK: " tys.",
       unitMonth: "miesięcznie", unitQuarter: "kwartalnie",
       unitYear: "rocznie", kAvgWeek: "Średnio na tydzień",
       kBestWeek: "Najlepszy tydzień: {0} ({1})", tOrders: "Zamówienia zakupu",
@@ -3322,6 +3352,101 @@ window.ValkTheme = (function () {
   document.addEventListener("click", (e) => { if (!$("#kpiMenu").hidden && !e.target.closest(".kpihead")) kpiMenuOpen(false); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#kpiMenu").hidden) { kpiMenuOpen(false); $("#kpiFilter").focus(); e.preventDefault(); } });
 
+  // ---- the bar chart of the statistics (same periods as the table under it)
+  /** gridline steps: 3-4 round values (1, 2, 2.5, 5 x 10^n), the top one at or above the highest bar */
+  function chartTicks(max) {
+    let st = 1;
+    out: for (let e = 0; e <= 9; e++) for (const m of [1, 2, 2.5, 5]) { st = m * 10 ** e; if (Math.ceil(max / st - 1e-9) <= 4) break out; }
+    const n = Math.max(1, Math.ceil(max / st - 1e-9));
+    return Array.from({ length: n }, (_, i) => (i + 1) * st);
+  }
+  /** axis label: in full under 10.000 (€ 2.500), compact from there (€ 10k / € 12,5k); one style per axis */
+  const tickFmt = (v, compact) => (compact ? "€ " + (v / 1000).toLocaleString("nl-NL", { maximumFractionDigits: 1 }) + tr("chK") : eur0(v));
+  const countWord = (n, po) => `${n} ${tr((po ? "chPo" : "chInv") + { daysOne: "1", daysFew: "F", daysMany: "M" }[plural(n)])}`;
+  function renderChart({ buckets, mode, sel, cy, po, unitKey }) {
+    const box = $("#chartBox"), chart = $("#chart"), n = buckets.length, dense = n > 14;
+    const keep = document.activeElement && document.activeElement.closest && document.activeElement.closest("#chart .bc"); // a re-render keeps the keyboard focus on the same period
+    const keepIdx = keep ? +keep.dataset.i : -1;
+    hideChartTip();
+    box.classList.toggle("dense", dense); chart.classList.toggle("dense", dense);
+    chart.style.setProperty("grid-template-columns", `repeat(${n}, minmax(0, 1fr))`);
+    const max = Math.max(0, ...buckets.map((b) => b.a.sub)), ticks = chartTicks(Math.max(max, 1)), top = Math.max(max * 1.15, ticks[ticks.length - 1], 1), compact = ticks[ticks.length - 1] >= 10000;
+    const labels = ticks.map((v) => tickFmt(v, compact));
+    box.style.setProperty("--yw", Math.ceil(Math.max(...labels.map((l) => l.length), 3) * 6.4 + 10) + "px");
+    $("#chartGrid").innerHTML = ticks.map((v, i) => `<div class="yl" style="--f:${(v / top).toFixed(4)}" data-v="${v}"><span>${esc(labels[i])}</span></div>`).join("");
+    // the average: over the periods that have passed (empty ones count too), the same figure as the "average per week/month" tile
+    const nowIdx = buckets.findIndex((b) => b.now), lastData = buckets.reduce((m, b, i) => (b.a.sub ? i : m), -1);
+    const elapsed = Math.max(nowIdx >= 0 ? nowIdx + 1 : mode === "year" || sel < cy ? n : 0, lastData + 1);
+    const sum = buckets.reduce((t, b) => t + b.a.sub, 0), avg = elapsed ? sum / elapsed : 0, showAvg = elapsed >= 2 && avg > 0;
+    const av = $("#chartAvg"); av.hidden = !showAvg; av.classList.remove("below");
+    const avgText = tr("chAvg", eur0(avg), tr(unitKey));
+    if (showAvg) { av.style.setProperty("--f", (avg / top).toFixed(4)); av.dataset.v = String(Math.round(avg * 100) / 100); const u = document.createElement("span"); u.className = "u"; u.textContent = " " + tr(unitKey); av.firstElementChild.replaceChildren(tr("chAvg", eur0(avg), "").trim(), u); av.title = tr("chAvgHint"); }
+    const hi = max > 0 ? buckets.findIndex((b) => b.a.sub === max) : -1;
+    // week mode: the month name under the week that holds the 1st of that month
+    const monthAt = mode === "week" ? (t) => { for (let m = 0; m < 12; m++) { const d = Date.UTC(sel, m, 1); if (d >= t && d < t + 7 * DAY) return m; } return -1; } : null;
+    const focusAt = keepIdx >= 0 && keepIdx < n ? keepIdx : nowIdx >= 0 ? nowIdx : Math.max(0, lastData);
+    chart.setAttribute("aria-label", [$("#chartTitle").textContent, showAvg ? avgText : ""].filter(Boolean).join(". "));
+    chart.innerHTML = buckets.map((b, i) => {
+      const lab = dense && i % 4 !== 0 ? " " : esc(b.label); // many weeks: a number on every fourth one
+      const val = i === hi ? `<span class="bv num${i < 2 ? " l" : i > n - 3 && n > 4 ? " r" : ""}">${esc(eur0(b.a.sub))}</span>` : "";
+      const bar = b.a.sub > 0 ? `<div class="bar" style="height:${(b.a.sub / top * 100).toFixed(2)}%"></div>` : `<div class="bar zero"></div>`;
+      const m = monthAt ? monthAt(b.t) : -1;
+      const mon = monthAt ? `<span class="bm${m % 2 ? " alt" : ""}">${m >= 0 ? `<span>${esc(monthName(m, "short"))}</span>` : " "}</span>` : "";
+      return `<div class="bc${b.now ? " now" : ""}${b.rows.length ? " has" : ""}" data-i="${i}" role="button" tabindex="${i === focusAt ? 0 : -1}" aria-label="${esc(chartTipText(chartTip(b, mode, po)))}"${b.rows.length ? ' aria-haspopup="dialog"' : ' aria-disabled="true"'}>` +
+        `<div class="bz">${b.now ? `<span class="bnow" aria-hidden="true">${esc(tr("chNow"))}</span>` : ""}${val}${bar}</div><span class="bx">${lab}</span>${mon}<span class="bn num">${b.a.n || " "}</span></div>`;
+    }).join("");
+    if (keepIdx >= 0 && keepIdx < n) chart.children[keepIdx].focus();
+    const under = chart.querySelector(".bc:hover"); if (under) showChartTip(under); // the pointer is still on a bar: its tooltip stays
+    // the average label moves under its line when it would sit on the value label of the highest bar
+    if (showAvg && hi >= 0) {
+      const r1 = av.firstElementChild.getBoundingClientRect(), v = chart.querySelector(".bv"), r2 = v && v.getBoundingClientRect();
+      if (r2 && r1.left < r2.right && r2.left < r1.right && r1.top < r2.bottom && r2.top < r1.bottom) av.classList.add("below");
+    }
+  }
+  /** what the tooltip and the accessible name of one bar say: period, value (excl. and, with VAT, incl.), count, days */
+  function chartTip(b, mode, po) {
+    const t = { title: mode === "week" ? b.text : b.long };
+    if (!b.rows.length) { t.none = tr("chNone"); return t; }
+    t.ex = [core.eur(b.a.sub), tr("chEx")];
+    if (!po && b.a.vat > 0) t.inc = [core.eur(b.a.total), tr("chInc")];
+    t.cnt = `${countWord(b.a.n, po)} · ${core.qty(core.round2(b.a.days))} ${tr(plural(b.a.days))}`;
+    return t;
+  }
+  const chartTipText = (t) => [t.title, t.none, t.ex && t.ex.join(" "), t.inc && t.inc.join(" "), t.cnt].filter(Boolean).join(", ");
+  function hideChartTip() { const t = $("#chartTip"); t.hidden = true; document.querySelectorAll("#chart .bc.on").forEach((c) => c.classList.remove("on")); }
+  function showChartTip(col) {
+    const b = (state.statBuckets || [])[+col.dataset.i]; if (!b) return;
+    const t = chartTip(b, state.statMode, state.statSource === "pos"), tip = $("#chartTip");
+    document.querySelectorAll("#chart .bc.on").forEach((c) => c !== col && c.classList.remove("on")); col.classList.add("on");
+    const line = (cls, txt, small) => { const d = document.createElement("div"); d.className = cls; d.textContent = txt; if (small) { const sm = document.createElement("small"); sm.textContent = " " + small; d.append(sm); } return d; };
+    tip.replaceChildren(line("tt", t.title));
+    if (t.none) tip.append(line("tn", t.none));
+    else { tip.append(line("tv", ...t.ex)); if (t.inc) tip.append(line("ti", ...t.inc)); tip.append(line("tn", t.cnt), line("th", tr("chClick"))); }
+    tip.hidden = false;
+    // above the bar, centred; beside it when there is no room above; always inside the chart
+    const box = $("#chartBox").getBoundingClientRect(), bz = col.querySelector(".bz").getBoundingClientRect(), bar = col.querySelector(".bar").getBoundingClientRect();
+    const w = tip.offsetWidth, h = tip.offsetHeight, gap = 8, cx = bz.left + bz.width / 2 - box.left;
+    let x = cx - w / 2, y = bar.top - box.top - h - gap;
+    if (y < 0) { y = 0; x = bz.right - box.left + gap; if (x + w > box.width) x = bz.left - box.left - gap - w; }
+    tip.style.transform = `translate(${Math.round(Math.max(0, Math.min(box.width - w, x)))}px, ${Math.round(Math.max(0, Math.min(box.height - h, y)))}px)`;
+  }
+  {
+    const chart = $("#chart");
+    chart.addEventListener("pointerover", (e) => { const c = e.target.closest(".bc"); if (c) showChartTip(c); });
+    $("#chartBox").addEventListener("pointerleave", () => { const f = document.activeElement; if (chart.contains(f) && f.matches(":focus-visible")) showChartTip(f.closest(".bc")); else hideChartTip(); });
+    chart.addEventListener("focusin", (e) => { const c = e.target.closest(".bc"); if (c && c.matches(":focus-visible")) showChartTip(c); });
+    chart.addEventListener("focusout", (e) => { if (!chart.contains(e.relatedTarget)) hideChartTip(); });
+    chart.addEventListener("click", (e) => { const c = e.target.closest(".bc"); if (c) openPeriod(c.dataset.i); });
+    chart.addEventListener("keydown", (e) => {
+      const c = e.target.closest(".bc"); if (!c) return;
+      const cols = [...chart.children], i = cols.indexOf(c);
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPeriod(c.dataset.i); return; }
+      if (e.key === "Escape") { if (!$("#chartTip").hidden) { hideChartTip(); e.preventDefault(); } return; }
+      const j = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: cols.length - 1 }[e.key];
+      if (j === undefined) return; e.preventDefault();
+      const to = cols[Math.max(0, Math.min(cols.length - 1, j))]; c.tabIndex = -1; to.tabIndex = 0; to.focus();
+    });
+  }
   function renderStats() {
     const { list, undated } = statData();
     const { years, sel, cy, now } = statScope();
@@ -3397,16 +3522,8 @@ window.ValkTheme = (function () {
     // ---- chart
     const unitKey = { week: "unitWeek", month: "unitMonth", quarter: "unitQuarter", year: "unitYear" }[mode];
     $("#chartTitle").textContent = `${tr(po ? "whatOrdered" : "whatRevenue")} ${tr(unitKey)}${mode === "year" ? "" : ", " + sel}`;
-    const max = Math.max(...buckets.map((b) => b.a.sub), 1), H = 196, dense = buckets.length > 14, count = tr(po ? "tOrders" : "tInvoices");
-    const chart = $("#chart"); chart.classList.toggle("dense", dense);
-    chart.style.setProperty("grid-template-columns", `repeat(${buckets.length}, minmax(0, 1fr))`);
-    chart.setAttribute("aria-label", buckets.filter((b) => b.a.n).map((b) => `${b.long}: ${eur0(b.a.sub)}`).join(", "));
-    chart.innerHTML = buckets.map((b, i) => {
-      const tip = `${b.long}: ${eur0(b.a.sub)} · ${count}: ${b.a.n}`;
-      const lab = dense && i % 4 !== 0 ? " " : esc(b.label); // many weeks: label every fourth one
-      return `<div class="bc${b.now ? " now" : ""}" title="${esc(tip)}"><div class="bz">${b.a.n ? `<span class="bv num">${esc(eur0(b.a.sub))}</span><div class="bar" style="height:${Math.max(3, Math.round(b.a.sub / max * H))}px"></div>` : `<div class="bar zero"></div>`}</div>
-        <span class="bx">${lab}</span><span class="bn num">${b.a.n || " "}</span></div>`;
-    }).join("");
+    renderChart({ buckets, mode, sel, cy, po, unitKey });
+    const count = tr(po ? "tOrders" : "tInvoices");
 
     // ---- table (weeks without anything on them are left out)
     const cell = (v, fmt) => (v ? `<td>${esc(fmt(v))}</td>` : `<td class="z">–</td>`);

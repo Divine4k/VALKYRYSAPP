@@ -27,7 +27,8 @@ const foot = async (page) => page.$$eval("#stTable tfoot td", (t) => t.map((x) =
   let k = await kv(page); console.log(k);
   eq([k[0][0], k[1][0], k[2][0]], [eur0(all.sub), String(all.n), String(all.days)], "all years: revenue / invoices / days from the folder");
   eq(await foot(page), ["Totaal", String(all.n), String(all.days), eur2(all.sub), eur2(all.vat), eur2(all.total)], "table totals incl. VAT");
-  eq(await page.$$eval("#chart .bc", (b) => b.map((x) => [x.querySelector(".bx").textContent, x.querySelector(".bv").textContent])), [["2025", eur0(Y[2025].sub)], ["2026", eur0(Y[2026].sub)]], "yearly bars");
+  eq(await page.$$eval("#chart .bc", (b) => b.map((x) => [x.querySelector(".bx").textContent, x.getAttribute("aria-label").split(", ")[1]])), [["2025", eur2(Y[2025].sub) + " excl. btw"], ["2026", eur2(Y[2026].sub) + " excl. btw"]], "yearly bars");
+  eq(await page.$eval("#chart .bv", (v) => v.textContent), eur0(Math.max(Y[2025].sub, Y[2026].sub)), "value label on the highest year");
   eq(await page.$$eval("#stTable tbody tr", (r) => r.map((x) => x.children[1].textContent)), [String(Y[2025].n), String(Y[2026].n)], "invoices per year (copy counted once, number read from content, Word-only counted)");
   const note = await page.textContent("#statsNote"); console.log("note:", note);
   ok(note.includes(`${all.n} facturen: 0 uit de lijst Gemaakte facturen en ${all.n} uit je map`), "note says where the data came from");
