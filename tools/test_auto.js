@@ -24,14 +24,16 @@ async function launch() {
 (async () => {
   for (const d of [HOME, INV, POF]) { fs.rmSync(d, { recursive: true, force: true }); fs.mkdirSync(d, { recursive: true }); }
   fs.copyFileSync(path.join(REAL, "PO-006344.pdf"), path.join(POF, "PO-006344.pdf"));      // a new PO in the folder
-  const imap = await F.start({ users: { "jan@wp.pl": PASS }, boxes: { INBOX: [{ uid: 3, date: new Date(), subject: "Inkooporder PO-006475", raw: F.poMail({ po: "006475", pdf: fs.readFileSync(path.join(REAL, "PO-006475.pdf")) }) }], Sent: [] }, sentBox: "Sent" });
+  const imap = await F.start({ users: { "jan@wp.pl": PASS }, boxes: { INBOX: [{ uid: 3, date: new Date(), subject: "Inkooporder PO-006475", raw: F.poMail({ po: "006475", pdf: fs.readFileSync(path.join(REAL, "PO-006475.pdf")) }) },
+    { uid: 4, date: new Date(), subject: "Inkooporder PO-006551", raw: F.poMail({ po: "006551", pdf: fs.readFileSync(path.join(REAL, "PO-006551.pdf")) }) }], Sent: [] }, sentBox: "Sent" }); // PO-006551 already has an invoice (below)
   const smtp = await F.startSmtp({ users: { "jan@wp.pl": PASS } });
   const dir = seedProfile(HOME, { folder: INV, poFolder: POF });
+  { const d0 = db(dir); d0["invoices/50-2026"] = { factuurnr: "50-2026", nummer: 50, jaar: 2026, po: "PO-006551", datum: "01/06/2026", client: { name: "Piguillet BV" }, lines: [{ desc: "PO-006551", tarief: 400, aantal: 1 }], btw: "verlegd", totaal: 400, dagen: [] }; fs.writeFileSync(path.join(dir, "data.json"), JSON.stringify(d0)); }
   fs.writeFileSync(path.join(dir, "mail.json"), JSON.stringify({ mode: "ask", accounts: [{ id: "acc1", provider: "imap", user: "jan@wp.pl", host: "127.0.0.1", port: imap.port, smtp: { host: "127.0.0.1", port: smtp.port }, enabled: true, pass: "b:" + Buffer.from(PASS).toString("base64") }] }));
 
   let { app, page, errs } = await launch();
   ok(await until(() => page.isVisible("#autoCard")), "the beta card shows on the Invoices tab");
-  ok(/2 nieuwe inkooporders/.test(await page.textContent("#autoTitle")) && /BETA/.test(await page.textContent("#autoCard")), "...counting the PO in the folder and the one in the mail, marked BETA", await page.textContent("#autoTitle"));
+  ok(/2 nieuwe inkooporders/.test(await page.textContent("#autoTitle")) && /BETA/.test(await page.textContent("#autoCard")), "...counting the PO in the folder and the new one in the mail (not the one in the mail that already has an invoice), marked BETA", await page.textContent("#autoTitle"));
   await page.screenshot({ path: "/tmp/auto-card.png", clip: { x: 180, y: 0, width: 1100, height: 420 } });
 
   // ---- the warning first
@@ -64,9 +66,9 @@ async function launch() {
   const inv = fs.readdirSync(INV).sort();
   ok(inv.filter((n) => n.endsWith(".pdf")).length === 2 && inv.filter((n) => n.endsWith(".docx")).length === 2, "two invoices saved, PDF and Word", inv);
   eq(smtp.sent.length, 1, "one email");
-  const mail = M.parseMail(smtp.sent[0].data), recs = Object.entries(db(dir)).filter(([k]) => k.startsWith("invoices/")).map(([, v]) => v).sort((a, b) => a.nummer - b.nummer);
+  const mail = M.parseMail(smtp.sent[0].data), recs = Object.entries(db(dir)).filter(([k]) => k.startsWith("invoices/")).map(([, v]) => v).filter((v) => v.nummer !== 50).sort((a, b) => a.nummer - b.nummer);
   eq(smtp.sent[0].to, ["facturen@piguillet.nl"], "to the client's invoice address");
-  eq(recs.map((r) => r.po), ["PO-006344", "PO-006475"], "invoices logged for both POs");
+  eq(recs.filter((r) => r.nummer !== 50).map((r) => r.po), ["PO-006344", "PO-006475"], "invoices logged for both POs");
   eq(mail.subject, "Facturen " + recs.map((r) => r.factuurnr).join(", "), "subject with the invoice numbers");
   eq(mail.attachments.map((a) => a.name), inv.filter((n) => n.endsWith(".pdf")).sort(), "the two PDFs attached");
   ok(mail.attachments.every((a, i) => a.data.equals(fs.readFileSync(path.join(INV, inv.filter((n) => n.endsWith(".pdf"))[i])))), "...the same files as in the folder");

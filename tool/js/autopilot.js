@@ -11,7 +11,7 @@ const poDigits = (s) => { const m = /PO[-_\s]?(\d{3,})/i.exec(String(s || "")); 
 function autoWork() {
   if (!(desk && MAIL) || !state.poFolder || !state.poFolder.exists || state.poScanSig === "" || state.poScan || !state.invoicesLoaded || !state.folderScanned) return null;
   const folder = newPoItems().show, seen = new Set(folder.map((x) => poDigits(x.r.po))), mail = [];
-  for (const p of (mailUi.st && mailUi.st.pending) || []) { const k = poDigits(p.name); if (k && !seen.has(k)) { seen.add(k); mail.push(p); } }
+  for (const p of (mailUi.st && mailUi.st.pending) || []) { const k = poDigits(p.name), po = String(p.name).replace(/\.pdf$/i, ""); if (k && !seen.has(k) && !poInvoiced(po)) { seen.add(k); mail.push(p); } } // one with an invoice already is not new
   return { folder, mail, n: folder.length + mail.length };
 }
 function renderAuto() {
@@ -86,7 +86,10 @@ async function autoRun(e) {
     await refreshPoFolder();
     await autoWait(() => !state.poScan && state.poScanSig === state.poSig && state.folderScanned && !state.npBusy, 30000);
     const items = newPoItems().show.filter((x) => wanted.has(poDigits(x.r.po)));
-    if (!items.length) { step("read", "bad"); return finish("error", "autoE_none"); }
+    if (!items.length) { // say why: the POs are there but already have an invoice, or they are not there at all
+      const had = state.poRecs.filter((x) => wanted.has(poDigits(x.r.po)) && poInvoiced(x.r.po)).map((x) => x.r.po);
+      step("read", "bad"); return had.length ? finish("error", "autoE_invoiced", had.join(", ")) : finish("error", "autoE_none");
+    }
     step("read", "ok");
     // 3. the invoice cards, exactly as if the PDFs were dropped on the Invoices tab, all for the chosen client
     step("make", "run", tr("autoS_make", 0, items.length));
