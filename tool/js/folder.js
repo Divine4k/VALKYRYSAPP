@@ -7,6 +7,7 @@ async function refreshFolder() {
   if (!desk) return;
   let folder = null, files = [];
   try { folder = await desk.getFolder(); if (folder && folder.exists) files = await desk.listFiles(); } catch (e) { folder = null; files = []; }
+  if (!Array.isArray(files)) { folder = Object.assign({}, folder, { exists: false }); files = []; } // read only in part (drive pulled out): as if not there
   const sig = JSON.stringify([folder, files.map((f) => [f.rel, f.mtime, f.size])]);
   if (sig === state.folderSig) return;
   state.folderSig = sig; state.folder = folder; state.files = files;

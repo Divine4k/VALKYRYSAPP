@@ -75,11 +75,11 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   ok(mt("pdf") > m0[0] && mt("docx") > m0[1], "save both rewrote the PDF and the Word file");
   ok(!fs.readdirSync(F).some((n) => n.includes("(2)")), "re-saving the same invoice replaces the file");
   ok(JSON.stringify(rec("65-2026").savedFiles) === '["VALKYRYS 65-2026.pdf","VALKYRYS 65-2026.docx"]', "file names not doubled in the record");
-  // no file left in the folder: Documents shows it as the app draws it (eye), the stale banner names it
+  // no file left in the folder: Documents shows it as the app draws it (eye); just made, so it is not removed yet (no banner either)
   fs.renameSync(`${F}/VALKYRYS 65-2026.pdf`, tmp("65.pdf")); fs.renameSync(`${F}/VALKYRYS 65-2026.docx`, tmp("65.docx"));
   await page.click("#newPo button[data-refresh]").catch(() => {}); await goTab(page, "docs"); await page.click("#docsView button[data-refresh]"); await page.waitForTimeout(1500); await goTab(page, "inv");
   { const b = await hbtns("65-2026"); ok(JSON.stringify(b) === '["draw","del"]', "Documents: eye + delete when no file is in the folder: " + b); }
-  ok(await page.isVisible("#staleBar") && (await page.textContent("#staleBar")).includes("65-2026"), "the stale banner names 65-2026");
+  ok(!(await page.isVisible("#staleBar")) && rec("65-2026"), "no banner; a record made a moment ago is kept (the grace minute)");
   await goTab(page, "docs"); await page.click('#docsList li[data-nr="65-2026"] button[data-draw]'); await page.waitForSelector("#poDlg[open] #poPages canvas", { timeout: 15000 });
   ok((await page.textContent("#poDlgTitle")).includes("65-2026"), "the eye shows 65-2026 as the app draws it");
   await page.click("#poDlgClose"); await page.waitForTimeout(300);

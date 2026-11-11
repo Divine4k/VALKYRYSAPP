@@ -251,6 +251,7 @@ $("#docsHead").addEventListener("change", (e) => { // tick all invoices shown (o
 
 // ------------------------------------------------------------ deleting an invoice: the app's record and, if wanted, its files in the folder (to the Recycle Bin).
 // One flow for the × in "Gemaakte facturen" and the bin on a Documents row. The files are the ones docSets() matched to the number.
+const DRIVE_POLL_MS = 3000;
 const refreshAll = () => (desk ? Promise.all([refreshFolder(), refreshPoFolder()]) : Promise.resolve());
 let delAsk = null; // resolves the open delete dialog
 function askDelete(s, rec) {
@@ -318,6 +319,18 @@ if (desk) {
   let backT = 0;
   const onBack = () => { if (document.visibilityState === "hidden") return; clearTimeout(backT); backT = setTimeout(() => { refreshAll().catch(() => {}); }, 500); };
   window.addEventListener("focus", onBack); document.addEventListener("visibilitychange", onBack);
+  // folders on a USB stick or an external drive: a quick look every few seconds (one check per folder, no listing) notices the drive
+  // being pulled out or plugged in again (also under another drive letter, see electron-app/drives.js) without waiting for a click.
+  // When the PO folder is back, the mail is checked at once, so orders that came in meanwhile are saved into it.
+  const there = (f) => (f ? f.path + "|" + !!f.exists : "");
+  setInterval(async () => {
+    if (document.visibilityState === "hidden" || !state.folderScanned) return;
+    let inv, pos; try { [inv, pos] = await Promise.all([desk.getFolder(), desk.getFolder("pos")]); } catch (e) { return; } // locked
+    const invCh = there(inv) !== there(state.folder), posCh = there(pos) !== there(state.poFolder); if (!invCh && !posCh) return;
+    const posBack = posCh && pos && pos.exists;
+    await refreshAll().catch(() => {});
+    if (posBack && typeof mailCheckAll === "function" && mailHasAccounts()) { await mailCheckAll().catch(() => {}); refreshPoFolder().catch(() => {}); }
+  }, DRIVE_POLL_MS);
 }
 
 // ---- the invoice folder is the truth: an invoice in the app with no file of its number in the folder (deleted outside the app, or never saved

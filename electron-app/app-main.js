@@ -39,25 +39,35 @@ const isDir = (p) => { try { return fs.statSync(p).isDirectory(); } catch (e) { 
 const CFG = { invoices: "folder", pos: "poFolder" }; // two folders: the finished invoices, and the purchase orders (PDFs from the client)
 const cfgKey = (kind) => CFG[kind] || CFG.invoices;
 const folderPath = (kind) => { const f = readConfig()[cfgKey(kind)]; return typeof f === "string" && f ? f : ""; };
-const folderInfo = (kind) => { const p = folderPath(kind); return p ? { path: p, exists: isDir(p) } : null; };
+// a folder on a USB stick / external drive that came back under another drive letter: the same folder there is used and remembered
+const findMoved = process.platform === "win32" ? require("./drives").finder(isDir) : () => "";
+const liveFolder = (kind) => {
+  const p = folderPath(kind); if (!p || isDir(p)) return p;
+  const n = findMoved(p); if (!n) return p;
+  writeConfig(Object.assign(readConfig(), { [cfgKey(kind)]: n })); return n;
+};
+const folderInfo = (kind) => { const p = liveFolder(kind); return p ? { path: p, exists: isDir(p) } : null; };
 const inside = (root, rel) => { const full = path.resolve(root, rel); const r = path.relative(root, full); return r && !r.startsWith("..") && !path.isAbsolute(r) ? full : ""; };
 const SAVE_EXT = /\.(pdf|docx)$/i;
 
+// null when the listing may be incomplete (the drive was pulled out while reading): the page then treats the folder as not there,
+// so nothing is taken for deleted. A subfolder that may not be read (permissions) is only skipped.
 function listInvoiceFiles(root) {
-  const out = []; let seen = 0;
+  const out = []; let seen = 0, broken = false;
+  const bad = (e) => { if (!e || !["EACCES", "EPERM", "ENOENT"].includes(e.code)) broken = true; };
   const walk = (dir, depth) => {
-    let ents; try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { return; }
+    let ents; try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch (e) { if (dir === root || !e || e.code !== "EACCES" && e.code !== "EPERM") broken = true; return; }
     for (const e of ents) {
       if (++seen > 5000) return;
       if (e.name.startsWith(".") || e.name.startsWith("~$")) continue; // hidden files and Word's temporary lock files
       const full = path.join(dir, e.name);
       if (e.isDirectory()) { if (depth < 2) walk(full, depth + 1); continue; }
       if (!e.isFile() || !SAVE_EXT.test(e.name)) continue;
-      try { const st = fs.statSync(full); out.push({ rel: path.relative(root, full).split(path.sep).join("/"), name: e.name, ext: path.extname(e.name).slice(1).toLowerCase(), mtime: st.mtimeMs, size: st.size }); } catch (err) {}
+      try { const st = fs.statSync(full); out.push({ rel: path.relative(root, full).split(path.sep).join("/"), name: e.name, ext: path.extname(e.name).slice(1).toLowerCase(), mtime: st.mtimeMs, size: st.size }); } catch (err) { bad(err); }
     }
   };
   walk(root, 0);
-  return out;
+  return broken || !isDir(root) ? null : out;
 }
 
 // ---- the PIN: set at the first start, asked at every start. Kept in pin.json (salted scrypt hash, never the PIN itself).
@@ -128,8 +138,8 @@ function registerFolderIpc(getWin) {
     return { canceled: false, folder: folderInfo(kind) };
   }));
   ipcMain.handle("folder:clear", guard((e, kind) => { const c = readConfig(); delete c[cfgKey(kind)]; writeConfig(c); return true; }));
-  ipcMain.handle("folder:open", guard(async (e, kind) => { const p = folderPath(kind); if (!p || !isDir(p)) return false; await shell.openPath(p); return true; }));
-  ipcMain.handle("folder:list", guard((e, kind) => { const p = folderPath(kind); return p && isDir(p) ? listInvoiceFiles(p) : []; }));
+  ipcMain.handle("folder:open", guard(async (e, kind) => { const p = liveFolder(kind); if (!p || !isDir(p)) return false; await shell.openPath(p); return true; }));
+  ipcMain.handle("folder:list", guard((e, kind) => { const p = liveFolder(kind); return p && isDir(p) ? listInvoiceFiles(p) : []; }));
   ipcMain.handle("folder:read", guard(async (e, rel, kind) => { // file contents, so the page can read invoices and purchase orders
     const p = folderPath(kind); const full = p && inside(p, rel);
     if (!full || !SAVE_EXT.test(full)) return null;
@@ -158,7 +168,7 @@ function registerFolderIpc(getWin) {
     const err = await shell.openPath(full); return err ? { error: err } : { ok: true };
   }));
   ipcMain.handle("folder:save", guard(async (e, name, bytes, overwrite) => {
-    const p = folderPath();
+    const p = liveFolder();
     if (!p || !isDir(p)) return { ok: false, error: "missing" };
     if (name !== path.basename(name) || !SAVE_EXT.test(name)) return { ok: false, error: "name" };
     const buf = Buffer.from(bytes);
@@ -256,7 +266,7 @@ function registerMailIpc() {
   const { safeStorage } = require("electron");
   const enc = (s) => (safeStorage.isEncryptionAvailable() ? "s:" + safeStorage.encryptString(s).toString("base64") : "b:" + Buffer.from(s, "utf8").toString("base64"));
   const dec = (s) => (String(s).startsWith("s:") ? safeStorage.decryptString(Buffer.from(s.slice(2), "base64")) : Buffer.from(String(s).slice(2), "base64").toString("utf8"));
-  mail = require("./mailfetch").create({ dataDir: app.getPath("userData"), poFolder: () => { const p = folderPath("pos"); return p && isDir(p) ? p : ""; }, encrypt: enc, decrypt: dec,
+  mail = require("./mailfetch").create({ dataDir: app.getPath("userData"), poFolder: () => { const p = liveFolder("pos"); return p && isDir(p) ? p : ""; }, encrypt: enc, decrypt: dec,
     canRun: () => unlocked, plain: process.env.VALKYRYS_MAIL_PLAIN === "1", // plain: the tests' fake server only
     send: (st) => { if (win && !win.isDestroyed()) win.webContents.send("mail:changed", st); } });
   const guard = (fn) => async (e, ...a) => { if (!fromApp(e) || !unlocked) throw new Error("not allowed"); return fn(e, ...a); };

@@ -6,7 +6,7 @@ const slimPo = (p) => ({ po: p.po, orderDate: p.orderDate, orderedBy: p.orderedB
 async function refreshPoFolder() {
   if (!desk) return;
   let folder = null, files = [];
-  try { folder = await desk.getFolder("pos"); if (folder && folder.exists) files = (await desk.listFiles("pos")).filter((f) => f.ext === "pdf"); } catch (e) { folder = null; files = []; }
+  try { folder = await desk.getFolder("pos"); if (folder && folder.exists) { const l = await desk.listFiles("pos"); if (Array.isArray(l)) files = l.filter((f) => f.ext === "pdf"); else folder = Object.assign({}, folder, { exists: false }); } } catch (e) { folder = null; files = []; } // read only in part: as if not there
   const sig = JSON.stringify([folder, files.map((f) => [f.rel, f.mtime, f.size])]);
   state.poFolder = folder; state.poChecked = true; renderPoFolderSet();
   if (sig !== state.poSig) {
