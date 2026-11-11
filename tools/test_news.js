@@ -20,7 +20,7 @@ const items = (page) => page.$$eval("#newsList .nrel:first-child li", (l) => l.m
   let { app, page } = await launch(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
   await page.emulateMedia({ colorScheme: "light" });
   ok(await page.isVisible("#side #newsBtn"), "button in the sidebar");
-  eq(await page.$eval("#side .side-foot", (h) => [...h.children].map((c) => c.id)), ["newsBtn", "tabSettings"], "at the bottom of the sidebar, the Settings gear after it");
+  eq(await page.$eval("#side .side-foot", (h) => [...h.children].map((c) => c.id)), ["sideToggle", "newsBtn", "tabSettings"], "at the bottom of the sidebar (below the collapse toggle), the Settings gear after it");
   const r = await page.evaluate(() => { const t = document.querySelector("#tabs").getBoundingClientRect(), b = document.querySelector("#newsBtn").getBoundingClientRect(); return { below: b.top > t.bottom, sameColumn: Math.abs(b.left - t.left) < 2 && Math.abs(b.width - t.width) < 2, nearBottom: innerHeight - b.bottom < 120 }; });
   ok(r.below && r.sameColumn && r.nearBottom, "button sits under the tabs, near the bottom of the sidebar", r);
   eq(await page.textContent("#newsBtn .nlabel"), "Nieuw", "Dutch label");

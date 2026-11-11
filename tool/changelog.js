@@ -3,6 +3,19 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
+    version: "1.1.5", date: "2026-11-11",
+    items: [
+      { type: "new",
+        nl: "Klap de zijbalk in tot een smalle rij pictogrammen met de knop „Inklappen” onderaan (of Ctrl+B), en klap hem op dezelfde manier weer uit. De app onthoudt je keuze.",
+        en: "Collapse the sidebar to a narrow row of icons with the “Collapse” button at the bottom (or Ctrl+B), and expand it again the same way. The app remembers your choice.",
+        pl: "Zwiń pasek boczny do wąskiej kolumny ikon przyciskiem „Zwiń” na dole (lub Ctrl+B) i rozwiń go z powrotem w ten sam sposób. Aplikacja zapamiętuje Twój wybór." },
+      { type: "improved",
+        nl: "De zijbalk is smaller, zodat er meer ruimte is voor je facturen en statistieken.",
+        en: "The sidebar is narrower, so there is more room for your invoices and statistics.",
+        pl: "Pasek boczny jest węższy, więc jest więcej miejsca na faktury i statystyki." },
+    ],
+  },
+  {
     version: "1.1.4", date: "2026-11-11",
     items: [
       { type: "improved",

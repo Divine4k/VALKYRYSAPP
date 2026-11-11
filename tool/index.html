@@ -266,22 +266,32 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .det button { min-height: 28px; padding: 3px 9px; font-size: 12px; }
 .det-wrap { overflow-x: auto; }
 .det tfoot td { font-weight: 900; color: var(--ink); border-top: 2px solid var(--ink); }
-/* Navigation: sidebar on the left (logo, the three work tabs, What's new + Settings at the bottom); an icon rail below 900px, a bar at the bottom below 560px */
-:root { --side-w: 224px; }
+/* Navigation: sidebar on the left (logo, the three work tabs, What's new + Settings at the bottom). html.rail (set by ValkSide in the head:
+   collapsed with the toggle, or forced between 560 and 899px) makes it an icon rail; below 560px a bar at the bottom. Icons keep their x in both states. */
+:root { --side-w: 180px; }
+html.rail { --side-w: 68px; }
 body { padding-left: var(--side-w); }
 #toast { left: calc(50% + var(--side-w) / 2); }
 @media (min-width: 560px) { body .pagehead-in, body .sv, body > main { padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px)); } }
-.side { position: fixed; top: 0; bottom: 0; left: 0; z-index: 10; width: var(--side-w); display: flex; flex-direction: column; gap: 4px; padding: 22px 12px max(14px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); background: var(--surface); border-right: 1px solid var(--line); overflow-y: auto; overscroll-behavior: contain; }
-.side-brand { display: flex; align-items: center; gap: 10px; min-height: 28px; padding: 0 10px 22px; }
-.side-logo { display: block; flex: 0 0 auto; height: 22px; aspect-ratio: 1365 / 318; background: var(--ink); -webkit-mask: url(img/logo-white.png) left center / contain no-repeat; mask: url(img/logo-white.png) left center / contain no-repeat; }
-.side-app { padding-left: 10px; border-left: 1px solid var(--line); color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; line-height: 16px; }
+.side { position: fixed; top: 0; bottom: 0; left: 0; z-index: 10; width: var(--side-w); display: flex; flex-direction: column; gap: 4px; padding: 22px 12px max(14px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); background: var(--surface); border-right: 1px solid var(--line); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+html.side-anim body { transition: padding-left .18s ease; }
+html.side-anim .side { transition: width .18s ease; }
+html.side-anim #toast { transition: left .18s ease; }
+.side-brand { display: flex; align-items: center; gap: 9px; min-height: 28px; padding: 0 0 22px 13px; white-space: nowrap; }
+.side-logo { display: block; flex: 0 0 auto; height: 20px; aspect-ratio: 1365 / 318; background: var(--ink); -webkit-mask: url(img/logo-white.png) left center / contain no-repeat; mask: url(img/logo-white.png) left center / contain no-repeat; }
+.side-app { padding-left: 9px; border-left: 1px solid var(--line); color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; line-height: 16px; }
 .sidenav, .side-foot { display: flex; flex-direction: column; gap: 2px; }
 .side-foot { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); }
-.navi { position: relative; width: 100%; min-height: 40px; padding: 0 12px; justify-content: flex-start; gap: 12px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 14px; font-weight: 700; text-align: left; white-space: nowrap; transition: background-color .15s ease, color .15s ease; }
-.navi:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); }
-.navi svg { flex: 0 0 auto; display: block; width: 18px; height: 18px; }
-.navi .lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.navi:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.navi, .sidetog { position: relative; flex: 0 0 auto; width: 100%; min-height: 42px; padding: 0 10px 0 13px; justify-content: flex-start; gap: 11px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 14px; font-weight: 700; text-align: left; white-space: nowrap; overflow: hidden; transition: background-color .15s ease, color .15s ease; }
+.navi:hover, .sidetog:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); }
+.navi svg, .sidetog svg { flex: 0 0 auto; display: block; width: 18px; height: 18px; }
+.navi .lbl, .sidetog .lbl { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+html.side-anim:not(.rail) .side .lbl { animation: lblIn .22s ease; }
+@keyframes lblIn { from { opacity: 0; } to { opacity: 1; } }
+.navi:focus-visible, .sidetog:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.sidetog { min-height: 34px; margin-bottom: 4px; font-size: 13px; font-weight: 600; }
+.sidetog svg .chev { transform-origin: 15.5px 12px; transition: transform .18s ease; }
+html.side-min .sidetog svg .chev { transform: scaleX(-1); }
 .navi[aria-selected="true"], .navi[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--ink); }
 .navi[aria-selected="true"]::before, .navi[aria-pressed="true"]::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--accent); }
 .navi.setbtn svg { transition: transform .4s ease; }
@@ -289,18 +299,14 @@ body { padding-left: var(--side-w); }
 .navi.newsbtn.unseen { color: var(--ink); }
 .newsdot { flex: 0 0 auto; margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px color-mix(in srgb, var(--ink) 18%, transparent); }
 .newsdot[hidden] { display: none; }
-@media (prefers-reduced-motion: reduce) { .navi, .navi.setbtn svg { transition: none; } .navi.setbtn:hover svg { transform: none; } }
-@media (max-width: 899px) {
-  :root { --side-w: 72px; }
-  .side { padding-inline: 12px; align-items: center; }
-  .side-brand { padding: 0 0 20px; justify-content: center; }
-  .side-logo { height: 28px; width: 36px; aspect-ratio: auto; -webkit-mask-size: auto 100%; mask-size: auto 100%; }
-  .side-app { display: none; }
-  .sidenav, .side-foot { align-items: center; width: 100%; }
-  .navi { width: 48px; min-height: 44px; padding: 0; justify-content: center; }
-  .navi .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .newsdot { position: absolute; top: 9px; right: 10px; margin: 0; }
-}
+@media (prefers-reduced-motion: reduce) { .navi, .navi.setbtn svg, html.side-anim body, html.side-anim .side, html.side-anim #toast, .sidetog svg .chev { transition: none; } html.side-anim:not(.rail) .side .lbl { animation: none; } .navi.setbtn:hover svg { transform: none; } }
+html.rail .side-brand { padding: 0 0 20px; justify-content: center; }
+html.rail .side-logo { height: 28px; width: 36px; aspect-ratio: auto; -webkit-mask-size: auto 100%; mask-size: auto 100%; }
+html.rail .side-app { display: none; }
+html.rail .navi, html.rail .sidetog { width: 44px; }
+html.rail .side .lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+html.rail .newsdot { position: absolute; top: 8px; right: 6px; margin: 0; }
+@media (max-width: 899px) { .sidetog { display: none; } }
 @media (max-width: 559px) {
   :root { --side-w: 0px; }
   body { padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
@@ -309,10 +315,10 @@ body { padding-left: var(--side-w); }
   .side-brand { display: none; }
   .sidenav, .side-foot { flex-direction: row; align-items: stretch; width: auto; flex: 3 1 0; min-width: 0; }
   .side-foot { flex: 2 1 0; margin: 0; padding: 0 0 0 4px; border-top: 0; border-left: 1px solid var(--line); }
-  .navi { flex: 1 1 0; min-width: 0; width: auto; min-height: 54px; flex-direction: column; gap: 3px; padding: 4px 2px; font-size: 11px; border-radius: 10px; }
+  .navi { flex: 1 1 0; min-width: 0; width: auto; min-height: 54px; flex-direction: column; justify-content: center; gap: 3px; padding: 4px 2px; font-size: 11px; border-radius: 10px; }
   .navi .lbl { position: static; width: auto; height: auto; clip: auto; max-width: 100%; }
   .navi[aria-selected="true"]::before, .navi[aria-pressed="true"]::before { left: 32%; right: 32%; top: 0; bottom: auto; width: auto; height: 3px; border-radius: 0 0 3px 3px; }
-  .newsdot { top: 7px; right: calc(50% - 15px); }
+  .newsdot { position: absolute; top: 7px; right: calc(50% - 15px); margin: 0; }
 }
 #newsDlg { width: min(600px, calc(100% - 24px)); }
 #newsDlg .dlg-body { background: var(--surface); padding: 6px 18px 4px; }
@@ -534,6 +540,23 @@ button.mkinv { min-height: 30px; padding: 4px 12px; font-size: 12.5px; white-spa
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
+<script>
+/* Sidebar width, before the page is drawn: html.side-min = collapsed by the person (localStorage valkyrys-side, also settings/prefs.side);
+   html.rail = drawn as the icon rail (collapsed, or forced between 560 and 899px; below 560px it is the bottom bar). */
+window.ValkSide = (function () {
+  var de = document.documentElement, wide = window.matchMedia("(min-width: 900px)"), mid = window.matchMedia("(min-width: 560px)"), min = false;
+  try { min = localStorage.getItem("valkyrys-side") === "min"; } catch (e) {}
+  function sync() { de.classList.toggle("side-min", min); de.classList.toggle("rail", mid.matches && (min || !wide.matches)); if (typeof window.ValkSideChanged === "function") window.ValkSideChanged(); }
+  [wide, mid].forEach(function (m) { if (m.addEventListener) m.addEventListener("change", sync); });
+  sync();
+  return {
+    collapsed: function () { return min; },
+    forced: function () { return !wide.matches; },
+    rail: function () { return de.classList.contains("rail"); },
+    set: function (v) { v = !!v; if (v === min) return false; min = v; try { localStorage.setItem("valkyrys-side", v ? "min" : "full"); } catch (e) {} sync(); return true; }
+  };
+})();
+</script>
 <script>
 /* Theme engine. Runs before the page is drawn. The black band with the Valkyrys logo and its yellow line are never themed. */
 window.ValkTheme = (function () {
@@ -798,6 +821,7 @@ window.ValkTheme = (function () {
       <button type="button" class="navi" role="tab" id="tabDocs" data-tab="docs" aria-selected="false" aria-controls="docsView" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M8 13h8"/></svg><span class="lbl" data-i18n="tabDocs">Documenten</span></button>
   </nav>
   <div class="side-foot">
+    <button type="button" class="sidetog" id="sideToggle" aria-controls="side" aria-expanded="true" data-i18n-aria="sideCollapse" aria-label="Zijbalk inklappen"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/><path class="chev" d="M16.5 9.5 14 12l2.5 2.5"/></svg><span class="lbl" id="sideToggleLbl" data-i18n="sideCollapseShort">Inklappen</span></button>
     <button type="button" class="navi newsbtn" id="newsBtn" aria-haspopup="dialog" aria-controls="newsDlg" data-i18n-aria="newsBtnAria" aria-label="Nieuw in deze versie"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/><path d="M5 2.5l.6 1.4L7 4.5l-1.4.6L5 6.5l-.6-1.4L3 4.5l1.4-.6z"/></svg><span class="lbl nlabel" data-i18n="newsBtn">Nieuw</span><span class="newsdot" id="newsDot" hidden></span></button>
     <button type="button" class="navi setbtn" id="tabSettings" data-tab="settings" aria-pressed="false" aria-controls="settingsView" data-i18n-aria="tabSettings" aria-label="Instellingen"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="lbl" data-i18n="tabSettings">Instellingen</span></button>
   </div>
@@ -1268,7 +1292,7 @@ window.ValkTheme = (function () {
       npAdd: "Toevoegen", npAddAll: "Alles toevoegen ({0})", npSkip: "Overslaan", npSkipTitle: "Niet meer in deze lijst tonen", npSkipAll: "Alles overslaan", npRestore: "Terugzetten",
       npSkipped: "{0} overgeslagen.", npMore: "Toon alle {0}", npLess: "Toon minder", npOrdered: "besteld {0}", npAdded: "{0} toegevoegd aan de lijst hieronder.", npFail: "Deze inkooporder kon niet worden geladen.",
       npUnread: "{0} PDF’s in de map zijn niet als inkooporder gelezen: {1}", npOpen: "Open map",
-      newsBtn: "Nieuw", newsBtnAria: "Wat is er nieuw", newsUnseen: "Wat is er nieuw (nieuwe wijzigingen)", newsTitle: "Wat is er nieuw", newsNew: "Nieuw", newsImproved: "Verbeterd", newsFixed: "Opgelost", newsVersion: "Versie {0}", newsLatest: "Deze versie", newsFoot: "Na elke update zie je hier wat er veranderd is.",
+      sideCollapse: "Zijbalk inklappen", sideExpand: "Zijbalk uitklappen", sideCollapseShort: "Inklappen", newsBtn: "Nieuw", newsBtnAria: "Wat is er nieuw", newsUnseen: "Wat is er nieuw (nieuwe wijzigingen)", newsTitle: "Wat is er nieuw", newsNew: "Nieuw", newsImproved: "Verbeterd", newsFixed: "Opgelost", newsVersion: "Versie {0}", newsLatest: "Deze versie", newsFoot: "Na elke update zie je hier wat er veranderd is.",
       themeBtn: "Thema", themeTitle: "Thema", themeIntro: "Kies hoe de app eruitziet. Het Valkyrys-logo blijft altijd zoals het is.",
       tAuto: "Automatisch", tLight: "Licht", tDark: "Donker", tMidnight: "Middernacht", tPaper: "Papier", tForest: "Bos", tContrast: "Hoog contrast", tCustom: "Eigen thema",
       tcTitle: "Eigen kleuren", tcBg: "Achtergrond", tcSurface: "Kaarten en vlakken", tcInk: "Tekst", tcAccent: "Accent (knoppen, grafiek)", tcHex: "{0}, kleurcode", tcBase: "Beginnen met de kleuren van", tcBasePh: "Kies een thema…",
@@ -1433,7 +1457,7 @@ window.ValkTheme = (function () {
       npAdd: "Add", npAddAll: "Add all ({0})", npSkip: "Skip", npSkipTitle: "Stop showing this one in the list", npSkipAll: "Skip all", npRestore: "Restore",
       npSkipped: "{0} skipped.", npMore: "Show all {0}", npLess: "Show fewer", npOrdered: "ordered {0}", npAdded: "{0} added to the list below.", npFail: "This purchase order could not be loaded.",
       npUnread: "{0} PDFs in the folder were not read as purchase orders: {1}", npOpen: "Open folder",
-      newsBtn: "What's new", newsBtnAria: "What's new", newsUnseen: "What's new (new changes)", newsTitle: "What's new", newsNew: "New", newsImproved: "Improved", newsFixed: "Fixed", newsVersion: "Version {0}", newsLatest: "This version", newsFoot: "After every update you can see here what has changed.",
+      sideCollapse: "Collapse sidebar", sideExpand: "Expand sidebar", sideCollapseShort: "Collapse", newsBtn: "What's new", newsBtnAria: "What's new", newsUnseen: "What's new (new changes)", newsTitle: "What's new", newsNew: "New", newsImproved: "Improved", newsFixed: "Fixed", newsVersion: "Version {0}", newsLatest: "This version", newsFoot: "After every update you can see here what has changed.",
       themeBtn: "Theme", themeTitle: "Theme", themeIntro: "Choose how the app looks. The Valkyrys logo always stays as it is.",
       tAuto: "Automatic", tLight: "Light", tDark: "Dark", tMidnight: "Midnight", tPaper: "Paper", tForest: "Forest", tContrast: "High contrast", tCustom: "Custom",
       tcTitle: "Your own colours", tcBg: "Background", tcSurface: "Cards and panels", tcInk: "Text", tcAccent: "Accent (buttons, chart)", tcHex: "{0}, colour code", tcBase: "Start from the colours of", tcBasePh: "Choose a theme…",
@@ -1598,7 +1622,7 @@ window.ValkTheme = (function () {
       npAdd: "Dodaj", npAddAll: "Dodaj wszystkie ({0})", npSkip: "Pomiń", npSkipTitle: "Nie pokazuj już tego na liście", npSkipAll: "Pomiń wszystkie", npRestore: "Przywróć",
       npSkipped: "Pominięte: {0}.", npMore: "Pokaż wszystkie ({0})", npLess: "Pokaż mniej", npOrdered: "zamówiono {0}", npAdded: "Dodano do listy poniżej: {0}.", npFail: "Nie udało się wczytać tego zamówienia.",
       npUnread: "Pliki PDF w folderze nieodczytane jako zamówienia: {0}: {1}", npOpen: "Otwórz folder",
-      newsBtn: "Co nowego", newsBtnAria: "Co nowego", newsUnseen: "Co nowego (nowe zmiany)", newsTitle: "Co nowego", newsNew: "Nowość", newsImproved: "Ulepszenie", newsFixed: "Poprawka", newsVersion: "Wersja {0}", newsLatest: "Ta wersja", newsFoot: "Po każdej aktualizacji zobaczysz tu, co się zmieniło.",
+      sideCollapse: "Zwiń pasek boczny", sideExpand: "Rozwiń pasek boczny", sideCollapseShort: "Zwiń", newsBtn: "Co nowego", newsBtnAria: "Co nowego", newsUnseen: "Co nowego (nowe zmiany)", newsTitle: "Co nowego", newsNew: "Nowość", newsImproved: "Ulepszenie", newsFixed: "Poprawka", newsVersion: "Wersja {0}", newsLatest: "Ta wersja", newsFoot: "Po każdej aktualizacji zobaczysz tu, co się zmieniło.",
       themeBtn: "Motyw", themeTitle: "Motyw", themeIntro: "Wybierz wygląd aplikacji. Logo Valkyrys zawsze pozostaje bez zmian.",
       tAuto: "Automatyczny", tLight: "Jasny", tDark: "Ciemny", tMidnight: "Północ", tPaper: "Papier", tForest: "Las", tContrast: "Wysoki kontrast", tCustom: "Własny",
       tcTitle: "Własne kolory", tcBg: "Tło", tcSurface: "Karty i panele", tcInk: "Tekst", tcAccent: "Akcent (przyciski, wykres)", tcHex: "{0}, kod koloru", tcBase: "Zacznij od kolorów motywu", tcBasePh: "Wybierz motyw…",
@@ -3398,12 +3422,26 @@ window.ValkTheme = (function () {
   const TABS = ["stats", "inv", "docs", "settings"], WORK_TABS = ["stats", "inv", "docs"], TAGLINE = { stats: "statsTagline", inv: "tagline", docs: "docsTagline", settings: "settingsTagline" };
   const TABKEY = { stats: "tabStats", inv: "tabInvoices", docs: "tabDocs", settings: "tabSettings" };
   // Page title follows the selected tab. In the icon rail (narrow window, labels hidden) the sidebar items get their label as a tooltip.
-  const RAIL = window.matchMedia("(max-width: 899px) and (min-width: 560px)");
+  // The rail is html.rail (see ValkSide in the head): collapsed with the toggle at the bottom of the sidebar (or Ctrl+B), or forced in a narrow window.
   function syncTabHead() {
     $("#pageTitle").textContent = tr(TABKEY[state.tab] || "tabStats");
-    document.querySelectorAll("#side .navi").forEach((b) => { const k = b.id === "newsBtn" ? "newsBtn" : TABKEY[b.dataset.tab]; if (RAIL.matches) b.title = tr(k); else b.removeAttribute("title"); });
+    const rail = window.ValkSide.rail(), min = window.ValkSide.collapsed();
+    document.querySelectorAll("#side .navi").forEach((b) => { const k = b.id === "newsBtn" ? "newsBtn" : TABKEY[b.dataset.tab]; if (rail) b.title = tr(k); else b.removeAttribute("title"); });
+    const t = $("#sideToggle"), k = min ? "sideExpand" : "sideCollapse";
+    t.dataset.i18nAria = k; t.setAttribute("aria-label", tr(k)); t.setAttribute("aria-expanded", String(!min)); t.title = tr(k) + " (Ctrl+B)";
   }
-  if (RAIL.addEventListener) RAIL.addEventListener("change", syncTabHead);
+  window.ValkSideChanged = syncTabHead;
+  function setSide(min) { // the person's choice: remembered in localStorage (ValkSide) and settings/prefs.side
+    if (!window.ValkSide.set(min)) return;
+    if (state.db) savePrefs({ side: min ? "min" : "full" });
+  }
+  $("#sideToggle").addEventListener("click", () => setSide(!window.ValkSide.collapsed()));
+  document.addEventListener("keydown", (e) => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== "b" || window.ValkSide.forced()) return;
+    const a = document.activeElement; if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || document.querySelector("dialog[open]")) return;
+    e.preventDefault(); setSide(!window.ValkSide.collapsed());
+  });
+  requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.add("side-anim"))); // no animation while the page is first drawn
   function setTab(t) {
     state.tab = TABS.includes(t) ? t : "stats";
     const work = WORK_TABS.includes(state.tab); // with Settings open no tab is selected; the first tab stays reachable with Tab
@@ -3613,8 +3651,10 @@ window.ValkTheme = (function () {
   }
   function saveLang() {
     try { localStorage.setItem("valkyrys-lang", state.lang); localStorage.setItem("valkyrys-lang-chosen", "1"); } catch (e) {}
-    if (state.db) { try { state.db.doc("settings/prefs").set({ lang: state.lang, langChosen: true }); } catch (e) {} }
+    if (state.db) savePrefs({ lang: state.lang, langChosen: true });
   }
+  let prefsData = {}; // last known settings/prefs (set() replaces the whole doc, so every write merges into this)
+  function savePrefs(v) { prefsData = Object.assign({}, prefsData, v); try { state.db.doc("settings/prefs").set(prefsData); } catch (e) {} }
   $("#lang").addEventListener("change", (e) => { state.lang = e.target.value in LANGS ? e.target.value : "nl"; saveLang(); applyLang(); });
   try { const saved = localStorage.getItem("valkyrys-lang"); state.lang = saved in LANGS ? saved : "nl"; } catch (e) { state.lang = "nl"; }
 
@@ -3934,6 +3974,7 @@ window.ValkTheme = (function () {
     }, () => {});
     db.doc("settings/prefs").onSnapshot((snap) => {
       const l = snap.exists && snap.data().lang;
+      if (snap.exists) { prefsData = Object.assign({}, snap.data()); const sd = prefsData.side; if (sd === "min" || sd === "full") window.ValkSide.set(sd === "min"); }
       if (langPicked) { langPicked = false; saveLang(); return; }
       if (l && l in LANGS && l !== state.lang) { state.lang = l; try { localStorage.setItem("valkyrys-lang", l); } catch (e) {} applyLang(); }
     }, () => {});

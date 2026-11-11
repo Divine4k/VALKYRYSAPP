@@ -97,7 +97,7 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   ok(await page.evaluate(() => !document.querySelector("#appbar, .appbar, .seg-ind")), "no black bar on top any more, no sliding pill");
   ok(await page.$eval("#side .side-logo", (l) => getComputedStyle(l).maskImage.includes("logo-white.png") && l.getAttribute("aria-label") === "Valkyrys"), "sidebar: logo drawn from the logo file (mask), named for screen readers");
   { const [s, w] = [await page.locator("#side").boundingBox(), await page.evaluate(() => [innerWidth, innerHeight])];
-    ok(s && s.x === 0 && s.y === 0 && s.width >= 200 && s.width <= 240 && s.height >= w[1] - 1, "sidebar on the left, full height, ~220px wide", s); }
+    ok(s && s.x === 0 && s.y === 0 && s.width >= 172 && s.width <= 188 && s.height >= w[1] - 1, "sidebar on the left, full height, ~180px wide", s); }
   ok(await page.$eval("#pageTitle", (h) => h.getBoundingClientRect().left >= document.querySelector("#side").getBoundingClientRect().right), "page content sits right of the sidebar");
   eq(await page.$eval("#tabs", (n) => [n.getAttribute("role"), n.getAttribute("aria-orientation"), n.closest("#side") !== null]), ["tablist", "vertical", true], "the tabs are a vertical list in the sidebar");
   { const ys = await page.$$eval("#side .navi", (b) => b.map((x) => [x.id, Math.round(x.getBoundingClientRect().top)]));
@@ -108,7 +108,7 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   eq(await page.$eval("#tabSettings", (b) => [b.closest("#tabs") === null, b.getAttribute("role"), b.getAttribute("aria-label"), b.getAttribute("aria-pressed"), b.textContent.trim(), b.previousElementSibling && b.previousElementSibling.id]), [true, null, "Instellingen", "false", "Instellingen", "newsBtn"], "Settings is a gear item after What's new, outside the tabs");
   ok(await page.isVisible("#statsView") && !(await page.isVisible("#viewInv")) && !(await page.isVisible("#settingsView")), "the app opens on the statistics");
   eq(await page.textContent("#tagline"), "Je omzet en facturen in cijfers.", "its tagline");
-  ok(await page.$eval("#side", (h) => !h.querySelector("#themeBtn, #lang, select, button:not([role=tab]):not(#newsBtn):not(#tabSettings)")), "the sidebar has no theme button or language list, only the tabs, What's new and Settings");
+  ok(await page.$eval("#side", (h) => !h.querySelector("#themeBtn, #lang, select, button:not([role=tab]):not(#newsBtn):not(#tabSettings):not(#sideToggle)")), "the sidebar has no theme button or language list, only the tabs, What's new, Settings and the collapse toggle");
   { const sel = await page.$eval("#tabStats", (b) => { const c = getComputedStyle(b), o = getComputedStyle(document.querySelector("#tabInv")); return [c.backgroundColor !== o.backgroundColor, getComputedStyle(b, "::before").content !== "none"]; });
     eq(sel, [true, true], "the selected tab is highlighted (tint + accent bar)"); }
   ok(await page.evaluate(() => !document.querySelector("#srcRow, #srcPath, #srcDot, #srcSettings, #srcPick, #srcOpen, #srcClear")), "no 'read from' line on the statistics: the folders are in Settings");
@@ -144,13 +144,17 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   await goTab(page, "settings"); await page.click("#poFolderClear"); await page.waitForTimeout(500);
   ok(!(await page.isVisible("#poFolderPath")) && (await page.textContent("#poFolderPick")) === "Kies map…", "disconnecting the PO folder works from Settings");
   await pick(PO); await page.click("#poFolderPick"); await page.waitForTimeout(600);
+  const labelsFit = () => page.evaluate(() => [...document.querySelectorAll("#side .navi, #side .side-brand")].filter((b) => { const l = b.querySelector(".lbl") || b; return l.scrollWidth > l.clientWidth + 0.5 || b.getBoundingClientRect().right > document.querySelector("#side").getBoundingClientRect().right - 12 || (b.querySelector(".lbl") && b.querySelector(".lbl").getBoundingClientRect().height > 24); }).map((b) => b.textContent.trim()));
+  await page.evaluate(() => { document.querySelector("#newsDot").hidden = false; }); // the dot must fit next to the longest "What's new" too
+  eq(await labelsFit(), [], "180px: every sidebar label fits on one line (nl)");
   // language and theme live here now
   await page.selectOption("#lang", "en"); await page.waitForTimeout(300);
-  eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.textContent.trim())), ["Statistics", "Invoices", "Documents"], "language list in Settings switches the app (English)"); eq(await page.getAttribute("#tabSettings", "aria-label"), "Settings", "gear button label in English");
+  eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.textContent.trim())), ["Statistics", "Invoices", "Documents"], "language list in Settings switches the app (English)"); eq(await page.getAttribute("#tabSettings", "aria-label"), "Settings", "gear button label in English"); eq(await labelsFit(), [], "180px: every sidebar label fits on one line (en)");
   eq(await page.textContent("#pageTitle"), "Settings", "page title in English");
   eq(await page.textContent("#folderHelp"), "Choose a folder where your invoices are kept. New invoices are saved there automatically and the app shows everything that is already in it.", "English help text for the invoice folder");
   await page.selectOption("#lang", "pl"); await page.waitForTimeout(300);
-  eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.textContent.trim())), ["Statystyki", "Faktury", "Dokumenty"], "Polish"); eq(await page.getAttribute("#tabSettings", "aria-label"), "Ustawienia", "gear button label in Polish"); eq(await page.textContent("#pageTitle"), "Ustawienia", "page title in Polish");
+  eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.textContent.trim())), ["Statystyki", "Faktury", "Dokumenty"], "Polish"); eq(await page.getAttribute("#tabSettings", "aria-label"), "Ustawienia", "gear button label in Polish"); eq(await page.textContent("#pageTitle"), "Ustawienia", "page title in Polish"); eq(await labelsFit(), [], "180px: every sidebar label fits on one line (pl, with the What's new dot)");
+  eq([await page.getAttribute("#sideToggle", "aria-label"), await page.textContent("#sideToggle")], ["Zwiń pasek boczny", "Zwiń"], "collapse toggle in Polish");
   eq(await page.textContent("#poFolderPick"), "Zmień folder…", "Polish button");
   await page.selectOption("#lang", "nl"); await page.waitForTimeout(300);
   await page.click("#themeBtn"); ok(await page.$eval("#themeDlg", (d) => d.open), "theme button opens the theme window"); await page.click("#themeClose");
@@ -173,6 +177,27 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   await page.keyboard.press("Home"); await page.keyboard.press("End"); await page.waitForTimeout(150);
   eq(await page.$eval("#tabs [aria-selected=true]", (t) => t.dataset.tab), "docs", "End reaches Documents, the last work tab");
   await page.keyboard.press("Home"); await page.waitForTimeout(100); eq(await page.$eval("#tabs [aria-selected=true]", (t) => t.dataset.tab), "stats", "Home reaches the first tab");
+  // the collapse toggle: icon rail and back, remembered
+  const sideState = () => page.evaluate(() => { const s = document.querySelector("#side").getBoundingClientRect(), b = [...document.querySelectorAll("#side .navi")], t = document.querySelector("#sideToggle");
+    return { w: Math.round(s.width), labelsHidden: b.every((x) => x.querySelector(".lbl").getBoundingClientRect().width <= 1), titles: b.map((x) => x.title), aria: [t.getAttribute("aria-label"), t.getAttribute("aria-expanded")], icons: b.map((x) => { const r = x.querySelector("svg").getBoundingClientRect(); return Math.round(r.left + r.width / 2); }), content: Math.round(document.querySelector("#pageTitle").getBoundingClientRect().left - s.right), stored: localStorage.getItem("valkyrys-side") }; });
+  const open0 = await sideState();
+  eq([open0.aria, open0.labelsHidden, open0.titles.every((t) => !t)], [["Zijbalk inklappen", "true"], false, true], "expanded: toggle says 'Zijbalk inklappen', aria-expanded, labels shown, no tooltips");
+  await page.screenshot({ path: "/tmp/sb2_open_light.png" });
+  await page.click("#sideToggle"); await page.waitForTimeout(400);
+  const shut = await sideState();
+  ok(shut.w <= 72 && shut.w >= 56 && shut.labelsHidden, "collapsed: an icon rail, labels hidden", shut);
+  eq(shut.titles, ["Statistieken", "Facturen", "Documenten", "Nieuw", "Instellingen"], "collapsed: labels as tooltips");
+  eq([shut.aria, shut.stored], [["Zijbalk uitklappen", "false"], "min"], "collapsed: toggle says 'Zijbalk uitklappen', aria-expanded=false, remembered");
+  eq(shut.icons, open0.icons, "the icons do not move sideways between the two states");
+  ok(shut.content >= 0 && open0.content >= 0 && shut.w + shut.content < open0.w + open0.content + 1, "the page follows the sidebar (moves left, never under it)", [shut, open0]);
+  ok(await page.$eval("#side .side-app", (e) => !e.offsetWidth), "collapsed: only the emblem of the logo");
+  await page.waitForTimeout(800); eq((JSON.parse(fs.readFileSync(D(HOME) + "/data.json", "utf8"))["settings/prefs"] || {}).side, "min", "...also saved in settings/prefs");
+  await page.reload(); await page.waitForSelector("#statsView", { state: "attached" }); await page.waitForTimeout(1200);
+  ok((await sideState()).w <= 72, "collapsed state stays after a reload");
+  await page.keyboard.press("Control+b"); await page.waitForTimeout(400);
+  { const r = await sideState(); ok(r.w >= 172 && r.w <= 188 && !r.labelsHidden && r.aria[1] === "true" && r.stored === "full", "Ctrl+B expands it again", r); }
+  await page.keyboard.press("Control+b"); await page.waitForTimeout(400); ok((await sideState()).w <= 72, "Ctrl+B collapses it");
+  await page.click("#sideToggle"); await page.waitForTimeout(400); ok((await sideState()).w >= 172, "the toggle expands it");
   // narrow windows: an icon rail at 800px (labels as tooltips), a bar at the bottom at 420px
   await page.setViewportSize({ width: 800, height: 900 }); await page.waitForTimeout(300);
   { const r = await page.evaluate(() => { const s = document.querySelector("#side").getBoundingClientRect(), b = [...document.querySelectorAll("#side .navi")];
@@ -180,6 +205,8 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
     ok(r.w >= 56 && r.w <= 80 && r.labelsHidden && r.content && r.fits, "800px: the sidebar is an icon rail, the page beside it", r);
     eq(r.titles, ["Statistieken", "Facturen", "Documenten", "Nieuw", "Instellingen"], "800px: labels as tooltips");
     ok(r.names.every((n) => n.length > 2), "800px: every item keeps a name for screen readers", r.names); }
+  ok(!(await page.isVisible("#sideToggle")), "800px: the rail is forced, no toggle");
+  await page.keyboard.press("Control+b"); await page.waitForTimeout(300); eq(await page.evaluate(() => localStorage.getItem("valkyrys-side")), "full", "800px: Ctrl+B does nothing");
   await page.click("#tabInv"); eq(await page.textContent("#pageTitle"), "Facturen", "800px: the rail switches tabs");
   await page.setViewportSize({ width: 420, height: 860 }); await page.waitForTimeout(300);
   { const r = await page.evaluate(() => { const s = document.querySelector("#side").getBoundingClientRect(), b = [...document.querySelectorAll("#side .navi")].map((x) => x.getBoundingClientRect());
@@ -194,6 +221,15 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   await page.screenshot({ path: "/tmp/settings-phone.png", fullPage: true });
   await page.setViewportSize({ width: 1280, height: 1000 }); await page.waitForTimeout(200); await page.screenshot({ path: "/tmp/settings-wide.png", fullPage: true });
   console.log("errors:", errs); ok(errs.length === 0, "no page errors");
+  // collapse, restart the app: still collapsed (dark screenshots of both states)
+  await page.click("#sideToggle"); await page.waitForTimeout(800); await app.close();
+  ({ app, page, errs } = await launch(HOME));
+  await page.evaluate(() => { const t = { id: "dark", custom: null }; window.ValkTheme.save(t); window.ValkTheme.apply(t); });
+  await page.setViewportSize({ width: 1280, height: 800 }); await page.waitForTimeout(400);
+  ok((await sideState()).w <= 72 && (await page.getAttribute("#sideToggle", "aria-expanded")) === "false", "collapsed state stays after a restart");
+  await page.screenshot({ path: "/tmp/sb2_closed.png" });
+  await page.click("#sideToggle"); await page.mouse.move(700, 500); await page.waitForTimeout(400); await page.screenshot({ path: "/tmp/sb2_open.png" });
+  ok(errs.length === 0, "no page errors after the restart", errs);
   await app.close();
   console.log(fails ? "FAILED: " + fails : "ALL PASSED"); process.exit(fails ? 1 : 0);
 })().catch((e) => { console.error("FAIL", e.stack || e.message); process.exit(1); });
