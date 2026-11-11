@@ -9,7 +9,7 @@ const { chromium } = require("playwright"); const fs = require("fs");
   await page.setInputFiles("#file", process.argv[2]); await page.waitForSelector("article.po h3");
   console.log("card:", (await page.textContent("article.po h3")), await page.inputValue('[data-k="nr"]'), await page.textContent("[data-total]"));
   // settings (client) then download
-  await page.evaluate(() => { document.querySelector("#settingsBox").open = true; });
+  await page.evaluate(() => { document.querySelector("#settingsBox").open = true; document.querySelector("#clientBox").open = true; });
   await page.fill("#cName", "Piguillet BV"); await page.fill("#cKvk", "52742938"); await page.evaluate(() => document.querySelector("#settings").requestSubmit()); await page.waitForTimeout(400);
   const [d1] = await Promise.all([page.waitForEvent("download"), page.click('article.po [data-act="download"]')]);
   await d1.saveAs("/tmp/vf-dl.pdf"); console.log("pdf:", d1.suggestedFilename(), fs.statSync("/tmp/vf-dl.pdf").size);

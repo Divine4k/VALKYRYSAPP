@@ -34,9 +34,12 @@ details summary { cursor: pointer; font-weight: 700; color: var(--ink); list-sty
 details summary::-webkit-details-marker { display: none; }
 details summary::after { content: "+"; font-weight: 900; color: var(--muted); }
 details[open] summary::after { content: "\2212"; }
-#settingsBox > summary { margin: 0; }
-#settingsBox[open] > summary { margin-bottom: 10px; }
-.clbox { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+#settingsBox > summary, #clientBox > summary { margin: 0; }
+#settingsBox[open] > summary, #clientBox[open] > summary { margin-bottom: 10px; }
+#settings.setforms { display: flex; flex-direction: column; gap: 16px; margin: 0; }
+#settings .stack { margin: 0; }
+#clientBox > summary .cltag { margin-left: 8px; margin-right: auto; }
+.clbox { display: flex; flex-direction: column; gap: 8px; }
 .clhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .clhead .eyebrow { margin: 0; }
 .cltag { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); }

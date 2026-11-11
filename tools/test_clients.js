@@ -13,7 +13,7 @@ const launch = async () => {
   const errs = []; page.on("pageerror", (e) => errs.push(e.message));
   await page.setViewportSize({ width: 1280, height: 1100 }).catch(() => {});
   await page.waitForSelector("#pick", { state: "attached" }); await page.waitForTimeout(1500); await goTab(page, "inv"); await page.waitForTimeout(300);
-  await page.evaluate(() => { document.querySelector("#settingsBox").open = true; });
+  await page.evaluate(() => { document.querySelector("#settingsBox").open = true; document.querySelector("#clientBox").open = true; });
   return { app, page, errs };
 };
 const opts = (page) => page.$$eval("#clPick option", (o) => o.map((x) => x.textContent));

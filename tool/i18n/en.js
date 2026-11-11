@@ -178,4 +178,5 @@ VALK_I18N.en = {
     tDim: "Dim",
     langTitle: "Language", langIntro: "The language of the app. Your invoices stay in Dutch.",
     rfMail: "Checking email…", rfFolders: "Reading folders…",
+    setInvoicesOnly: "Invoices",
 };

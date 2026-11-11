@@ -84,13 +84,19 @@
         <p class="small" id="storeNote"></p>
       </div>
     </div>
+    <form id="settings" class="setforms" novalidate>
     <details class="panel" id="settingsBox">
-      <summary class="eyebrow" data-i18n="setInvoices">Facturen en klant</summary>
-      <form id="settings" class="stack">
+      <summary class="eyebrow" data-i18n="setInvoicesOnly">Facturen</summary>
+      <div class="stack">
           <label class="f" for="sStart"><span data-i18n="sStart">Begin bij factuurnummer (dit jaar)</span><input id="sStart" type="number" min="1" step="1" inputmode="numeric"></label>
           <label class="f" for="sFile"><span data-i18n="sFile">Bestandsnaam</span><input id="sFile" type="text" autocomplete="off" spellcheck="false"><small class="hint" id="sFileHint"></small></label>
+          <button class="primary" type="submit" data-i18n="save">Instellingen opslaan</button>
+      </div>
+    </details>
+    <details class="panel" id="clientBox">
+      <summary class="eyebrow"><span data-i18n="client">Klant</span><span class="cltag" id="clMod" hidden data-i18n="clMod">gewijzigd</span></summary>
+      <div class="stack">
           <div class="clbox" id="clBox">
-            <div class="clhead"><p class="eyebrow" data-i18n="client">Klant</p><span class="cltag" id="clMod" hidden data-i18n="clMod">gewijzigd</span></div>
             <label class="f" for="clPick"><span data-i18n="clPick">Opgeslagen klant</span><select id="clPick"></select></label>
             <div class="frow clbtns"><button type="button" class="ghost" id="clSaveNew" data-i18n="clSaveNew">Opslaan als klant</button><button type="button" class="ghost" id="clUpdate" data-i18n="clUpdate">Bijwerken</button><button type="button" class="ghost" id="clDelete" data-i18n="clDelete">Verwijderen</button></div>
             <div class="clname" id="clNameRow" hidden><label class="f" for="clNewName"><span data-i18n="clNewName">Naam van deze klant</span><input id="clNewName" type="text" autocomplete="off"></label><div class="frow"><button type="button" class="primary" id="clNameOk" data-i18n="clNameOk">Klant opslaan</button><button type="button" class="ghost" id="clNameCancel" data-i18n="clCancel">Annuleren</button></div></div>
@@ -103,8 +109,9 @@
           <label class="f" for="sTerm"><span data-i18n="sTerm">Betaaltermijn</span><input id="sTerm" type="text"></label>
           <label class="f" for="sBtw"><span data-i18n="sBtw">Standaard BTW</span><select id="sBtw"><option value="verlegd" data-i18n="btw.verlegd">BTW verlegd</option><option value="21" data-i18n="btw.21">BTW 21%</option><option value="9" data-i18n="btw.9">BTW 9%</option></select></label>
           <button class="primary" type="submit" data-i18n="save">Instellingen opslaan</button>
-        </form>
+      </div>
     </details>
+    </form>
   </aside>
 </main>
 

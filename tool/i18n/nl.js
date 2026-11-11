@@ -178,4 +178,5 @@ VALK_I18N.nl = {
     tDim: "Gedimd",
     langTitle: "Taal", langIntro: "De taal van de app. Je facturen blijven in het Nederlands.",
     rfMail: "E-mail controleren…", rfFolders: "Mappen lezen…",
+    setInvoicesOnly: "Facturen",
 };

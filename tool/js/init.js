@@ -43,7 +43,7 @@ setTab("stats"); // the statistics are what opens first
   if (!db) { state.invoicesLoaded = true; renderNewPos(); firstRun(); return; }
   db.doc("settings/main").onSnapshot((snap) => {
     if (snap.exists) { state.settings = Object.assign(structuredClone(DEFAULTS), snap.data()); state.settings.client = Object.assign({}, DEFAULTS.client, snap.data().client || {}); }
-    if (!$("#settingsBox").contains(document.activeElement)) fillSettingsForm();
+    if (!$("#settings").contains(document.activeElement)) fillSettingsForm();
     syncDesign(); firstRun();
     render();
   }, () => {});

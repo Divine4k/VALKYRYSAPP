@@ -116,7 +116,7 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   await page.click('#statSource [data-src="pos"]'); await page.waitForTimeout(400); ok(!(await page.isVisible("#statsGoSettings")), "PO source with its folder: no button to Settings either");
   await goTab(page, "inv"); ok(await page.isVisible("#viewInv"), "Invoices tab opens");
   ok(!(await page.isVisible("#pinPanel")), "PIN is not on the Invoices tab");
-  ok(await page.isVisible("#settingsBox") && await page.$eval("#settingsBox", (d) => d.tagName === "DETAILS" && d.closest("#viewInv") !== null && d.open), "invoice details are a fold-out in the Invoices sidebar, open while no client is set");
+  ok(await page.isVisible("#settingsBox") && await page.isVisible("#clientBox") && await page.$eval("#clientBox", (d) => d.tagName === "DETAILS" && d.closest("#viewInv") !== null && d.open) && await page.$eval("#settingsBox", (d) => !!d.querySelector("#sStart") && !d.querySelector("#cName")), "invoice numbering and the client are two fold-outs in the Invoices sidebar, the client one open while no client is set; invoice details are a fold-out in the Invoices sidebar, open while no client is set");
   ok(!(await page.$("#folderPanel")) && !(await page.isVisible("#folderPick")), "no folder list in the Invoices sidebar any more (it is the Documents tab), the choosing is in Settings");
   await goTab(page, "docs"); await page.waitForTimeout(200); ok(await page.isVisible("#docsView") && !(await page.isVisible("#viewInv")), "Documents tab opens"); eq(await page.textContent("#pageTitle"), "Documenten", "page title: Documenten");
   await goTab(page, "settings"); await page.waitForTimeout(200);
@@ -171,7 +171,7 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   await page.selectOption("#lang", "nl"); await page.waitForTimeout(300);
   ok(!(await page.isVisible("#settings")), "invoice details are not on the Settings tab");
   // invoice details are saved from the Invoices tab
-  await goTab(page, "inv"); await page.$eval("#settingsBox", (d) => { d.open = true; }); await page.fill("#sTerm", "21 dagen"); await page.fill("#cName", "Piguillet BV test"); await page.click('#settings button[type="submit"]'); await page.waitForTimeout(600);
+  await goTab(page, "inv"); await page.evaluate(() => { document.querySelector("#settingsBox").open = true; document.querySelector("#clientBox").open = true; }); await page.fill("#sTerm", "21 dagen"); await page.fill("#cName", "Piguillet BV test"); await page.click('#settings button[type="submit"]'); await page.waitForTimeout(600);
   const saved = JSON.parse(fs.readFileSync(D(HOME) + "/data.json", "utf8"))["settings/main"]; eq([saved.betaaltermijn, saved.client.name], ["21 dagen", "Piguillet BV test"], "invoice details are saved from the Invoices tab"); await goTab(page, "settings");
   // keyboard: arrows move through the three tabs
   ok(await page.$eval("#tabStats", (b) => b.tabIndex === 0), "with Settings open the first tab can still be reached with Tab");
