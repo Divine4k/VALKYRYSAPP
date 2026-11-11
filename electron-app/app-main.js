@@ -325,7 +325,11 @@ function showSplash() {
     skipTaskbar: true, alwaysOnTop: true, center: true, show: false, hasShadow: false, backgroundColor: "#00000000", title: "Valkyrys app",
     icon: path.join(__dirname, "build", "icon.png"), webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true } });
   splash.once("ready-to-show", () => splash.show());
-  splash.loadFile(path.join(__dirname, "splash", "splash.html"));
+  // the splash speaks the app's language (settings/prefs in data.json; else Windows' language) and shows the running version
+  let lang = ""; try { lang = (JSON.parse(fs.readFileSync(path.join(app.getPath("userData"), "data.json"), "utf8"))["settings/prefs"] || {}).lang || ""; } catch (e) {}
+  if (!["nl", "en", "pl"].includes(lang)) { const l = String(app.getLocale() || "").slice(0, 2); lang = ["en", "pl"].includes(l) ? l : "nl"; }
+  let v = ""; try { v = require(path.join(__dirname, "package.json")).version; } catch (e) {}
+  splash.loadFile(path.join(__dirname, "splash", "splash.html"), { query: { lang, v } });
   return splash;
 }
 
@@ -334,9 +338,16 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   registerFolderIpc(() => win); registerPinIpc();
   // the start checks run while the splash plays (updates: only looked for, never installed by themselves; new purchase orders in the mail)
-  const startChecks = Promise.allSettled([registerUpdateIpc(), registerMailIpc()]);
+  const updCheck = Promise.resolve(registerUpdateIpc()), mailCheck = Promise.resolve(registerMailIpc());
+  const startChecks = Promise.allSettled([updCheck, mailCheck]);
   const started = Date.now();
   const splash = process.argv.includes("--no-splash") ? null : showSplash();
+  // tell the splash which start-up steps are done (its progress line and status text follow them); steps done before it loaded are sent once it has
+  const stepsDone = new Set();
+  const sendSteps = () => { if (splash && !splash.isDestroyed() && !splash.webContents.isLoading()) for (const s of stepsDone) splash.webContents.executeJavaScript(`window.splashStep && window.splashStep(${JSON.stringify(s)})`).catch(() => {}); };
+  const splashStep = (name) => { stepsDone.add(name); sendSteps(); };
+  if (splash) splash.webContents.on("did-finish-load", sendSteps);
+  updCheck.catch(() => {}).finally(() => splashStep("upd")); mailCheck.catch(() => {}).finally(() => splashStep("mail"));
   const server = createServer(path.join(__dirname, "web"), path.join(app.getPath("userData"), "data.json"), () => unlocked);
   // a fixed port keeps the address of the app the same from start to start, so the window remembers things like the theme and language;
   // when something else is using that port, any free port is taken instead
@@ -361,6 +372,7 @@ app.whenReady().then(() => {
       splash.webContents.executeJavaScript("window.splashDone").catch(() => sleep(Math.max(0, SPLASH_FALLBACK_MS - (Date.now() - started)))),
       sleep(12000)]);
     loaded.then(async () => {
+      splashStep("app");
       await splashDone;
       await sleep(Math.max(0, SPLASH_MS - (Date.now() - started)));
       if (splashLive()) await Promise.race([startChecks, sleep(Math.max(0, START_CHECKS_MAX_MS - (Date.now() - started)))]); // a slow network never keeps the splash longer than this
