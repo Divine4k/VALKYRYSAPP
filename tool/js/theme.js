@@ -1,4 +1,4 @@
-// Theme picker in Settings (colours of the app; the engine is js/boot-theme.js).
+// Theme picker in Settings › Weergave, the cards right in the panel (colours of the app; the engine is js/boot-theme.js).
 "use strict";
 // ------------------------------------------------------------ theme (the colours of the app; the black band with the logo is never themed)
 const TH = window.ValkTheme;
@@ -31,9 +31,6 @@ function renderThemeUi() {
     const we = $("#themeWarn"); we.hidden = !msgs.length; we.textContent = msgs.join(" ");
   }
 }
-$("#themeBtn").addEventListener("click", () => { renderThemeUi(); const d = $("#themeDlg"); if (!d.open) d.showModal(); });
-$("#themeClose").addEventListener("click", () => $("#themeDlg").close());
-$("#themeDlg").addEventListener("click", (e) => { if (e.target === $("#themeDlg")) $("#themeDlg").close(); });
 
 $("#themeGrid").addEventListener("click", (e) => {
   const b = e.target.closest("[data-theme-id]"); if (!b) return;

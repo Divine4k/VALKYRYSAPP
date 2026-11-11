@@ -176,5 +176,5 @@ VALK_I18N.nl = {
     stabMe: "Mijn gegevens", stabFolders: "Mappen", stabMail: "Verbindingen", stabLook: "Weergave", stabPin: "Beveiliging", stabUpd: "Updates",
     dropHint: "Sleep PDF’s van inkooporders ergens op deze pagina, of", dropRelease: "Laat los om de inkooporders toe te voegen",
     tDim: "Gedimd",
-    langTitle: "Taal", langIntro: "De taal van de app. Je facturen blijven in het Nederlands.", themeIntroShort: "Kies de kleuren van de app.",
+    langTitle: "Taal", langIntro: "De taal van de app. Je facturen blijven in het Nederlands.",
 };

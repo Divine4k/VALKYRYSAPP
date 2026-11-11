@@ -18,7 +18,7 @@ const dataHome = "/tmp/el-appdata-ths";
   await page.click("#tabStats"); await page.waitForSelector("#statsBody:not([hidden])", { timeout: 60000 }); await page.waitForTimeout(500);
   await page.screenshot({ path: "/tmp/th-stats-midnight.png" });
   await page.evaluate(() => ValkTheme.apply({ id: "paper", custom: null })); await page.waitForTimeout(150); await page.screenshot({ path: "/tmp/th-stats-paper.png" });
-  await page.click("#tabInv"); await page.click("#themeBtn"); await page.click('#themeGrid [data-theme-id="custom"]'); await page.waitForTimeout(300);
+  await page.click("#tabInv"); await page.click('#themeGrid [data-theme-id="custom"]'); await page.waitForTimeout(300);
   await page.screenshot({ path: "/tmp/th-dialog.png" });
   await app.close();
 })();

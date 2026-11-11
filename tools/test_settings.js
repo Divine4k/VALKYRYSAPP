@@ -108,7 +108,7 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   eq(await page.$eval("#tabSettings", (b) => [b.closest("#tabs") === null, b.getAttribute("role"), b.getAttribute("aria-label"), b.getAttribute("aria-pressed"), b.textContent.trim(), b.previousElementSibling && b.previousElementSibling.id]), [true, null, "Instellingen", "false", "Instellingen", "newsBtn"], "Settings is a gear item after What's new, outside the tabs");
   ok(await page.isVisible("#statsView") && !(await page.isVisible("#viewInv")) && !(await page.isVisible("#settingsView")), "the app opens on the statistics");
   eq(await page.textContent("#tagline"), "Je omzet en facturen in cijfers.", "its tagline");
-  ok(await page.$eval("#side", (h) => !h.querySelector("#themeBtn, #lang, select, button:not([role=tab]):not(#newsBtn):not(#tabSettings):not(#sideToggle)")), "the sidebar has no theme button or language list, only the tabs, What's new, Settings and the collapse toggle");
+  ok(await page.$eval("#side", (h) => !h.querySelector("#themeGrid, #lang, select, button:not([role=tab]):not(#newsBtn):not(#tabSettings):not(#sideToggle)")), "the sidebar has no theme button or language list, only the tabs, What's new, Settings and the collapse toggle");
   { const sel = await page.$eval("#tabStats", (b) => { const c = getComputedStyle(b), o = getComputedStyle(document.querySelector("#tabInv")); return [c.backgroundColor !== o.backgroundColor, getComputedStyle(b, "::before").content !== "none"]; });
     eq(sel, [true, true], "the selected tab is highlighted (tint + accent bar)"); }
   ok(await page.evaluate(() => !document.querySelector("#srcRow, #srcPath, #srcDot, #srcSettings, #srcPick, #srcOpen, #srcClear")), "no 'read from' line on the statistics: the folders are in Settings");
@@ -126,13 +126,13 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   eq([await page.getAttribute("#tabSettings", "aria-pressed"), await page.$$eval("#tabs [aria-selected=true]", (t) => t.length)], ["true", 0], "the gear button shows it is open, no tab is selected");
   eq(await page.$$eval("#setTabs [role=tab]:not([hidden])", (t) => t.map((x) => x.textContent.trim())).then((l) => l.filter((x) => x !== "Updates")), ["Mijn gegevens", "Mappen", "Verbindingen", "Weergave", "Beveiliging"], "Settings has its own tabs");
   eq([await page.$eval("#setTabs [aria-selected=true]", (t) => t.dataset.stab), await page.isVisible("#detPanel"), await page.isVisible("#tplPanel"), await page.isVisible("#lookPanel")], ["me", true, true, false], "it opens on 'Mijn gegevens' (details and invoice design), the rest is on other tabs");
-  for (const [stab, sel, what] of [["folders", "#setFolders", "folders"], ["pin", "#pinPanel", "PIN"], ["look", "#lookPanel", "appearance"], ["look", "#themeBtn", "theme button"], ["look", "#lang", "language list"], ["folders", "#folderPick", "invoice folder button"], ["folders", "#poFolderPick", "PO folder button"], ["mail", "#mailPanel", "connections"]]) {
+  for (const [stab, sel, what] of [["folders", "#setFolders", "folders"], ["pin", "#pinPanel", "PIN"], ["look", "#lookPanel", "appearance"], ["look", "#themeGrid", "theme cards"], ["look", "#lang", "language list"], ["folders", "#folderPick", "invoice folder button"], ["folders", "#poFolderPick", "PO folder button"], ["mail", "#mailPanel", "connections"]]) {
     await page.click(`#stab-${stab}`); ok(await page.isVisible(sel) && (await page.$$eval("#setCol > .panel", (p) => p.filter((x) => x.offsetParent).map((x) => x.dataset.stab))).every((k) => k === stab), `Settings › ${stab} has: ${what} (and only its own panels)`);
   }
   const lay = await page.evaluate(() => { const t = document.querySelector("#setTabs").getBoundingClientRect(), c = document.querySelector("#setCol").getBoundingClientRect(), v = document.querySelector("#settingsView").getBoundingClientRect(); return { below: c.top >= t.bottom, sameLeft: Math.abs(c.left - t.left) < 2, wide: c.width > v.width * 0.6 }; });
   ok(lay.below && lay.sameLeft && lay.wide, "the panels are under the tabs, in the wide column", lay);
   await page.click("#stab-look"); eq(await page.$$eval("#setCol > .panel.cur", (p) => p.filter((x) => !x.hidden).map((x) => x.id)), ["lookPanel", "langPanel"], "Weergave: theme and language each in their own box");
-  ok(await page.$eval("#themeBtn", (b) => !!b.closest("#lookPanel")) && await page.$eval("#lang", (b) => !!b.closest("#langPanel")), "...theme button in the one, language list in the other");
+  ok(await page.$eval("#themeGrid", (b) => !!b.closest("#lookPanel")) && await page.$eval("#lang", (b) => !!b.closest("#langPanel")), "...theme cards in the one, language list in the other");
   await page.screenshot({ path: "/tmp/settings-look.png" });
   await page.focus("#stab-folders"); await page.keyboard.press("ArrowRight"); eq(await page.$eval("#setTabs [aria-selected=true]", (t) => t.dataset.stab), "mail", "arrow keys move through the Settings tabs");
   await page.click("#stab-folders");
@@ -169,7 +169,6 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   eq([await page.getAttribute("#sideToggle", "aria-label"), await page.textContent("#sideToggle")], ["Zwiń pasek boczny", "Zwiń"], "collapse toggle in Polish");
   eq(await page.textContent("#poFolderPick"), "Zmień folder…", "Polish button");
   await page.selectOption("#lang", "nl"); await page.waitForTimeout(300);
-  await page.click("#themeBtn"); ok(await page.$eval("#themeDlg", (d) => d.open), "theme button opens the theme window"); await page.click("#themeClose");
   ok(!(await page.isVisible("#settings")), "invoice details are not on the Settings tab");
   // invoice details are saved from the Invoices tab
   await goTab(page, "inv"); await page.$eval("#settingsBox", (d) => { d.open = true; }); await page.fill("#sTerm", "21 dagen"); await page.fill("#cName", "Piguillet BV test"); await page.click('#settings button[type="submit"]'); await page.waitForTimeout(600);

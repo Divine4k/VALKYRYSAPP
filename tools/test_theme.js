@@ -16,11 +16,11 @@ const choose = async (page, id) => { await page.click(`#themeGrid [data-theme-id
   fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome);
   let { app, page } = await launch(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
   await page.emulateMedia({ colorScheme: "light" });
-  ok(!(await page.isVisible("#themeBtn")) && (await page.$eval("#side", (h) => !h.querySelector("#themeBtn, #lang"))), "no theme button or language list in the sidebar");
+  ok(await page.$eval("#side", (h) => !h.querySelector("#themeGrid, #lang")), "no themes or language list in the sidebar");
   { const logo = async () => page.evaluate(() => { const l = getComputedStyle(document.querySelector("#side .side-logo")), s = getComputedStyle(document.querySelector("#side")); return { logo: l.backgroundColor, side: s.backgroundColor, ink: getComputedStyle(document.querySelector("#pageTitle")).color }; });
     for (const id of ["light", "dark"]) { await page.evaluate((id) => ValkTheme.apply({ id, custom: null }), id); await page.waitForTimeout(150); const c = await logo(); ok(c.logo !== c.side && c.logo === c.ink, `${id}: the logo is drawn in the text colour, visible on the sidebar`, c); }
-    await page.evaluate(() => ValkTheme.apply({ id: "auto", custom: null })); await page.waitForTimeout(150); } await goSet(page, "look"); ok(await page.isVisible("#themeBtn") && await page.isVisible("#lang"), "theme button and language list are in Settings"); eq(await page.textContent("#themeBtn"), "Thema", "button label");
-  await page.click("#themeBtn"); ok(await page.$eval("#themeDlg", (d) => d.open), "dialog opens");
+    await page.evaluate(() => ValkTheme.apply({ id: "auto", custom: null })); await page.waitForTimeout(150); } await goSet(page, "look"); ok(await page.isVisible("#lookPanel #themeGrid") && await page.isVisible("#lang"), "the themes and the language list are in Settings › Weergave");
+  ok(!(await page.$("#themeBtn, #themeDlg")), "the themes are right there: no button, no extra window");
   eq(await page.$$eval("#themeGrid [data-theme-id]", (b) => b.map((x) => x.dataset.themeId)), ["auto", "light", "dark", "dim", "midnight", "paper", "forest", "contrast", "custom"], "nine themes");
   eq(await page.$$eval("#themeGrid .tname", (b) => b.map((x) => x.textContent)), ["Automatisch", "Licht", "Donker", "Gedimd", "Middernacht", "Papier", "Bos", "Hoog contrast", "Eigen thema"], "Dutch names");
   eq(await page.$eval('#themeGrid [aria-checked="true"]', (b) => b.dataset.themeId), "auto", "automatic is the default");
@@ -44,7 +44,7 @@ const choose = async (page, id) => { await page.click(`#themeGrid [data-theme-id
     eq([await css(page, "#side .side-logo", "backgroundColor"), await page.$eval("#side .side-logo", (l) => getComputedStyle(l).maskImage.includes("logo-white.png"))], [rgb(await v(page, "--ink")), true], `${id}: logo shape untouched, drawn in the text colour`);
     await page.waitForTimeout(250); eq(await page.$eval("#tabSettings", (b) => getComputedStyle(b, "::before").backgroundColor), rgb(accent), `${id}: the open Settings item has the accent bar`);
   }
-  await choose(page, "dim"); await page.waitForTimeout(200); await page.click("#themeClose"); await goTab(page, "inv"); await page.screenshot({ path: "/tmp/theme-dim.png" }); await goSet(page, "look"); await page.click("#themeBtn");
+  await choose(page, "dim"); await page.waitForTimeout(200); await page.screenshot({ path: "/tmp/theme-look.png" }); await goTab(page, "inv"); await page.screenshot({ path: "/tmp/theme-dim.png" }); await goSet(page, "look");
   await choose(page, "midnight"); eq(await css(page, "button.primary, #npPick, #folderPick", "backgroundColor"), rgb("#6C9CFF"), "primary buttons use the theme accent");
 
   // ---- own theme: starts from what you see, live colours, warnings
@@ -76,7 +76,7 @@ const choose = async (page, id) => { await page.click(`#themeGrid [data-theme-id
   eq([await v(page, "--bg"), await v(page, "--accent")], ["#EAF4F4", "#00A3A3"], "...and restored from the saved data when browser storage is empty");
 
   // ---- keyboard, languages, tab views
-  await goSet(page, "look"); await page.click("#themeBtn"); await page.focus('#themeGrid [aria-checked="true"]'); await page.keyboard.press("ArrowLeft"); await page.waitForTimeout(150);
+  await goSet(page, "look"); await page.focus('#themeGrid [aria-checked="true"]'); await page.keyboard.press("ArrowLeft"); await page.waitForTimeout(150);
   eq(await page.$eval('#themeGrid [aria-checked="true"]', (b) => b.dataset.themeId), "contrast", "arrow keys move through the themes"); await page.keyboard.press("ArrowRight"); await page.waitForTimeout(100);
   await setLang(page, "pl"); await page.waitForTimeout(200);
   eq([await page.textContent("#themeTitle"), (await page.$$eval("#themeGrid .tname", (b) => b.map((x) => x.textContent))).slice(0, 3)], ["Motyw", ["Automatyczny", "Jasny", "Ciemny"]], "Polish");
