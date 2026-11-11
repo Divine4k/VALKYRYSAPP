@@ -23,7 +23,9 @@ document.addEventListener("keydown", (e) => {
   e.preventDefault(); setSide(!window.ValkSide.collapsed());
 });
 requestAnimationFrame(() => requestAnimationFrame(() => document.documentElement.classList.add("side-anim"))); // no animation while the page is first drawn
+const TAB_VIEW = { inv: "#viewInv", stats: "#statsView", settings: "#settingsView", docs: "#docsView" };
 function setTab(t) {
+  const was = state.tab;
   state.tab = TABS.includes(t) ? t : "stats";
   const work = WORK_TABS.includes(state.tab); // with Settings open no tab is selected; the first tab stays reachable with Tab
   document.querySelectorAll("#tabs [role=tab]").forEach((b) => { const on = b.dataset.tab === state.tab; b.setAttribute("aria-selected", String(on)); b.tabIndex = on || (!work && b.dataset.tab === WORK_TABS[0]) ? 0 : -1; });
@@ -34,6 +36,7 @@ function setTab(t) {
   if (state.tab === "stats") { renderStats(); if (desk) refreshPoFolder(); }
   if (state.tab === "docs") { renderDocs(); if (desk) refreshPoFolder(); } // the purchase orders are read if that has not happened yet
   window.scrollTo(0, 0);
+  if (was && was !== state.tab) window.ValkMotion.play($(TAB_VIEW[state.tab]));
 }
 $("#tabs").addEventListener("click", (e) => { const b = e.target.closest("[role=tab]"); if (b) setTab(b.dataset.tab); });
 $("#tabs").addEventListener("keydown", (e) => {

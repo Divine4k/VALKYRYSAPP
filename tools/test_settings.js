@@ -131,7 +131,7 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   }
   const lay = await page.evaluate(() => { const t = document.querySelector("#setTabs").getBoundingClientRect(), c = document.querySelector("#setCol").getBoundingClientRect(), v = document.querySelector("#settingsView").getBoundingClientRect(); return { below: c.top >= t.bottom, sameLeft: Math.abs(c.left - t.left) < 2, wide: c.width > v.width * 0.6 }; });
   ok(lay.below && lay.sameLeft && lay.wide, "the panels are under the tabs, in the wide column", lay);
-  await page.click("#stab-look"); eq(await page.$$eval("#setCol > .panel.cur", (p) => p.filter((x) => !x.hidden).map((x) => x.id)), ["lookPanel", "langPanel"], "Weergave: theme and language each in their own box");
+  await page.click("#stab-look"); eq(await page.$$eval("#setCol > .panel.cur", (p) => p.filter((x) => !x.hidden).map((x) => x.id)), ["lookPanel", "langPanel", "motionPanel"], "Weergave: theme, language and animations each in their own box");
   ok(await page.$eval("#themeGrid", (b) => !!b.closest("#lookPanel")) && await page.$eval("#lang", (b) => !!b.closest("#langPanel")), "...theme cards in the one, language list in the other");
   await page.screenshot({ path: "/tmp/settings-look.png" });
   await page.focus("#stab-folders"); await page.keyboard.press("ArrowRight"); eq(await page.$eval("#setTabs [aria-selected=true]", (t) => t.dataset.stab), "mail", "arrow keys move through the Settings tabs");

@@ -1,0 +1,38 @@
+/* Animations (Settings › Weergave › Animaties). Short and snappy: 120-180 ms, ease-out, only opacity and transform.
+   html.mo = on (js/boot-motion.js); html.no-motion = off: every transition and animation stops, except the busy spinners (.spin). */
+:root { --mo-fast: .12s; --mo: .17s; --mo-ease: cubic-bezier(.2, .8, .2, 1); }
+@keyframes mo-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes mo-fade { from { opacity: 0; } }
+@keyframes mo-pop { from { opacity: 0; transform: translateY(8px) scale(.97); } }
+@keyframes mo-toast { from { opacity: 0; transform: translate(-50%, 10px) scale(.98); } }
+
+/* a tab or a settings tab that opens; cards and rows the page adds with ValkMotion.play */
+html.mo .mo-in { animation: mo-in var(--mo) var(--mo-ease); }
+/* windows: rise and grow a little, the dark backdrop fades in */
+html.mo dialog[open] { animation: mo-pop var(--mo) var(--mo-ease); }
+html.mo dialog[open]::backdrop { animation: mo-fade var(--mo) ease-out; }
+/* the toast at the bottom */
+html.mo #toast:not([hidden]) { animation: mo-toast var(--mo) var(--mo-ease); }
+/* the lock screen card and the update bars */
+html.mo #lockScreen:not([hidden]) .lk-card { animation: mo-pop .2s var(--mo-ease); }
+html.mo #updBars:not([hidden]) { animation: mo-in var(--mo) var(--mo-ease); }
+
+/* buttons, tabs and fields: colours change smoothly, a button gives a little when pressed */
+html.mo button, html.mo .btn { transition: background-color var(--mo-fast), border-color var(--mo-fast), color var(--mo-fast), filter var(--mo-fast), box-shadow var(--mo-fast), transform 80ms ease-out; }
+html.mo button:not(:disabled):active, html.mo .btn:active { transform: scale(.97); }
+html.mo input, html.mo select, html.mo textarea { transition: border-color var(--mo-fast), box-shadow var(--mo-fast), background-color var(--mo-fast); }
+html.mo .drow, html.mo .navi { transition: background-color var(--mo-fast), color var(--mo-fast); }
+
+/* the on/off switch in Settings */
+.mswitch { display: flex; align-items: center; gap: 12px; margin-top: 14px; cursor: pointer; color: var(--ink); font-weight: 700; }
+.mswitch input { appearance: none; -webkit-appearance: none; position: relative; flex: 0 0 auto; width: 40px; height: 24px; min-height: 0; margin: 0; padding: 0;
+  border: 0; border-radius: 12px; background: var(--line); cursor: pointer; transition: background-color var(--mo-fast); }
+.mswitch input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .3); transition: transform var(--mo) var(--mo-ease); }
+.mswitch input:checked { background: var(--accent); }
+.mswitch input:checked::after { transform: translateX(16px); }
+.mswitch input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.mswitch + .small { margin: 8px 0 0; }
+
+/* off: no movement anywhere (the spinners that show work is going on keep turning) */
+html.no-motion :not(.spin, .spin *), html.no-motion :not(.spin)::before, html.no-motion :not(.spin)::after, html.no-motion ::backdrop { transition: none !important; animation: none !important; }

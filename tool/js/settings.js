@@ -63,6 +63,8 @@ function saveLang() {
 }
 let prefsData = {}; // last known settings/prefs (set() replaces the whole doc, so every write merges into this)
 function savePrefs(v) { prefsData = Object.assign({}, prefsData, v); try { state.db.doc("settings/prefs").set(prefsData); } catch (e) {} }
+$("#motionOn").checked = window.ValkMotion.on();
+$("#motionOn").addEventListener("change", (e) => { window.ValkMotion.set(e.target.checked); savePrefs({ motion: e.target.checked ? "on" : "off" }); });
 $("#lang").addEventListener("change", (e) => { state.lang = e.target.value in LANGS ? e.target.value : "nl"; saveLang(); applyLang(); });
 try { const saved = localStorage.getItem("valkyrys-lang"); state.lang = saved in LANGS ? saved : "nl"; } catch (e) { state.lang = "nl"; }
 

@@ -49,7 +49,8 @@ setTab("stats"); // the statistics are what opens first
   }, () => {});
   db.doc("settings/prefs").onSnapshot((snap) => {
     const l = snap.exists && snap.data().lang;
-    if (snap.exists) { prefsData = Object.assign({}, snap.data()); const sd = prefsData.side; if (sd === "min" || sd === "full") window.ValkSide.set(sd === "min"); }
+    if (snap.exists) { prefsData = Object.assign({}, snap.data()); const sd = prefsData.side; if (sd === "min" || sd === "full") window.ValkSide.set(sd === "min");
+      const mo = prefsData.motion; if (mo === "on" || mo === "off") { window.ValkMotion.set(mo === "on"); $("#motionOn").checked = mo === "on"; } }
     if (langPicked) { langPicked = false; saveLang(); return; }
     if (l && l in LANGS && l !== state.lang) { state.lang = l; try { localStorage.setItem("valkyrys-lang", l); } catch (e) {} applyLang(); }
   }, () => {});

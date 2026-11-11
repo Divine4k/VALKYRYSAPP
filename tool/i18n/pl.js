@@ -176,6 +176,7 @@ VALK_I18N.pl = {
     stabMe: "Moje dane", stabFolders: "Foldery", stabMail: "Połączenia", stabLook: "Wygląd", stabPin: "Bezpieczeństwo", stabUpd: "Aktualizacje",
     dropHint: "Przeciągnij PDF-y zamówień w dowolne miejsce tej strony albo", dropRelease: "Upuść, aby dodać zamówienia",
     tDim: "Przygaszony",
+    motionTitle: "Animacje", motionOn: "Pokazuj animacje", motionIntro: "Krótkie, szybkie ruchy kart, okien i komunikatów. Wyłączone: wszystko pojawia się od razu.",
     langTitle: "Język", langIntro: "Język aplikacji. Faktury pozostają po niderlandzku.",
     rfMail: "Sprawdzanie poczty…", rfFolders: "Odczytywanie folderów…",
     setInvoicesOnly: "Faktury",

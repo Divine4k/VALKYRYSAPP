@@ -18,8 +18,10 @@
 <link rel="stylesheet" href="css/firstrun.css">
 <link rel="stylesheet" href="css/stats-table.css">
 <link rel="stylesheet" href="css/documents.css">
+<link rel="stylesheet" href="css/motion.css">
 <link rel="stylesheet" href="css/utilities.css">
 <script src="js/boot-side.js"></script>
+<script src="js/boot-motion.js"></script>
 <script src="js/boot-theme.js"></script>
 <script src="js/boot-lock.js"></script>
 
@@ -144,6 +146,11 @@
       <div class="frow look">
         <select id="lang" class="langsel" aria-label="Taal / Language / Język"></select>
       </div>
+    </div>
+    <div class="panel" id="motionPanel" data-stab="look">
+      <p class="eyebrow" data-i18n="motionTitle">Animaties</p>
+      <label class="mswitch"><input type="checkbox" id="motionOn" role="switch" checked><span data-i18n="motionOn">Bewegingen tonen</span></label>
+      <p class="small" data-i18n="motionIntro">Korte, snelle bewegingen bij tabbladen, vensters en meldingen. Uit: alles staat er meteen.</p>
     </div>
     </div>
     <div class="panel" id="updPanel" data-stab="upd" hidden>

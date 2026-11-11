@@ -20,8 +20,10 @@ function renderSetTabs() {
 /** open one tab inside Settings */
 function setStab(k) {
   if (!STABS.includes(k)) return;
+  const was = stab;
   stab = k; try { localStorage.setItem("valkyrys-settab", k); } catch (e) {}
   renderSetTabs();
+  if (was !== k && !$("#settingsView").classList.contains("mo-in")) stabPanels(k).filter((p) => !p.hidden).forEach((p) => window.ValkMotion.play(p));
 }
 /** go to Settings at a given tab (from a button elsewhere in the app) */
 function openSettings(k) { setTab("settings"); setStab(k); }

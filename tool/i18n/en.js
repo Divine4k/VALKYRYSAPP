@@ -176,6 +176,7 @@ VALK_I18N.en = {
     stabMe: "My details", stabFolders: "Folders", stabMail: "Connections", stabLook: "Appearance", stabPin: "Security", stabUpd: "Updates",
     dropHint: "Drop purchase order PDFs anywhere on this page, or", dropRelease: "Release to add the purchase orders",
     tDim: "Dim",
+    motionTitle: "Animations", motionOn: "Show animations", motionIntro: "Short, quick movements for tabs, windows and messages. Off: everything appears at once.",
     langTitle: "Language", langIntro: "The language of the app. Your invoices stay in Dutch.",
     rfMail: "Checking email…", rfFolders: "Reading folders…",
     setInvoicesOnly: "Invoices",
