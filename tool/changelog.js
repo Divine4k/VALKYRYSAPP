@@ -3,6 +3,19 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
+    version: "1.3.3", date: "2026-11-11",
+    items: [
+      { type: "improved",
+        nl: "Instellingen hebben nu tabbladen, zodat je alles sneller vindt.",
+        en: "Settings now have tabs, so you find everything faster.",
+        pl: "Ustawienia mają teraz zakładki, więc szybciej wszystko znajdziesz." },
+      { type: "new",
+        nl: "Nieuw thema: Gedimd, een zachter donker thema.",
+        en: "New theme: Dim, a softer dark theme.",
+        pl: "Nowy motyw: Przygaszony, łagodniejszy ciemny motyw." },
+    ],
+  },
+  {
     version: "1.3.2", date: "2026-11-11",
     items: [
       { type: "new",
