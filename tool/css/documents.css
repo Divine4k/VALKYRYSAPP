@@ -117,9 +117,8 @@ button.mkinv { min-height: 30px; padding: 4px 12px; font-size: 12.5px; white-spa
 .dtable:not(.selmode) .c-sel { display: none; }
 @media (min-width: 1001px) { .dtable.selmode .dhead, .dtable.selmode .drow { grid-template-columns: 22px minmax(80px, .8fr) minmax(120px, 1.6fr) 92px minmax(92px, 1fr) 104px 192px 116px 68px; } }
 .sendbar button:disabled { opacity: .5; }
-/* "Facturen versturen": a round button floating bottom right on the Documents tab */
-.sendfab { position: fixed; right: max(24px, env(safe-area-inset-right, 0px)); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 14; width: 60px; height: 60px; min-height: 0; padding: 0; margin: 0; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 8px 24px rgba(0, 0, 0, .28); transition: transform .12s, box-shadow .12s; }
-.sendfab:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(0, 0, 0, .32); }
-.sendfab:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
-.sendfab svg { margin: 2px 2px 0 0; }
-@media (max-width: 559px) { .sendfab { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); } }
+/* the line under the bar: what is in the folder (left); how many are sent and "Facturen versturen" (right), all on one quiet row */
+.dmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin: -2px 0 12px; min-height: 34px; }
+.dmeta .dinfo { flex: 1 1 260px; margin: 0; line-height: 1.4; }
+.dmeta .dprog { margin-left: auto; }
+.dmeta .sendstart { margin: 0; min-height: 32px; height: 32px; padding: 0 13px; display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; border-radius: 8px; white-space: nowrap; }

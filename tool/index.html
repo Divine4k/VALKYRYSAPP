@@ -245,9 +245,12 @@
       <button type="button" id="docsDir"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16"/><path d="m3 16 4 4 4-4"/><path d="M17 20V4"/><path d="m13 8 4-4 4 4"/></svg></button>
     </div>
     <button type="button" class="ghost refresh" data-refresh data-i18n-aria="refresh" aria-label="Vernieuwen" hidden><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.86 9.4A7.6 7.6 0 0 1 17.37 6.63"/><path d="M19.78 4.22L19.92 9.17L14.97 9.03Z" fill="currentColor" stroke-width="1.2"/><path d="M19.14 14.6A7.6 7.6 0 0 1 6.63 17.37"/><path d="M4.22 19.78L4.08 14.83L9.03 14.97Z" fill="currentColor" stroke-width="1.2"/></svg></button>
-    <div class="dprog" id="docsProg"><span class="pb" aria-hidden="true"><i></i></span><span id="docsCount"></span></div>
   </div>
-  <p class="dinfo" id="docsInfo" role="status"></p>
+  <div class="dmeta">
+    <p class="dinfo" id="docsInfo" role="status"></p>
+    <div class="dprog" id="docsProg"><span class="pb" aria-hidden="true"><i></i></span><span id="docsCount"></span></div>
+    <button type="button" class="primary sendstart" id="docsSendStart" hidden><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg><span data-i18n="docsSendStart">Facturen versturen</span></button>
+  </div>
   <div class="panel sendbar" id="sendBar" role="status" hidden><span class="stext" id="sendBarText"></span><button type="button" id="sendBarUnsent"></button><button type="button" class="ghost" id="sendBarClear" data-i18n="sendCancel">Annuleren</button><button type="button" class="primary" id="sendBarGo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg><span data-i18n="sendGo">Per e-mail versturen…</span></button></div>
   <div class="panel dtable" id="docsTable">
     <div class="dhead" id="docsHead"></div>
@@ -257,7 +260,6 @@
     <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
     <h2 id="docsEmptyT"></h2><p id="docsEmptyP"></p>
   </div>
-  <button type="button" class="primary sendfab" id="docsSendStart" hidden data-i18n-aria="docsSendStart" aria-label="Facturen versturen" title="Facturen versturen"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg></button>
 </section>
 
 <div class="sv" id="statsView" role="tabpanel" aria-labelledby="tabStats">

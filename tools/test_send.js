@@ -37,9 +37,10 @@ async function launch() {
   // ---- no mail connected: ticking works, sending says to connect first
   let { app, page, errs } = await launch();
   ok(await until(async () => (await page.$$("#docsList li[data-nr]:not(.po-only)")).length === 3), "three invoice rows");
-  ok(await page.isVisible("#docsSendStart") && (await page.getAttribute("#docsSendStart", "aria-label")) === "Facturen versturen" && !(await page.isVisible("#docsList input[data-sel]")) && !(await page.isVisible("#sendBar")), "a round 'Facturen versturen' button; no tick boxes and no bar yet");
-  const fab = await page.evaluate(() => { const r = document.querySelector("#docsSendStart").getBoundingClientRect(); return { right: innerWidth - r.right < 40, bottom: innerHeight - r.bottom < 40, round: Math.abs(r.width - r.height) < 1, fixed: getComputedStyle(document.querySelector("#docsSendStart")).position === "fixed" }; });
-  ok(fab.right && fab.bottom && fab.round && fab.fixed, "...floating in the bottom-right corner", fab);
+  ok(await page.isVisible("#docsSendStart") && /Facturen versturen/.test(await page.textContent("#docsSendStart")) && !(await page.isVisible("#docsList input[data-sel]")) && !(await page.isVisible("#sendBar")), "a 'Facturen versturen' button; no tick boxes and no bar yet");
+  const lay = await page.evaluate(() => { const b = document.querySelector("#docsSendStart").getBoundingClientRect(), p = document.querySelector("#docsProg").getBoundingClientRect(), i = document.querySelector("#docsInfo").getBoundingClientRect(), bar = document.querySelector("#docsBar").getBoundingClientRect();
+    return { oneRow: Math.abs((b.top + b.bottom) / 2 - (p.top + p.bottom) / 2) < 3 && Math.abs((b.top + b.bottom) / 2 - (i.top + i.bottom) / 2) < 6, belowBar: b.top > bar.bottom, slim: b.height <= 34, barOneRow: bar.height < 80 }; });
+  ok(lay.oneRow && lay.belowBar && lay.slim && lay.barOneRow, "under the bar, on one row with the folder line and the counter; slim; the bar stays one row", lay);
   await page.screenshot({ path: "/tmp/send-start.png" });
   await page.click("#docsSendStart");
   ok(await page.isVisible("#sendBar") && /Vink de facturen aan/.test(await page.textContent("#sendBarText")) && (await page.isDisabled("#sendBarGo")) && !(await page.isVisible("#docsSendStart")), "choosing: tick boxes, a bar that says what to do, send off until one is ticked");

@@ -15,7 +15,7 @@ function setSendMode(on) { state.docs.selMode = !!on; if (!on) state.docs.sel.cl
 function renderSendBar() {
   const bar = $("#sendBar"), start = $("#docsSendStart"); if (!bar) return;
   const on = !!(desk && MAIL && state.docs.selMode);
-  if (start) { start.hidden = !(desk && MAIL) || on; start.title = tr("docsSendStart"); }
+  if (start) start.hidden = !(desk && MAIL) || on;
   bar.hidden = !on; if (!on) return;
   const sets = sendSets(), n = sets.length, total = sets.reduce((a, s) => a + (+s.total || 0), 0), unsent = sendUnsentNrs();
   $("#sendBarText").textContent = n ? tr(n === 1 ? "sendBar1" : "sendBarN", n, core.eur(total)) : tr("sendPick");
