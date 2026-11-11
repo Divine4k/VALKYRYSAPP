@@ -46,7 +46,7 @@ const bars = async (page) => ((await vis(page, "#updBars")) ? page.$$eval("#updB
   ok(!(await vis(page, "#updDot")) && !(await bars(page)).length, "up to date: no dot, no bar");
   await goSet(page, "upd"); await page.waitForTimeout(150);
   ok(await vis(page, "#updPanel"), "Updates panel shows in Settings");
-  eq(await page.$$eval("#settingsView .col > .panel", (p) => p.map((x) => x.id).slice(0, 2)), ["lookPanel", "updPanel"], "panel right after the look panel");
+  eq(await page.$$eval("#setCol > .panel.cur", (p) => p.map((x) => x.id)), ["updPanel"], "the Updates tab holds the updates panel");
   eq(await txt(page, "#updPanel .eyebrow"), "Updates", "panel title");
   eq(await txt(page, "#updVer"), "Versie 1.2.0", "current version");
   eq(await txt(page, "#updStatus"), "Je hebt de nieuwste versie · laatst gecontroleerd 10 minuten geleden", "up to date + last checked");

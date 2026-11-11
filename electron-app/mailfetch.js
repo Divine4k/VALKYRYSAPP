@@ -10,7 +10,7 @@
 const fs = require("fs"), path = require("path"), net = require("net"), tls = require("tls"), crypto = require("crypto");
 
 const PROVIDERS = { gmail: { host: "imap.gmail.com", port: 993 }, wp: { host: "imap.wp.pl", port: 993 } };
-const LOOKBACK_DAYS = 30, EVERY_MS = 5 * 60 * 1000, FIRST_AFTER_MS = 4000, MAX_PER_RUN = 300, TIMEOUT_MS = 45000;
+const LOOKBACK_DAYS = 30, EVERY_MS = 5 * 60 * 1000, FIRST_AFTER_MS = 0, MAX_PER_RUN = 300, TIMEOUT_MS = 45000;
 const SUBJECT_RE = /inkooporder\b[^\n]*?\bPO[-\s]?(\d{3,})/i;
 const PO_FILE_RE = /\bPO[-_\s]?(\d{3,})\b/i;
 
@@ -347,13 +347,13 @@ function create({ dataDir, poFolder, encrypt, decrypt, canRun = () => true, send
   }
   function remove(id) { change((d) => { d.accounts = d.accounts.filter((a) => a.id !== id); d.pending = d.pending.filter((p) => p.acc !== id); }); emit(); return true; }
   function setEnabled(id, on) { let a; change((d) => { a = d.accounts.find((x) => x.id === id); if (a) { a.enabled = !!on; if (on) a.error = ""; } }); emit(); if (a && on) setTimeout(() => check(id).catch(() => {}), 50); return !!a; }
-  /** checks: soon after the start (as soon as the PIN is entered), then every EVERY_MS */
+  /** checks: right at the start (while the splash plays, also before the PIN is entered: it only reads the mail and saves into the PO folder),
+   *  then every EVERY_MS once the app is unlocked. Returns the first check (resolves, never fails). */
   function auto(firstMs = FIRST_AFTER_MS) {
-    if (timer) return;
+    if (timer) return Promise.resolve();
     const tick = () => { if (canRun() && !queued) check().catch(() => {}); };
-    const first = () => { if (!timer) return; if (canRun()) tick(); else setTimeout(first, 3000).unref?.(); };
     timer = setInterval(tick, EVERY_MS); timer.unref?.();
-    setTimeout(first, firstMs).unref?.();
+    return new Promise((res) => { setTimeout(() => { check().catch(() => {}).then(res, res); }, firstMs).unref?.(); });
   }
   function stop() { if (timer) clearInterval(timer); timer = null; }
   return { state, add, remove, setEnabled, setMode, check, download, ignore, forget, seen, auto, stop };

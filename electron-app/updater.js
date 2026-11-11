@@ -16,7 +16,7 @@ const ASSET_URL = (ver) => `${RAW}/packages/valkyrys-app-${ver}.zip`;
 // Ed25519 public key (SPKI DER, base64) of keys/update-signing.pem. SHA-256 of the DER: 0de2a657c544335c0fc5383b7408987f28f1da506b1e3b418ad1ef513fc130c1
 const PUBLIC_KEY = "MCowBQYDK2VwAyEA8JAuqhMe2z3SlaVVluGEo5GC8zI143/vaTJFyunVXsw=";
 const REQUIRED = ["app-main.js", "updater.js", "preload.js", "server.js", "package.json", "web/index.html", "splash/splash.html", "build/icon.png"];
-const CHECK_EVERY_MS = 6 * 3600 * 1000;
+const CHECK_EVERY_MS = 3600 * 1000; // while the app is open; and always once at the start
 
 const canonical = (v) => {
   if (Array.isArray(v)) return "[" + v.map(canonical).join(",") + "]";
@@ -149,13 +149,13 @@ function create(opts) {
 
   function restart() { app.relaunch(); app.exit(0); }
 
-  /** check 15 s after start (VALKYRYS_UPDATE_DELAY ms in tests), at most once per 6 h */
+  /** check right at the start (while the splash plays; VALKYRYS_UPDATE_DELAY ms later in tests), then every hour while the app is open.
+   *  Only checks: installing is always the user's choice. Returns the first check (resolves, never fails). */
   function auto() {
-    const delay = process.env.VALKYRYS_UPDATE_DELAY ? Number(process.env.VALKYRYS_UPDATE_DELAY) : 15000;
-    const tick = () => { const lc = Date.parse(readMeta().lastCheck || "") || 0; if (Date.now() - lc >= CHECK_EVERY_MS && status !== "downloading") check(); };
-    setTimeout(() => { tick(); setInterval(tick, 3600 * 1000).unref(); }, delay).unref();
+    const delay = process.env.VALKYRYS_UPDATE_DELAY ? Number(process.env.VALKYRYS_UPDATE_DELAY) : 0;
+    const tick = () => (status !== "downloading" && status !== "ready" ? Promise.resolve(check()).catch(() => {}) : Promise.resolve());
+    return new Promise((res) => { setTimeout(() => { tick().then(res, res); setInterval(tick, CHECK_EVERY_MS).unref(); }, delay).unref(); });
   }
-
   return { state, check, install, restart, prune, auto, running, bundled };
 }
 

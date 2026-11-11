@@ -103,7 +103,7 @@ function fakeApp(dest, ver, mainCode) {
   // ---- 2: the loader starts 9.9.9
   ({ app, page } = await launch());
   s = await st(page);
-  check(s.running === "9.9.9" && s.bundled === bundled && s.status === "idle", "loader runs 9.9.9", brief(s));
+  check(s.running === "9.9.9" && s.bundled === bundled && ["idle", "checking", "uptodate"].includes(s.status), "loader runs 9.9.9 (and looks for updates right at the start)", brief(s));
   check(await app.evaluate(({ app }) => app.getVersion()) === bundled, "app.getVersion() still the installed version");
   check((await app.evaluate(() => global.valkyrysLoader.dir)).endsWith(path.join("versions", "9.9.9")), "app files come from versions/9.9.9");
   await page.waitForSelector("#pick", { state: "attached", timeout: 20000 });

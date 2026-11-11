@@ -244,7 +244,7 @@ function registerUpdateIpc() {
   ipcMain.handle("upd:install", guard(() => updater.install(), true));
   ipcMain.handle("upd:restart", guard(() => { setTimeout(() => updater.restart(), 50); return true; }, true));
   updater.prune();
-  updater.auto();
+  return updater.auto();
 }
 // ---- e-mail (Settings › Connections): purchase orders fetched from the mailbox into the PO folder, see mailfetch.js.
 // Passwords are encrypted with Windows' own encryption (safeStorage = DPAPI, bound to this Windows user); only when that is not available (some Linux test setups) plainly encoded.
@@ -278,7 +278,7 @@ function registerMailIpc() {
     try { win.flashFrame(true); win.once("focus", () => { try { win.flashFrame(false); } catch (err) {} }); } catch (err) {}
     return true;
   }));
-  mail.auto();
+  return mail.auto();
 }
 // an update version counts as good once its page has loaded and stayed up a moment (or the app was closed normally after that);
 // until then the loader treats a next start as "this version crashed" and goes back to the previous one
@@ -291,7 +291,7 @@ const arg = process.argv.find((a) => a.startsWith("--splash-ms="));
 // --splash-ms=N: keep the splash at least N ms from start (tests). Without it the splash page decides: it says when its animation
 // plus a short hold of the finished logo is done (window.splashDone, ~4.2 s); SPLASH_FALLBACK_MS is the minimum if the page can't answer.
 const SPLASH_MS = arg ? Number(arg.slice(12)) : 0;
-const SPLASH_FALLBACK_MS = 4200, SPLASH_FADE_MS = 550;
+const SPLASH_FALLBACK_MS = 4200, SPLASH_FADE_MS = 550, START_CHECKS_MAX_MS = 9000;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // fade a window's opacity (Windows/macOS; on Linux setOpacity does nothing and the window is simply there)
 async function fadeOpacity(w, from, to, ms) {
@@ -316,7 +316,9 @@ function showSplash() {
 app.whenReady().then(() => {
   if (!gotLock) return; // a second launch only wakes the first window; it gets no splash
   Menu.setApplicationMenu(null);
-  registerFolderIpc(() => win); registerPinIpc(); registerUpdateIpc(); registerMailIpc();
+  registerFolderIpc(() => win); registerPinIpc();
+  // the start checks run while the splash plays (updates: only looked for, never installed by themselves; new purchase orders in the mail)
+  const startChecks = Promise.allSettled([registerUpdateIpc(), registerMailIpc()]);
   const started = Date.now();
   const splash = process.argv.includes("--no-splash") ? null : showSplash();
   const server = createServer(path.join(__dirname, "web"), path.join(app.getPath("userData"), "data.json"), () => unlocked);
@@ -345,6 +347,7 @@ app.whenReady().then(() => {
     loaded.then(async () => {
       await splashDone;
       await sleep(Math.max(0, SPLASH_MS - (Date.now() - started)));
+      if (splashLive()) await Promise.race([startChecks, sleep(Math.max(0, START_CHECKS_MAX_MS - (Date.now() - started)))]); // a slow network never keeps the splash longer than this
       if (!win) { if (splashLive()) splash.close(); return; }
       if (!splashLive()) { win.show(); win.focus(); return; }
       try { win.setOpacity(0); } catch (e) {}
