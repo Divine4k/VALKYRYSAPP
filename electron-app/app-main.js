@@ -321,7 +321,7 @@ async function fadeOpacity(w, from, to, ms) {
 }
 
 function showSplash() {
-  const splash = new BrowserWindow({ width: 640, height: 360, frame: false, transparent: true, resizable: false, movable: false, minimizable: false, maximizable: false,
+  const splash = new BrowserWindow({ width: 560, height: 316, frame: false, transparent: true, resizable: false, movable: false, minimizable: false, maximizable: false,
     skipTaskbar: true, alwaysOnTop: true, center: true, show: false, hasShadow: false, backgroundColor: "#00000000", title: "Valkyrys app",
     icon: path.join(__dirname, "build", "icon.png"), webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true } });
   splash.once("ready-to-show", () => splash.show());
