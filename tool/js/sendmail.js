@@ -9,11 +9,19 @@ function sendSets() {
   for (const n of [...sel]) if (!all.some((s) => s.nr === n)) sel.delete(n); // deleted in the meantime
   return all.sort((a, b) => a.y - b.y || a.n - b.n);
 }
+/** "Facturen versturen": the tick boxes come out and a bar says what to do; "all unsent" ticks every invoice not sent yet */
+const sendUnsentNrs = () => docSets().filter((s) => !s.poOnly && !s.sent && s.nr).map((s) => s.nr);
+function setSendMode(on) { state.docs.selMode = !!on; if (!on) state.docs.sel.clear(); renderDocs(); if (on) { const b = $("#sendBarUnsent"); if (b && !b.hidden) b.focus(); } }
 function renderSendBar() {
-  const bar = $("#sendBar"); if (!bar) return;
-  const sets = desk ? sendSets() : [], n = sets.length, total = sets.reduce((a, s) => a + (+s.total || 0), 0);
-  bar.hidden = !n; if (!n) return;
-  $("#sendBarText").textContent = tr(n === 1 ? "sendBar1" : "sendBarN", n, core.eur(total));
+  const bar = $("#sendBar"), start = $("#docsSendStart"); if (!bar) return;
+  const on = !!(desk && MAIL && state.docs.selMode);
+  if (start) start.hidden = !(desk && MAIL) || on;
+  bar.hidden = !on; if (!on) return;
+  const sets = sendSets(), n = sets.length, total = sets.reduce((a, s) => a + (+s.total || 0), 0), unsent = sendUnsentNrs();
+  $("#sendBarText").textContent = n ? tr(n === 1 ? "sendBar1" : "sendBarN", n, core.eur(total)) : tr("sendPick");
+  const u = $("#sendBarUnsent"), allIn = unsent.length > 0 && unsent.every((nr) => state.docs.sel.has(nr));
+  u.hidden = !unsent.length || allIn; u.textContent = tr("sendUnsent", unsent.length);
+  $("#sendBarGo").disabled = !n;
 }
 /** {placeholders}: {nummers} {lijst} {totaal} {aantal} {naam} {Factuur}/{factuur} (singular or plural) */
 function sendFill(t, sets) {
@@ -102,13 +110,15 @@ async function sendSubmit(e) {
   sendUi.prefs = p; await saveSendPrefs();
   const toRaw = to.join(", ");
   for (const s of sets) state.sent.add(s.nr); saveSent();
-  state.docs.sel.clear();
+  state.docs.sel.clear(); state.docs.selMode = false;
   $("#sendDlg").close(); renderDocs();
   toast(tr(sets.length === 1 ? "sendDone1" : "sendDoneN", sets.length, toRaw));
 }
 if (desk && MAIL) {
   $("#sendBarGo").addEventListener("click", openSend);
-  $("#sendBarClear").addEventListener("click", () => { state.docs.sel.clear(); renderDocs(); });
+  $("#sendBarClear").addEventListener("click", () => setSendMode(false));
+  $("#docsSendStart").addEventListener("click", () => setSendMode(true));
+  $("#sendBarUnsent").addEventListener("click", () => { for (const nr of sendUnsentNrs()) state.docs.sel.add(nr); renderDocs(); });
   $("#sendDlgClose").addEventListener("click", () => $("#sendDlg").close());
   $("#sendForm").addEventListener("submit", sendSubmit);
   $("#sendForm").addEventListener("input", (e) => { $("#sendErr").hidden = true; if (e.target.id === "sendSubj" || e.target.id === "sendText") renderSendPrev(); if (e.target.id === "sendTo") renderSendBook(); });

@@ -36,8 +36,14 @@ async function launch() {
 
   // ---- no mail connected: ticking works, sending says to connect first
   let { app, page, errs } = await launch();
-  ok(await until(async () => (await page.$$("#docsList input[data-sel]")).length === 3), "every invoice row has a tick box");
-  ok(!(await page.isVisible("#sendBar")), "nothing ticked: no send bar");
+  ok(await until(async () => (await page.$$("#docsList li[data-nr]:not(.po-only)")).length === 3), "three invoice rows");
+  ok(await page.isVisible("#docsSendStart") && /Facturen versturen/.test(await page.textContent("#docsSendStart")) && !(await page.isVisible("#docsList input[data-sel]")) && !(await page.isVisible("#sendBar")), "a 'Facturen versturen' button; no tick boxes and no bar yet");
+  await page.screenshot({ path: "/tmp/send-start.png" });
+  await page.click("#docsSendStart");
+  ok(await page.isVisible("#sendBar") && /Vink de facturen aan/.test(await page.textContent("#sendBarText")) && (await page.isDisabled("#sendBarGo")) && !(await page.isVisible("#docsSendStart")), "choosing: tick boxes, a bar that says what to do, send off until one is ticked");
+  ok((await page.$$("#docsList input[data-sel]")).length === 3 && await page.isVisible('#docsList input[data-sel="1-2026"]'), "every invoice row has a tick box now");
+  await page.click("#sendBarClear"); ok(!(await page.isVisible("#sendBar")) && !(await page.isVisible("#docsList input[data-sel]")) && await page.isVisible("#docsSendStart"), "Annuleren: back to the list");
+  await page.click("#docsSendStart");
   await page.check('#docsList input[data-sel="1-2026"]');
   ok(await until(() => page.isVisible("#sendBar")) && /1 factuur geselecteerd · € 2\.250,00/.test(await page.textContent("#sendBarText")), "one ticked: '1 factuur geselecteerd · € 2.250,00'", await page.textContent("#sendBarText"));
   await page.click("#sendBarGo");
@@ -50,8 +56,13 @@ async function launch() {
   const smtp = await F.startSmtp({ users: { "jan@wp.pl": PASS }, rejectRcpt: ["weg@piguillet.nl"] });
   fs.writeFileSync(path.join(dir, "mail.json"), JSON.stringify({ mode: "ask", accounts: [{ id: "acc1", provider: "imap", user: "jan@wp.pl", host: "127.0.0.1", port: imap.port, smtp: { host: "127.0.0.1", port: smtp.port }, enabled: true, pass: "b:" + Buffer.from(PASS).toString("base64") }] }));
   ({ app, page, errs } = await launch());
-  ok(await until(async () => (await page.$$("#docsList input[data-sel]")).length === 3), "rows back");
-  await page.check("#docsSelAll");
+  ok(await until(async () => (await page.$$("#docsList li[data-nr]:not(.po-only)")).length === 3), "rows back");
+  await page.click("#docsSendStart");
+  ok(/Alle niet-verzonden aanvinken \(3\)/.test(await page.textContent("#sendBarUnsent")), "'Alle niet-verzonden aanvinken (3)'");
+  await page.click("#sendBarUnsent");
+  ok(await until(async () => /3 facturen geselecteerd/.test(await page.textContent("#sendBarText"))) && !(await page.isVisible("#sendBarUnsent")), "one click ticks all unsent; the button goes away");
+  await page.screenshot({ path: "/tmp/send-pick.png" });
+  await page.uncheck("#docsSelAll"); await page.check("#docsSelAll");
   ok(await until(async () => /3 facturen geselecteerd · € 4\.850,00/.test(await page.textContent("#sendBarText"))), "the head box ticks all shown: 3 invoices, € 4.850,00", await page.textContent("#sendBarText"));
   await page.uncheck('#docsList input[data-sel="2-2026"]');
   ok(await until(async () => /2 facturen geselecteerd/.test(await page.textContent("#sendBarText"))), "untick one: 2");
@@ -87,7 +98,8 @@ async function launch() {
   ok(await until(async () => !(await page.$eval("#sendDlg", (d) => d.open))), "the window closes");
   ok(await until(async () => /2 facturen verstuurd naar facturen@piguillet\.nl, boekhouding@piguillet\.nl/.test(await page.textContent("#toast"))), "toast: sent to whom");
   ok(await until(async () => (await page.isChecked('#docsList input[data-sent="1-2026"]')) && (await page.isChecked('#docsList input[data-sent="3-2026"]')) && !(await page.isChecked('#docsList input[data-sent="2-2026"]'))), "the two are marked as sent, the other not");
-  ok(!(await page.isVisible("#sendBar")) && !(await page.$$eval("#docsList input[data-sel]:checked", (x) => x.length)), "selection cleared");
+  ok(!(await page.isVisible("#sendBar")) && !(await page.$$eval("#docsList input[data-sel]:checked", (x) => x.length)) && !(await page.isVisible("#docsList input[data-sel]")), "done: selection cleared, back to the plain list");
+  await page.click("#docsSendStart"); eq(await page.textContent("#sendBarUnsent"), "Alle niet-verzonden aanvinken (1)", "'all unsent' now counts only the one left");
   ok(imap.boxes.Sent.length === 1, "a copy in the mailbox's Sent folder");
 
   // ---- next time: empty again, the saved addresses one click away

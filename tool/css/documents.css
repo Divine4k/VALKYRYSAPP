@@ -14,7 +14,7 @@
 .dprog .pb i { display: block; height: 100%; border-radius: 3px; background: var(--ok); transition: width .3s ease; }
 .dinfo { margin: 0; font-size: 13px; color: var(--muted); }
 .dtable { padding: 0; }
-.dhead, .drow { display: grid; grid-template-columns: 22px minmax(80px, .8fr) minmax(120px, 1.6fr) 92px minmax(92px, 1fr) 104px 192px 116px 68px; gap: 12px; align-items: center; padding: 0 16px; }
+.dhead, .drow { display: grid; grid-template-columns: minmax(80px, .8fr) minmax(120px, 1.6fr) 92px minmax(92px, 1fr) 104px 192px 116px 68px; gap: 12px; align-items: center; padding: 0 16px; }
 .dhead { position: sticky; top: 0; z-index: 2; min-height: 40px; background: var(--sunken); border-bottom: 1px solid var(--line); border-radius: var(--r) var(--r) 0 0; }
 .dhead button, .dhead span { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .dhead button { background: none; border: 0; padding: 0; min-height: 40px; justify-content: flex-start; gap: 4px; border-radius: 0; }
@@ -63,7 +63,8 @@ button.mkinv { min-height: 30px; padding: 4px 12px; font-size: 12.5px; white-spa
 .dempty p { margin: 0; max-width: 52ch; }
 @media (max-width: 1000px) {
   .dhead { display: none; }
-  .drow { grid-template-columns: auto auto minmax(0, 1fr) auto auto; grid-template-areas: "sel nr cl cl amt" "sel dt po po sent" "sel docs docs docs act"; gap: 6px 12px; padding: 12px 14px; }
+  .drow { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "nr cl cl amt" "dt po po sent" "docs docs docs act"; gap: 6px 12px; padding: 12px 14px; }
+  .dtable.selmode .drow { grid-template-columns: auto auto minmax(0, 1fr) auto auto; grid-template-areas: "sel nr cl cl amt" "sel dt po po sent" "sel docs docs docs act"; }
   .c-sel { grid-area: sel; align-self: start; padding-top: 2px; }
   .c-nr { grid-area: nr; } .c-cl { grid-area: cl; align-self: center; } .c-amt { grid-area: amt; } .c-dt { grid-area: dt; color: var(--muted); } .c-po { grid-area: po; color: var(--muted); } .c-docs { grid-area: docs; } .c-sent { grid-area: sent; justify-self: end; } .c-act { grid-area: act; justify-self: end; }
   .dprog { margin-left: 0; }
@@ -112,3 +113,9 @@ button.mkinv { min-height: 30px; padding: 4px 12px; font-size: 12.5px; white-spa
 .abook .abdel:hover { color: var(--err); }
 .sendsave { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--text); cursor: pointer; }
 .sendsave input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+/* the tick boxes only while choosing invoices to send ("Facturen versturen") */
+.dtable:not(.selmode) .c-sel { display: none; }
+@media (min-width: 1001px) { .dtable.selmode .dhead, .dtable.selmode .drow { grid-template-columns: 22px minmax(80px, .8fr) minmax(120px, 1.6fr) 92px minmax(92px, 1fr) 104px 192px 116px 68px; } }
+.dbar .sendstart { order: 9; margin-left: 0; min-height: 38px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 7px; font-size: 14px; }
+.sendbar button:disabled { opacity: .5; }
+.dbar .dprog { order: 8; }

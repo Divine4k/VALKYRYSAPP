@@ -230,6 +230,7 @@
   <div class="panel dupbar stalebar" id="staleBarD" role="status" hidden><span class="dtext" data-stale-text></span><button type="button" data-stale="del" data-i18n="staleDel">Uit de app verwijderen</button><button type="button" class="ghost" data-stale="keep" data-i18n="staleKeep">Behouden</button></div>
   <div class="dwarn" id="docsWarn" hidden></div>
   <div class="panel dbar" id="docsBar">
+    <button type="button" class="primary sendstart" id="docsSendStart" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg><span data-i18n="docsSendStart">Facturen versturen</span></button>
     <label class="dsearch" for="docsSearch"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="sr" data-i18n="docsSearch">Zoeken op nummer, klant of inkooporder</span><input id="docsSearch" type="search" autocomplete="off" spellcheck="false"></label>
     <div class="seg" role="group" id="docsFilter" data-i18n-aria="docsFilter" aria-label="Tonen">
       <button type="button" data-f="all" aria-pressed="true"><span data-i18n="docsAll">Alle</span><span class="n num" data-n="all"></span></button>
@@ -248,7 +249,7 @@
     <div class="dprog" id="docsProg"><span class="pb" aria-hidden="true"><i></i></span><span id="docsCount"></span></div>
   </div>
   <p class="dinfo" id="docsInfo" role="status"></p>
-  <div class="panel sendbar" id="sendBar" role="status" hidden><span class="stext" id="sendBarText"></span><button type="button" class="ghost" id="sendBarClear" data-i18n="sendClear">Selectie wissen</button><button type="button" class="primary" id="sendBarGo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg><span data-i18n="sendGo">Per e-mail versturen…</span></button></div>
+  <div class="panel sendbar" id="sendBar" role="status" hidden><span class="stext" id="sendBarText"></span><button type="button" id="sendBarUnsent"></button><button type="button" class="ghost" id="sendBarClear" data-i18n="sendCancel">Annuleren</button><button type="button" class="primary" id="sendBarGo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg><span data-i18n="sendGo">Per e-mail versturen…</span></button></div>
   <div class="panel dtable" id="docsTable">
     <div class="dhead" id="docsHead"></div>
     <ul class="dlist" id="docsList"></ul>
