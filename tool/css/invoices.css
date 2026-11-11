@@ -67,9 +67,6 @@ details[open] summary::after { content: "\2212"; }
 .nextbox .nextadd { flex: 0 0 96px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; margin: 0; padding: 8px; min-height: 0; color: var(--ink); font-size: 12px; font-weight: 700; cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
 .nextbox .nextadd:hover { background: var(--accent); border-color: var(--accent); color: #111214; }
 .nextbox .nextadd:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-.owntog { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 12px; min-height: 34px; padding: 6px 12px; font-size: 13px; }
-.owntog svg { transition: transform .15s; } .owntog[aria-expanded="true"] svg { transform: rotate(90deg); }
-.owntog .ownsum { font-weight: 400; color: var(--muted); }
 .po.nopo { border-left: 4px solid var(--accent); }
 .ownclient { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 12px; margin: 0 0 12px; padding: 12px; border: 1px dashed var(--line); border-radius: 8px; }
 .ownclient .frow { grid-column: 1 / -1; margin: 0; }
@@ -81,4 +78,3 @@ details[open] summary::after { content: "\2212"; }
 .nextbox .next { flex-wrap: wrap; justify-content: flex-start; }
 .nextbox .next b { white-space: nowrap; }
 .nextbox .next .small { margin: 0; }
-.po .owntog { display: flex; width: fit-content; margin-left: 0; margin-right: auto; }

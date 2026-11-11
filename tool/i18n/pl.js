@@ -172,5 +172,5 @@ VALK_I18N.pl = {
     mailInMail0: "brak zamówień w poczcie (ostatnie 30 dni)", mailInMail1: "1 zamówienie w poczcie (ostatnie 30 dni)", mailInMailN: "zamówienia w poczcie (ostatnie 30 dni): {0}",
     mailNoteTitle1: "Masz nowe zamówienie w poczcie!", mailNoteTitleN: "Masz nowe zamówienia w poczcie!", mailNoteGot1: "{0} jest już w Twoim folderze i poniżej w Nowych zamówieniach.", mailNoteGotN: "{0} są już w Twoim folderze i poniżej w Nowych zamówieniach.", mailNoteAsk1: "{0}. Pobrać je?", mailNoteAskN: "{0}. Pobrać je?", mailNoteOk: "Super, dzięki",
     noPoNew: "Faktura bez zamówienia", noPoTitle: "Faktura bez zamówienia", noPoMeta: "Dla innego klienta lub dodatkowej pracy: sam wpisz klienta i pozycje.", noPoOther: "Inny klient (wpisz poniżej)", noPoSaveClient: "Zapisz jako klienta", noPoClientSaved: "Klient „{0}” zapisany. Możesz go teraz wybrać także na innych fakturach.", noPoClient: "Wpisz nazwę klienta.", noPoEmpty: "Wypełnij co najmniej jedną pozycję: opis, ilość i stawkę.", noPoAddLine: "+ Dodaj pozycję", noPoDelLine: "Usuń pozycję",
-    noPoPlus: "Nowa", noPoClientBox: "Dane klienta", noPoClientEmpty: "jeszcze nie wpisane",
+    noPoPlus: "Nowa",
 };

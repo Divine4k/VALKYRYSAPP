@@ -25,16 +25,17 @@ const until = async (fn, ms = 8000) => { const t = Date.now(); while (Date.now()
   const card = ".po.nopo";
   ok(await until(() => page.isVisible(card)), "an empty card is added");
   ok(/Factuur zonder inkooporder/.test(await page.textContent(`${card} h3`)), "...titled 'Factuur zonder inkooporder'");
-  ok(!(await page.isVisible(`${card} .ownclient`)) && /Klantgegevens · nog niet ingevuld/.test(await page.textContent(`${card} [data-act=owntoggle]`)), "client box folded: 'Klantgegevens · nog niet ingevuld'");
+  ok((await page.$eval(`${card} select[data-k=client]`, (s) => s.options[s.selectedIndex].textContent)) === "Piguillet BV" && !(await page.$(`${card} .ownclient`)), "starts with the main client, no client fields", await page.$eval(`${card} select[data-k=client]`, (s) => s.options[s.selectedIndex].textContent));
+  ok(await page.evaluate(() => document.activeElement && document.activeElement.dataset.k === "desc"), "...the first line has focus");
   await page.screenshot({ path: "/tmp/nopo-new.png" });
-  await page.click(`${card} [data-act=owntoggle]`);
-  ok(await page.isVisible(`${card} .ownclient`) && await page.evaluate(() => document.activeElement && document.activeElement.dataset.ck === "name"), "opened: the client fields, name has focus");
-  ok(/Andere klant/.test(await page.$eval(`${card} select[data-k=client]`, (s) => s.options[s.selectedIndex].textContent)), "client: 'Andere klant' by default");
-  const notes = await page.textContent(`${card} .checks`);
-  ok(/naam van de klant/.test(notes) && /minstens één regel/.test(notes), "notes ask for the client and a line", notes);
   await page.click(`${card} [data-act=download-both]`);
   ok(await until(async () => /minstens één regel/.test(await page.textContent("#toast"))), "saving an empty one: says what is missing");
   ok(!fs.readdirSync(F).length, "...and saves nothing");
+  await page.selectOption(`${card} select[data-k=client]`, "");
+  ok(await until(() => page.isVisible(`${card} .ownclient`)), "'Andere klant': the client fields appear");
+  ok(await page.evaluate(() => document.activeElement && document.activeElement.dataset.ck === "name"), "...name has focus");
+  const notes = await page.textContent(`${card} .checks`);
+  ok(/naam van de klant/.test(notes) && /minstens één regel/.test(notes), "notes ask for the client and a line", notes);
 
   await page.fill(`${card} [data-ck=name]`, "Bakkerij De Vries"); await page.fill(`${card} [data-ck=street]`, "Dorpsstraat 1"); await page.fill(`${card} [data-ck=city]`, "1234 AB Delft");
   await page.fill(`${card} [data-line="0"][data-k=desc]`, "Advieswerk oktober"); await page.fill(`${card} [data-line="0"][data-k=aantal]`, "2"); await page.fill(`${card} [data-line="0"][data-k=tarief]`, "450");
@@ -49,9 +50,6 @@ const until = async (fn, ms = 8000) => { const t = Date.now(); while (Date.now()
   await page.click(`${card} [data-act=addline]`); await page.click(`${card} [data-act=delline][data-line="2"]`);
   ok((await page.$$(`${card} .line`)).length === 2, "a line can be removed again");
 
-  await page.click(`${card} [data-act=owntoggle]`);
-  ok(!(await page.isVisible(`${card} .ownclient`)) && /Bakkerij De Vries, 1234 AB Delft/.test(await page.textContent(`${card} [data-act=owntoggle]`)), "folded again: the name shows on the button, the typed details are kept");
-  await page.click(`${card} [data-act=owntoggle]`);
   await page.click(`${card} [data-act=saveclient]`);
   ok(await until(async () => /Bakkerij De Vries/.test(await page.textContent("#toast"))), "Bewaren als klant: toast");
   ok(await until(() => { const c = db()["settings/clients"]; return c && c.list.some((p) => p.name === "Bakkerij De Vries" && p.fields.client.city === "1234 AB Delft"); }), "...stored as a client preset", db()["settings/clients"]);

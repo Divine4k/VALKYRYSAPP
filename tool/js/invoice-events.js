@@ -25,7 +25,10 @@ $("#cards").addEventListener("change", (e) => {
     const y = +el.value.slice(0, 4);
     if (y !== c.jaar) { c.jaar = y; c.nummer = nextNumber(y, c); }
   } else if (k === "btw") c.btw = el.value;
-  else if (k === "client") { const p = clientById(el.value); c.clientId = p ? p.id : null; if (p && !c.done) c.btw = clientFields(p.fields).btw; }
+  else if (k === "client") {
+    const p = clientById(el.value); c.clientId = p ? p.id : null; if (p && !c.done) c.btw = clientFields(p.fields).btw;
+    if (c.noPo && !p) { render(); const n = document.getElementById(`${c.id}-cn`); if (n) n.focus(); return; } // "Andere klant": straight into its fields
+  }
   else if (el.dataset.ck || el.dataset.line != null) { renderCardNotes(c, el.closest("[data-id]")); return; } // typed text: only the notes, so the next field keeps its focus and text
   render();
 });
@@ -40,7 +43,6 @@ $("#cards").addEventListener("click", (e) => {
   if (b.dataset.act === "addline") { c.lines.push(blankLine()); c.done = false; render(); const d = document.getElementById(`${c.id}-d${c.lines.length - 1}`); if (d) d.focus(); }
   if (b.dataset.act === "delline" && c.lines.length > 1) { c.lines.splice(+b.dataset.line, 1); c.done = false; render(); }
   if (b.dataset.act === "saveclient") saveCardClient(c);
-  if (b.dataset.act === "owntoggle") { c.ownOpen = !c.ownOpen; render(); if (c.ownOpen) { const n = document.getElementById(`${c.id}-cn`); if (n) n.focus(); } }
 });
 $("#zipAll").addEventListener("click", (e) => downloadAll(e.currentTarget));
 $("#newNoPo").addEventListener("click", addNoPo);
