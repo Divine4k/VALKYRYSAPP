@@ -35,11 +35,49 @@ function renderMail() {
       + `<button type="button" class="ghost" data-mdel>${esc(tr(sure ? "mailDelSure" : "mailDel"))}</button></div></div></li>`;
   }).join("");
   const add = $("#mailAdd"); add.classList.toggle("primary", !list.length); add.textContent = tr(list.length ? "mailAddMore" : "mailAdd");
+  const mode = (mailUi.st && mailUi.st.mode) || "auto";
+  $("#mailMode").hidden = !list.length;
+  document.querySelectorAll('#mailMode input[name="mailMode"]').forEach((r) => { r.checked = r.value === mode; });
+  const pend = (mailUi.st && mailUi.st.pending) || [];
+  $("#mailPend").hidden = !pend.length;
+  $("#mailPendList").innerHTML = pend.map((p) => `<li data-key="${esc(p.key)}"><span class="pname">${esc(mailPo(p.name))}${p.at ? `<span class="pwhen">${esc(mailWhen(p.at))}</span>` : ""}</span>`
+    + `<button type="button" class="primary" data-pdl>${esc(tr("mailDownload"))}</button><button type="button" class="ghost" data-pign>${esc(tr("mailIgnore"))}</button></li>`).join("");
+  $("#mailPendAll").hidden = $("#mailPendIgn").hidden = pend.length < 2;
+  renderMailBars();
+}
+// ---- the notice at the bottom of the screen: POs fetched (until looked at), or POs found that wait for "Downloaden"
+const mailPo = (n) => String(n).replace(/\.pdf$/i, "");
+const mailNames = (list) => { const n = list.map(mailPo); return n.length > 3 ? n.slice(0, 3).join(", ") + " " + tr("mailMore", n.length - 3) : n.join(", "); };
+const mailGotText = (names) => (names.length === 1 ? tr("mailBarGot1", mailPo(names[0])) : tr("mailBarGotN", names.length, mailNames(names)));
+const mailFoundText = (names) => (names.length === 1 ? tr("mailBarFound1", mailPo(names[0])) : tr("mailBarFoundN", names.length, mailNames(names)));
+function renderMailBars() {
+  const box = $("#mailBars"), st = mailUi.st; if (!box) return;
+  const bars = [];
+  if (MAIL && desk && st) {
+    const pend = st.pending || [], unseen = st.unseen || [], psig = pend.map((p) => p.key).join();
+    if (pend.length && mailUi.hideFound !== psig) bars.push({ k: "found", text: mailFoundText(pend.map((p) => p.name)), btns: [["dl", "primary", pend.length > 1 ? "mailDlAll" : "mailDownload"], ["choose", "", "mailBarView"], ["x"]] });
+    if (unseen.length) bars.push({ k: "got", text: mailGotText(unseen), btns: [["view", "primary", "mailBarView"], ["x"]] });
+  }
+  box.hidden = !bars.length; document.body.classList.toggle("mail-on", !!bars.length);
+  const sig = JSON.stringify(bars.map((b) => [b.k, b.text]));
+  if (sig === mailUi.barSig) return; mailUi.barSig = sig; // unchanged: keep focus
+  box.innerHTML = bars.map((b) => `<div class="updbar" role="status" data-mbar="${b.k}"><span class="utext">${esc(b.text)}</span>` +
+    b.btns.map(([a, cls, key]) => a === "x" ? `<button type="button" class="ghost xbtn" data-mbar-act="x" aria-label="${esc(tr("close"))}" title="${esc(tr("close"))}">${X_SVG}</button>` : `<button type="button"${cls ? ` class="${cls}"` : ""} data-mbar-act="${a}">${esc(tr(key))}</button>`).join("") + `</div>`).join("");
 }
 function mailSet(st) {
   if (!st || !Array.isArray(st.accounts)) return;
   mailUi.st = st; renderMail();
-  if (st.saved && st.saved.length) { refreshPoFolder(); toast(st.saved.length === 1 ? tr("mailGot1", st.saved[0]) : tr("mailGotN", st.saved.length)); }
+  const away = !document.hasFocus();
+  if (st.saved && st.saved.length) {
+    refreshPoFolder();
+    if (st.downloaded) toast(st.saved.length === 1 ? tr("mailDownloaded1", mailPo(st.saved[0])) : tr("mailDownloadedN", st.saved.length));
+    else if (away) MAIL.notify(tr("mailNotifTitle"), mailGotText(st.saved)).catch(() => {});
+  }
+  if (st.found && st.found.length && away) MAIL.notify(tr("mailNotifTitle"), mailFoundText(st.found)).catch(() => {});
+}
+async function mailDownload(keys) {
+  let r; try { r = await MAIL.download(keys || null); } catch (e) { r = { error: "other" }; }
+  if (r && r.error && !(r.saved && r.saved.length)) toast(mailErr(r.error));
 }
 
 // ---- the add dialog
@@ -88,6 +126,22 @@ if (MAIL && desk) {
   $("#mailList").addEventListener("change", (e) => {
     const t = e.target.closest("[data-mtog]"), li = e.target.closest("li[data-id]"); if (!t || !li) return;
     MAIL.setEnabled(li.dataset.id, t.checked).catch(() => {});
+  });
+  $("#mailMode").addEventListener("change", (e) => { if (e.target.name === "mailMode") MAIL.setMode(e.target.value).catch(() => {}); });
+  $("#mailPendList").addEventListener("click", (e) => {
+    const li = e.target.closest("li[data-key]"); if (!li) return;
+    if (e.target.closest("[data-pdl]")) { e.target.closest("button").disabled = true; mailDownload([li.dataset.key]); }
+    else if (e.target.closest("[data-pign]")) MAIL.ignore([li.dataset.key]).catch(() => {});
+  });
+  $("#mailPendAll").addEventListener("click", () => mailDownload());
+  $("#mailPendIgn").addEventListener("click", () => MAIL.ignore(null).catch(() => {}));
+  $("#mailBars").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-mbar-act]"), bar = b && b.closest("[data-mbar]"); if (!b) return;
+    const k = bar.dataset.mbar, act = b.dataset.mbarAct, st = mailUi.st || {};
+    if (k === "got") { MAIL.seen().catch(() => {}); mailSet(Object.assign({}, st, { unseen: [], saved: null, found: null })); if (act === "view") { setTab("inv"); const np = $("#npList"); if (np) np.scrollIntoView({ block: "center" }); } return; }
+    if (act === "dl") { b.disabled = true; mailDownload(); return; }
+    if (act === "choose") { setTab("settings"); $("#mailPend").scrollIntoView({ block: "center" }); return; }
+    if (act === "x") { mailUi.hideFound = (st.pending || []).map((p) => p.key).join(); renderMailBars(); }
   });
   let sureTimer = 0;
   $("#mailList").addEventListener("click", (e) => {

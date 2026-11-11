@@ -10,7 +10,7 @@
 const fs = require("fs"), path = require("path"), net = require("net"), tls = require("tls"), crypto = require("crypto");
 
 const PROVIDERS = { gmail: { host: "imap.gmail.com", port: 993 }, wp: { host: "imap.wp.pl", port: 993 } };
-const FIRST_DAYS = 30, EVERY_MS = 5 * 60 * 1000, FIRST_AFTER_MS = 20 * 1000, MAX_PER_RUN = 200, TIMEOUT_MS = 45000;
+const FIRST_DAYS = 30, EVERY_MS = 5 * 60 * 1000, FIRST_AFTER_MS = 4000, MAX_PER_RUN = 200, TIMEOUT_MS = 45000;
 const SUBJECT_RE = /inkooporder\b[^\n]*?\bPO[-\s]?(\d{3,})/i;
 const PO_FILE_RE = /\bPO[-_\s]?(\d{3,})\b/i;
 
@@ -164,47 +164,70 @@ async function pickBox(c, acc) {
 }
 const boxArg = (b) => (/^".*"$/.test(b) ? b : arg(b));
 
-/** log in, look for new PO mails and save their PDFs. st = { uidValidity, lastUid } of this account (updated in place). Returns { saved: [names], seen } */
-async function checkAccount(acc, pass, st, { poFolder, exists, save, plain, now = new Date() }) {
+async function login(acc, pass, plain) {
   let c;
   try { c = await Imap.open({ host: acc.host, port: acc.port, plain }); } catch (e) { throw Object.assign(e, { kind: errCode(e) }); }
+  const lr = await c.cmd("LOGIN ", arg(acc.user), " ", arg(pass)).catch((e) => { c.close(); throw Object.assign(e, { kind: errCode(e) }); });
+  if (lr.status !== "OK") { c.close(); const e = Object.assign(new Error(lr.text || "login failed"), { code: "EAUTH" }); throw Object.assign(e, { kind: errCode(e) }); }
+  return c;
+}
+async function examine(c, box) {
+  const ex = await c.ok("EXAMINE ", boxArg(box)); // read-only: nothing gets marked as read
+  let uv = 0, next = 0;
+  for (const u of ex.untagged) { let m; if ((m = /\[UIDVALIDITY (\d+)\]/i.exec(u.text))) uv = Number(m[1]); if ((m = /\[UIDNEXT (\d+)\]/i.exec(u.text))) next = Number(m[1]); }
+  return { uv, next };
+}
+async function fetchMail(c, uid) {
+  const fr = await c.ok("UID FETCH " + uid + " (BODY.PEEK[])");
+  const lit = fr.untagged.find((u) => u.lits.length && /FETCH/i.test(u.text));
+  return lit ? parseMail(lit.lits[0]) : null;
+}
+
+/** log in and look for new PO mails. Their PDFs are saved (save), or with `hold` only noted (asked first: hold(name, uid, uidValidity)).
+ *  st = { uidValidity, lastUid, box } of this account (updated in place). Returns { saved: [names], held: [names], seen } */
+async function checkAccount(acc, pass, st, { exists, save, hold, plain, now = new Date() }) {
+  const c = await login(acc, pass, plain);
   try {
-    const lr = await c.cmd("LOGIN ", arg(acc.user), " ", arg(pass));
-    if (lr.status !== "OK") { const e = Object.assign(new Error(lr.text || "login failed"), { code: "EAUTH" }); throw Object.assign(e, { kind: errCode(e) }); }
     const box = st.box || (st.box = await pickBox(c, acc));
-    const ex = await c.ok("EXAMINE ", boxArg(box)); // read-only: nothing gets marked as read
-    let uv = 0, next = 0;
-    for (const u of ex.untagged) { let m; if ((m = /\[UIDVALIDITY (\d+)\]/i.exec(u.text))) uv = Number(m[1]); if ((m = /\[UIDNEXT (\d+)\]/i.exec(u.text))) next = Number(m[1]); }
+    const { uv, next } = await examine(c, box);
     const fresh = !st.lastUid || st.uidValidity !== uv;
     const since = new Date(now.getTime() - FIRST_DAYS * 86400000);
     const sr = await c.ok("UID SEARCH ", fresh ? "SINCE " + imapDate(since) : "UID " + (st.lastUid + 1) + ":*", ' SUBJECT "Inkooporder"');
     let uids = [];
     for (const u of sr.untagged) { const m = /^\* SEARCH\b(.*)$/i.exec(u.text); if (m) uids.push(...m[1].trim().split(/\s+/).filter(Boolean).map(Number)); }
     uids = [...new Set(uids)].filter((u) => u > 0 && (fresh || u > st.lastUid)).sort((a, b) => a - b).slice(0, MAX_PER_RUN);
-    const saved = []; let last = fresh ? 0 : st.lastUid;
+    const saved = [], held = []; let last = fresh ? 0 : st.lastUid;
     for (const uid of uids) {
-      const fr = await c.ok("UID FETCH " + uid + " (BODY.PEEK[])");
-      const lit = fr.untagged.find((u) => u.lits.length && /FETCH/i.test(u.text));
-      if (lit) for (const f of poFiles(parseMail(lit.lits[0]))) if (!exists(f.name)) { await save(f.name, f.data); saved.push(f.name); }
+      const mail = await fetchMail(c, uid);
+      if (mail) for (const f of poFiles(mail)) {
+        if (exists(f.name)) continue;
+        if (hold) { await hold(f.name, uid, uv); held.push(f.name); } else { await save(f.name, f.data); saved.push(f.name); }
+      }
       last = Math.max(last, uid);
     }
     if (uids.length < MAX_PER_RUN && next) last = Math.max(last, next - 1);
     st.uidValidity = uv; st.lastUid = last;
-    return { saved, seen: uids.length };
+    return { saved, held, seen: uids.length };
   } finally { c.close(); }
 }
 
 // ------------------------------------------------------------------ the accounts, the timer, and what the page sees
+// mail.json = { accounts: [...], mode: "auto" | "ask", unseen: [names fetched that the page has not shown yet], pending: [{ key, acc, uid, uv, name, at }] (found, asked first) }
 function create({ dataDir, poFolder, encrypt, decrypt, canRun = () => true, send = () => {}, plain = false }) {
   const file = path.join(dataDir, "mail.json");
-  const read = () => { try { const d = JSON.parse(fs.readFileSync(file, "utf8")); return Array.isArray(d.accounts) ? d : { accounts: [] }; } catch (e) { return { accounts: [] }; } };
+  const arr = (x) => (Array.isArray(x) ? x : []);
+  const read = () => { let d = {}; try { d = JSON.parse(fs.readFileSync(file, "utf8")) || {}; } catch (e) {} return { ...d, accounts: arr(d.accounts), mode: d.mode === "ask" ? "ask" : "auto", unseen: arr(d.unseen), pending: arr(d.pending) }; };
   const write = (d) => { fs.mkdirSync(dataDir, { recursive: true }); const t = file + ".tmp"; fs.writeFileSync(t, JSON.stringify(d, null, 2)); fs.renameSync(t, file); };
-  const busy = new Set(); let timer = null, running = null;
+  const change = (fn) => { const d = read(); const r = fn(d); write(d); return r; };
+  const busy = new Set(); let timer = null, chain = Promise.resolve(), queued = 0;
+  const serial = (fn) => { queued++; const r = chain.then(fn, fn).finally(() => { queued--; }); chain = r.catch(() => {}); return r; };
   const pub = (a) => ({ id: a.id, provider: a.provider, user: a.user, host: a.host, port: a.port, enabled: a.enabled !== false, lastCheck: a.lastCheck || 0, lastOk: a.lastOk || 0,
     error: a.error || "", found: a.found || 0, lastFiles: a.lastFiles || [], busy: busy.has(a.id) });
-  const state = () => ({ accounts: read().accounts.map(pub) });
+  const state = () => { const d = read(); return { mode: d.mode, accounts: d.accounts.map(pub), unseen: d.unseen, pending: d.pending.map((p) => ({ key: p.key, name: p.name, account: p.acc, at: p.at || 0 })) }; };
   const emit = (extra) => { try { send(Object.assign(state(), extra || {})); } catch (e) {} };
   const where = (provider, host) => { if (PROVIDERS[provider]) return PROVIDERS[provider]; const m = /^\s*([^\s:/]+)(?::(\d+))?\s*$/.exec(String(host || "")); return m ? { host: m[1].toLowerCase(), port: Number(m[2] || 993) } : null; };
+  const folderOk = () => { const f = poFolder(); return f && fs.existsSync(f) ? f : ""; };
+  const uniq = (list) => { const seen = new Set(); return list.filter((n) => { const k = String(n).toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; }); };
 
   // the PO folder: which names are there already (in it or a subfolder, any case), and saving into it without ever overwriting
   const names = (root) => {
@@ -212,41 +235,83 @@ function create({ dataDir, poFolder, encrypt, decrypt, canRun = () => true, send
     const walk = (d, depth) => { let es; try { es = fs.readdirSync(d, { withFileTypes: true }); } catch (e) { return; } for (const e of es) { if (++n > 20000) return; if (e.isDirectory()) { if (depth < 2) walk(path.join(d, e.name), depth + 1); } else out.add(e.name.toLowerCase()); } };
     walk(root, 0); return out;
   };
+  const saver = (folder, have) => async (n, bytes) => { // true when written (false: a file of that name was already there)
+    if (have.has(n.toLowerCase())) return false;
+    have.add(n.toLowerCase());
+    try { fs.writeFileSync(path.join(folder, n), bytes, { flag: "wx" }); return true; } catch (e) { if (e.code === "EEXIST") return false; have.delete(n.toLowerCase()); throw e; }
+  };
+  const keepAcc = (d, a) => { const i = d.accounts.findIndex((x) => x.id === a.id); if (i >= 0) Object.assign(d.accounts[i], { state: a.state, lastCheck: a.lastCheck, lastOk: a.lastOk, error: a.error, found: a.found, lastFiles: a.lastFiles }); };
 
-  async function runOne(acc, data, folder, have) {
+  async function runOne(acc, folder, have, ask) {
     busy.add(acc.id); emit();
-    const st = acc.state || (acc.state = {});
+    const st = acc.state || (acc.state = {}), held = [];
     try {
-      const pass = decrypt(acc.pass);
-      const r = await checkAccount(acc, pass, st, { poFolder: folder, plain, exists: (n) => have.has(n.toLowerCase()),
-        save: async (n, bytes) => { have.add(n.toLowerCase()); try { fs.writeFileSync(path.join(folder, n), bytes, { flag: "wx" }); } catch (e) { if (e.code !== "EEXIST") throw e; } } });
+      const save = saver(folder, have);
+      const r = await checkAccount(acc, decrypt(acc.pass), st, { plain, exists: (n) => have.has(n.toLowerCase()),
+        save: async (n, b) => { await save(n, b); },
+        hold: ask ? (n, uid, uv) => { held.push({ key: `${acc.id}:${uv}:${uid}:${n.toLowerCase()}`, acc: acc.id, uid, uv, name: n, at: Date.now() }); } : null });
       Object.assign(acc, { lastCheck: Date.now(), lastOk: Date.now(), error: "" });
       if (r.saved.length) { acc.found = (acc.found || 0) + r.saved.length; acc.lastFiles = r.saved.slice(-20); }
-      return r.saved;
+      return { saved: r.saved, held };
     } catch (e) {
       Object.assign(acc, { lastCheck: Date.now(), error: e.kind || errCode(e) });
-      return [];
+      return { saved: [], held: [] };
     } finally { busy.delete(acc.id); }
   }
 
-  /** check every switched-on account (or just one id). Saved file names come back, and go to the page as { saved: [...] } */
-  function check(id) {
-    if (running) return running.then(() => (id ? check(id) : { saved: [] }));
-    running = (async () => {
-      const folder = poFolder();
-      const data = read(), list = data.accounts.filter((a) => (id ? a.id === id : a.enabled !== false));
-      if (!list.length) return { saved: [] };
-      if (!folder || !fs.existsSync(folder)) { for (const a of list) Object.assign(a, { lastCheck: Date.now(), error: "nofolder" }); write(data); emit(); return { saved: [], error: "nofolder" }; }
-      const have = names(folder), saved = [];
-      for (const a of list) {
-        saved.push(...(await runOne(a, data, folder, have)));
-        const cur = read(); const i = cur.accounts.findIndex((x) => x.id === a.id); if (i >= 0) { cur.accounts[i] = Object.assign(cur.accounts[i], { state: a.state, lastCheck: a.lastCheck, lastOk: a.lastOk, error: a.error, found: a.found, lastFiles: a.lastFiles }); write(cur); }
-      }
-      emit(saved.length ? { saved } : null);
-      return { saved };
-    })().finally(() => { running = null; });
-    return running;
-  }
+  /** check every switched-on account (or just one id). Fetched files go to the page as { saved: [...] }, files found when asking first as { found: [...] } */
+  const check = (id) => serial(async () => {
+    const folder = folderOk(), data = read(), list = data.accounts.filter((a) => (id ? a.id === id : a.enabled !== false));
+    if (!list.length) return { saved: [], found: [] };
+    if (!folder) { change((d) => { for (const a of d.accounts) if (list.some((x) => x.id === a.id)) Object.assign(a, { lastCheck: Date.now(), error: "nofolder" }); }); emit(); return { saved: [], found: [], error: "nofolder" }; }
+    const have = names(folder), saved = [], found = [], ask = data.mode === "ask";
+    for (const a of list) {
+      const r = await runOne(a, folder, have, ask);
+      saved.push(...r.saved);
+      change((d) => {
+        keepAcc(d, a);
+        if (r.saved.length) d.unseen = uniq([...d.unseen, ...r.saved]).slice(-50);
+        for (const h of r.held) if (!d.pending.some((p) => p.name.toLowerCase() === h.name.toLowerCase())) { d.pending.push(h); found.push(h.name); }
+      });
+    }
+    change((d) => { d.pending = d.pending.filter((p) => !have.has(p.name.toLowerCase())); }); // found earlier, but the file is in the folder by now
+    emit(saved.length || found.length ? { saved, found } : null);
+    return { saved, found };
+  });
+
+  /** download POs that were found while asking first (all, or the given keys) */
+  const download = (keys) => serial(async () => {
+    const folder = folderOk(); if (!folder) return { saved: [], error: "nofolder" };
+    const data = read(), want = data.pending.filter((p) => !keys || keys.includes(p.key)), have = names(folder), save = saver(folder, have), done = new Set(), saved = [];
+    let error = "";
+    for (const accId of [...new Set(want.map((p) => p.acc))]) {
+      const acc = data.accounts.find((a) => a.id === accId), mine = want.filter((p) => p.acc === accId);
+      if (!acc) { mine.forEach((p) => done.add(p.key)); continue; }
+      let c = null; busy.add(acc.id); emit();
+      try {
+        c = await login(acc, decrypt(acc.pass), plain);
+        const { uv } = await examine(c, (acc.state && acc.state.box) || "INBOX");
+        for (const p of mine) {
+          if (have.has(p.name.toLowerCase()) || p.uv !== uv) { done.add(p.key); continue; } // already there, or the mailbox was renumbered: nothing to fetch
+          const mail = await fetchMail(c, p.uid), files = mail ? poFiles(mail) : [];
+          const f = files.find((x) => x.name.toLowerCase() === p.name.toLowerCase()) || files[0];
+          if (f && (await save(p.name, f.data))) saved.push(p.name);
+          done.add(p.key); // fetched, or the mail is gone
+        }
+        acc.error = "";
+      } catch (e) { error = acc.error = e.kind || errCode(e); }
+      finally { busy.delete(acc.id); if (c) c.close(); }
+      change((d) => { const x = d.accounts.find((y) => y.id === acc.id); if (x) { x.error = acc.error; if (saved.length) x.found = (x.found || 0) + mine.filter((p) => saved.includes(p.name)).length; } });
+    }
+    change((d) => { d.pending = d.pending.filter((p) => !done.has(p.key)); });
+    emit(saved.length ? { saved, downloaded: true } : null);
+    return { saved, error };
+  });
+  /** found POs not wanted: forgotten (they are not offered again) */
+  function ignore(keys) { change((d) => { d.pending = keys ? d.pending.filter((p) => !keys.includes(p.key)) : []; }); emit(); return true; }
+  /** the page has shown the fetched POs */
+  function seen() { const d = read(); if (d.unseen.length) { d.unseen = []; write(d); emit(); } return true; }
+  function setMode(m) { change((d) => { d.mode = m === "ask" ? "ask" : "auto"; }); emit(); return true; }
 
   /** add an account: the login is tried first, and it is only kept when that works. { ok, account } or { error } */
   async function add({ provider, user, pass, host }) {
@@ -256,31 +321,25 @@ function create({ dataDir, poFolder, encrypt, decrypt, canRun = () => true, send
     if (!user || !pass) return { error: "missing" };
     if (!w) return { error: "host" };
     const acc = { id: crypto.randomBytes(6).toString("hex"), provider, user, host: w.host, port: w.port, enabled: true };
-    const data = read();
-    if (data.accounts.some((a) => a.user.toLowerCase() === user.toLowerCase() && a.host === acc.host)) return { error: "dup" };
-    try { await testLogin(acc, pass); } catch (e) { return { error: e.kind || errCode(e), detail: String(e.message || "").slice(0, 200) }; }
+    if (read().accounts.some((a) => a.user.toLowerCase() === user.toLowerCase() && a.host === acc.host)) return { error: "dup" };
+    try { (await login(acc, pass, plain)).close(); } catch (e) { return { error: e.kind || errCode(e), detail: String(e.message || "").slice(0, 200) }; }
     acc.pass = encrypt(pass); acc.added = Date.now();
-    data.accounts.push(acc); write(data); emit();
+    change((d) => { d.accounts.push(acc); }); emit();
     setTimeout(() => check(acc.id).catch(() => {}), 50);
     return { ok: true, account: pub(acc) };
   }
-  async function testLogin(acc, pass) {
-    let c; try { c = await Imap.open({ host: acc.host, port: acc.port, plain }); } catch (e) { throw Object.assign(e, { kind: errCode(e) }); }
-    try {
-      const r = await c.cmd("LOGIN ", arg(acc.user), " ", arg(pass));
-      if (r.status !== "OK") { const e = Object.assign(new Error(r.text || "login failed"), { code: "EAUTH" }); throw Object.assign(e, { kind: errCode(e) }); }
-    } finally { c.close(); }
-  }
-  function remove(id) { const d = read(); d.accounts = d.accounts.filter((a) => a.id !== id); write(d); emit(); return true; }
-  function setEnabled(id, on) { const d = read(), a = d.accounts.find((x) => x.id === id); if (a) { a.enabled = !!on; if (on) a.error = ""; write(d); emit(); if (on) setTimeout(() => check(id).catch(() => {}), 50); } return !!a; }
-  function auto() {
+  function remove(id) { change((d) => { d.accounts = d.accounts.filter((a) => a.id !== id); d.pending = d.pending.filter((p) => p.acc !== id); }); emit(); return true; }
+  function setEnabled(id, on) { let a; change((d) => { a = d.accounts.find((x) => x.id === id); if (a) { a.enabled = !!on; if (on) a.error = ""; } }); emit(); if (a && on) setTimeout(() => check(id).catch(() => {}), 50); return !!a; }
+  /** checks: soon after the start (as soon as the PIN is entered), then every EVERY_MS */
+  function auto(firstMs = FIRST_AFTER_MS) {
     if (timer) return;
-    const tick = () => { if (canRun()) check().catch(() => {}); };
-    setTimeout(tick, FIRST_AFTER_MS).unref?.();
+    const tick = () => { if (canRun() && !queued) check().catch(() => {}); };
+    const first = () => { if (!timer) return; if (canRun()) tick(); else setTimeout(first, 3000).unref?.(); };
     timer = setInterval(tick, EVERY_MS); timer.unref?.();
+    setTimeout(first, firstMs).unref?.();
   }
   function stop() { if (timer) clearInterval(timer); timer = null; }
-  return { state, add, remove, setEnabled, check, auto, stop };
+  return { state, add, remove, setEnabled, setMode, check, download, ignore, seen, auto, stop };
 }
 
 module.exports = { create, parseMail, poFiles, checkAccount, PROVIDERS, Imap, imapDate, errCode, params, words };

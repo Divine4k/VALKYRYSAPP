@@ -60,6 +60,11 @@ contextBridge.exposeInMainWorld("valkyrysMail", {
   remove: (id) => call("mail:remove", String(id)),
   setEnabled: (id, on) => call("mail:enable", String(id), !!on),
   check: (id) => call("mail:check", id ? String(id) : ""),
+  setMode: (m) => call("mail:mode", m === "ask" ? "ask" : "auto"),          // "auto": download right away, "ask": list them first
+  download: (keys) => call("mail:download", Array.isArray(keys) ? keys.map(String) : null),
+  ignore: (keys) => call("mail:ignore", Array.isArray(keys) ? keys.map(String) : null),
+  seen: () => call("mail:seen"),                                             // the notice about fetched POs has been read
+  notify: (title, body) => call("mail:notify", String(title || ""), String(body || "")),
   onChange: (cb) => {
     if (typeof cb !== "function") return () => {};
     const h = (e, st) => { try { cb(st); } catch (err) {} };

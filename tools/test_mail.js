@@ -56,7 +56,7 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   ok(fs.readdirSync(POF).length === 1, "the other mail is ignored", fs.readdirSync(POF));
   ok(await until(async () => /Gecontroleerd om .*1 inkooporder opgehaald/.test(await page.textContent("#mailList .mstat"))), "status: checked, 1 fetched", await page.textContent("#mailList .mstat"));
   ok(await until(() => page.evaluate(() => state.poFiles.some((f) => f.name === "PO-008148.pdf"))), "the app read the PO folder again (new POs)");
-  ok(await until(async () => /Nieuwe inkooporder uit je e-mail/.test(await page.textContent("#toast"))), "a message says a PO came in");
+  ok(await until(async () => (await page.isVisible("#mailBars [data-mbar=got]")) && /opgehaald: PO-008148/.test(await page.textContent("#mailBars"))), "a notice at the bottom says the PO came in");
   await page.waitForTimeout(400);
   await page.screenshot({ path: "/tmp/mail-settings.png" });
   await page.$eval("#mailPanel", (el) => el.scrollIntoView()); await page.screenshot({ path: "/tmp/mail-panel.png" });
@@ -69,6 +69,38 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   await page.click("#mailList [data-mcheck]");
   ok(await saved(path.join(POF, "PO-008149.pdf"), 10000), "check now: the new PO is fetched");
   ok(await until(async () => /2 inkooporders opgehaald/.test(await page.textContent("#mailList .mstat"))), "status counts 2");
+
+  ok(await until(async () => /2 nieuwe inkooporders uit je e-mail opgehaald: PO-008148, PO-008149/.test(await page.textContent("#mailBars"))), "the notice lists both until looked at");
+
+  // the notice is still there after a restart, until "Bekijken"
+  await app.close();
+  ({ app, page, errs } = await launch());
+  ok(await until(() => page.isVisible("#mailBars [data-mbar=got]")), "after a restart: the notice is shown on opening");
+  await page.click("#mailBars [data-mbar-act=view]");
+  ok(await until(async () => !(await page.isVisible("#mailBars [data-mbar]"))), "Bekijken: notice gone");
+  ok(await page.evaluate(() => state.tab === "inv"), "...and the Invoices tab (new POs) is open");
+  ok(await until(() => JSON.parse(fs.readFileSync(path.join(HOME, APP_DIR, "mail.json"), "utf8")).unseen.length === 0), "...remembered as seen");
+  await goTab(page, "settings"); await page.waitForTimeout(300);
+
+  // ask first
+  ok(await page.isVisible("#mailMode") && (await page.isChecked('#mailMode input[value="auto"]')), "mode choice shown, 'Automatisch downloaden' by default");
+  await page.click('#mailMode label:has(input[value="ask"])');
+  ok(await until(() => JSON.parse(fs.readFileSync(path.join(HOME, APP_DIR, "mail.json"), "utf8")).mode === "ask"), "'Eerst vragen' stored");
+  inbox.push({ uid: 7, date: new Date(), subject: "Inkooporder PO-008150", raw: F.poMail({ po: "008150", pdf }) });
+  inbox.push({ uid: 8, date: new Date(), subject: "Inkooporder PO-008151", raw: F.poMail({ po: "008151", pdf }) });
+  await page.click("#mailList [data-mcheck]");
+  ok(await until(async () => (await page.isVisible("#mailBars [data-mbar=found]")) && /2 nieuwe inkooporders in je e-mail: PO-008150, PO-008151/.test(await page.textContent("#mailBars"))), "found: a notice asks", await page.textContent("#mailBars"));
+  ok(!fs.existsSync(path.join(POF, "PO-008150.pdf")), "...nothing downloaded yet");
+  ok(await page.isVisible("#mailPend") && (await page.$$("#mailPendList li")).length === 2, "...listed in Connections with Downloaden / Negeren");
+  await page.$eval("#mailPend", (el) => el.scrollIntoView({ block: "center" })); await page.waitForTimeout(200);
+  await page.screenshot({ path: "/tmp/mail-ask.png" });
+  await page.click('#mailPendList li:has-text("PO-008151") [data-pign]');
+  ok(await until(async () => (await page.$$("#mailPendList li")).length === 1), "Negeren: one left");
+  await page.click("#mailBars [data-mbar-act=dl]");
+  ok(await saved(path.join(POF, "PO-008150.pdf"), 10000), "Downloaden from the notice: saved");
+  ok(!fs.existsSync(path.join(POF, "PO-008151.pdf")), "the ignored one not");
+  ok(await until(async () => !(await page.isVisible("#mailBars [data-mbar]")) && (await page.isHidden("#mailPend"))), "notice and list gone");
+  ok(await until(async () => /Gedownload: PO-008150/.test(await page.textContent("#toast"))), "toast: downloaded");
 
   // switched off, then disconnect (asks once)
   await page.click("#mailList [data-mtog]");

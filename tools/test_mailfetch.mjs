@@ -73,6 +73,34 @@ eq(files(), ["PO-000100.pdf", "PO-000101.pdf", "PO-000103.pdf"], "the deleted PO
 ok(srv.log.some((l) => /UID SEARCH UID 12:\*/.test(l)), "asks only for mails after the last one seen", srv.log);
 r = await mf.check(); eq(r.saved, [], "nothing new: nothing saved");
 
+// "seen": fetched POs stay listed for the page until it has shown them
+eq(mf.state().unseen, ["PO-000101.pdf", "PO-000102.pdf", "PO-000103.pdf"], "fetched POs are kept as 'unseen' for the notice");
+mf.seen(); eq(mf.state().unseen, [], "seen() clears them");
+
+// ask first: found, not saved, until downloaded; ignored ones go away
+mf.setMode("ask"); eq(mf.state().mode, "ask", "mode 'ask' stored");
+mails.push({ uid: 13, date: new Date(now), subject: "Inkooporder PO-000104", raw: F.poMail({ po: "000104", pdf: pdf(104) }) });
+mails.push({ uid: 14, date: new Date(now), subject: "Inkooporder PO-000105", raw: F.poMail({ po: "000105", pdf: pdf(105) }) });
+events.length = 0;
+r = await mf.check();
+eq(r.found, ["PO-000104.pdf", "PO-000105.pdf"], "ask first: the new POs are found");
+ok(!fs.existsSync(path.join(po, "PO-000104.pdf")), "...but not saved");
+eq(mf.state().pending.map((p) => p.name), ["PO-000104.pdf", "PO-000105.pdf"], "...and wait in 'pending'");
+ok(events.some((e) => e.found && e.found.length === 2), "the page is told what was found");
+r = await mf.check(); eq(r.found, [], "checking again does not offer them twice");
+const [p104, p105] = mf.state().pending;
+r = await mf.download([p104.key]);
+eq(r.saved, ["PO-000104.pdf"], "download one");
+ok(fs.readFileSync(path.join(po, "PO-000104.pdf")).equals(pdf(104)), "...the right PDF");
+eq(mf.state().pending.map((p) => p.name), ["PO-000105.pdf"], "...the other still waits");
+ok(srv.log.filter((l) => / UID FETCH /.test(l)).every((l) => /BODY\.PEEK\[\]/.test(l)), "download is read-only too");
+mf.ignore([p105.key]); eq(mf.state().pending, [], "ignore removes it");
+r = await mf.check(); eq(r.found, [], "an ignored PO is not offered again");
+mails.push({ uid: 15, date: new Date(now), subject: "Inkooporder PO-000106", raw: F.poMail({ po: "000106", pdf: pdf(106) }) });
+await mf.check(); r = await mf.download(); eq(r.saved, ["PO-000106.pdf"], "download all");
+eq(mf.state().unseen, [], "downloaded by hand: no 'unseen' notice");
+mf.setMode("auto");
+
 // switched off: not checked; no PO folder: error, nothing fetched
 mf.setEnabled(a.id, false); srv.log.length = 0; await mf.check();
 eq(srv.log.length, 0, "switched off: not checked");

@@ -261,6 +261,22 @@ function registerMailIpc() {
   ipcMain.handle("mail:remove", guard((e, id) => mail.remove(String(id))));
   ipcMain.handle("mail:enable", guard((e, id, on) => mail.setEnabled(String(id), !!on)));
   ipcMain.handle("mail:check", guard((e, id) => mail.check(id ? String(id) : undefined)));
+  const keys = (k) => (Array.isArray(k) ? k.map(String).slice(0, 500) : undefined);
+  ipcMain.handle("mail:mode", guard((e, m) => mail.setMode(m === "ask" ? "ask" : "auto")));
+  ipcMain.handle("mail:download", guard((e, k) => mail.download(keys(k))));
+  ipcMain.handle("mail:ignore", guard((e, k) => mail.ignore(keys(k))));
+  ipcMain.handle("mail:seen", guard(() => mail.seen()));
+  // the page asks for this when POs came in while the window is not in front: a Windows notification (click = bring the app forward) and a flashing taskbar button
+  ipcMain.handle("mail:notify", guard((e, title, body) => {
+    if (!win || win.isDestroyed() || win.isFocused()) return false;
+    const front = () => { if (!win || win.isDestroyed()) return; if (win.isMinimized()) win.restore(); win.show(); win.focus(); };
+    try {
+      const { Notification } = require("electron");
+      if (Notification.isSupported()) { const n = new Notification({ title: String(title || "Valkyrys app").slice(0, 120), body: String(body || "").slice(0, 300), icon: path.join(__dirname, "build", "icon.png") }); n.on("click", front); n.show(); }
+    } catch (err) {}
+    try { win.flashFrame(true); win.once("focus", () => { try { win.flashFrame(false); } catch (err) {} }); } catch (err) {}
+    return true;
+  }));
   mail.auto();
 }
 // an update version counts as good once its page has loaded and stayed up a moment (or the app was closed normally after that);
