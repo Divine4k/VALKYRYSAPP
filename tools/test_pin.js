@@ -9,7 +9,7 @@ const launch = async (waitApp = false, home = dataHome) => {
   await page.waitForLoadState("domcontentloaded"); await page.waitForTimeout(700); return { app, page };
 };
 const locked = (page) => page.$("#lockScreen").then((e) => !!e);
-const pad = async (page, s) => { for (const d of s) await page.click(`#lockScreen [data-d="${d}"]`); }; // on-screen keypad
+const pad = (page, s) => page.keyboard.type(s); // there is no on-screen keypad: the keyboard
 const keys = (page, s) => page.keyboard.type(s); // physical keyboard, no Enter
 const dots = (page) => page.$$eval("#lkDots i", (a) => ({ n: a.length, on: a.filter((i) => i.classList.contains("on")).length, opt: a.filter((i) => i.classList.contains("opt")).length }));
 const goShown = (page) => page.$eval('#lockScreen [data-act="go"]', (b) => getComputedStyle(b).visibility === "visible");
@@ -27,7 +27,7 @@ const dataJson = () => { try { return JSON.parse(fs.readFileSync(path.join(D, "d
   ok(await locked(page), "fresh install: the lock screen comes first");
   eq(await page.textContent("#lkTitle"), LANG_TITLE, "fresh install: first the language, asked in all three languages");
   eq(await page.$$eval("#lockScreen .lk-langs button b", (a) => a.map((b) => b.textContent)), ["Nederlands", "English", "Polski"], "three buttons with the languages' own names");
-  ok(!(await page.isVisible("#lkAskYes")) && !(await page.isVisible("#lkDots")) && !(await page.isVisible('#lockScreen [data-d="1"]')), "no PIN question or keypad yet");
+  ok(!(await page.isVisible("#lkAskYes")) && !(await page.isVisible("#lkDots")) && !(await page.isVisible('#lockScreen [data-act="go"]')), "no PIN question or keypad yet");
   ok(await page.isVisible("#lockScreen .band img"), "logo on the language card");
   const guess = await page.evaluate(() => { const n = String(navigator.language).slice(0, 2).toLowerCase(); return n === "pl" ? "pl" : n === "nl" ? "nl" : "en"; });
   eq(await langSel(page), guess, "the system language is highlighted"); eq(await page.evaluate(() => document.activeElement.dataset.lang), guess, "...and has the keyboard focus");
@@ -59,7 +59,7 @@ const dataJson = () => { try { return JSON.parse(fs.readFileSync(path.join(D, "d
   // ---- first start: first the question (a PIN or not), then choose a PIN in two steps
   ok(await locked(page), "first start shows the lock screen");
   eq(await page.textContent("#lkTitle"), "Wil je de app beveiligen met een pincode?", "first start asks whether you want a PIN (Dutch)");
-  ok(await page.isVisible("#lkAskYes") && await page.isVisible("#lkAskNo") && !(await page.isVisible("#lkDots")) && !(await page.isVisible('#lockScreen [data-d="1"]')), "two choices, no keypad yet");
+  ok(await page.isVisible("#lkAskYes") && await page.isVisible("#lkAskNo") && !(await page.isVisible("#lkDots")) && !(await page.isVisible('#lockScreen [data-act="go"]')), "two choices, no keypad yet");
   const bw = await page.$$eval("#lkAskYes, #lkAskNo", (a) => a.map((b) => Math.round(b.getBoundingClientRect().width)));
   ok(bw[0] === bw[1] && bw[0] > 200, "both choices are equally big", bw);
   ok(await page.evaluate(() => document.body.inert), "the app behind it cannot be reached (inert)");
@@ -82,11 +82,11 @@ const dataJson = () => { try { return JSON.parse(fs.readFileSync(path.join(D, "d
   await keys(page, "1235"); await page.waitForTimeout(400);
   eq(await page.textContent("#lkTitle"), "Kies een pincode", "mismatch goes back to step 1"); eq(await err(page), "De twee pincodes zijn niet hetzelfde.", "mismatch message");
   ok(await locked(page) && pinFile() === null, "nothing saved yet");
-  await pad(page, "123"); eq((await dots(page)).on, 3, "on-screen keypad types digits");
+  await pad(page, "123"); eq((await dots(page)).on, 3, "typed digits fill the dots"); ok(!(await page.$('#lockScreen [data-d], #lockScreen [data-act="del"]')), "no on-screen number buttons");
   await page.screenshot({ path: "/tmp/pin_setup.png" });
   await pad(page, "4"); await page.click('#lockScreen [data-act="go"]'); await page.waitForTimeout(150); eq(await page.textContent("#lkTitle"), "Herhaal je pincode", "check key goes to step 2");
-  await page.click('#lockScreen [data-act="del"]'); eq(await page.textContent("#lkTitle"), "Kies een pincode", "backspace on an empty step 2 goes back"); await pad(page, "1234"); await page.keyboard.press("Enter"); await page.waitForTimeout(150);
-  await pad(page, "123"); await page.click('#lockScreen [data-act="del"]'); eq((await dots(page)).on, 2, "backspace key removes a digit"); await pad(page, "34");
+  await page.keyboard.press("Backspace"); eq(await page.textContent("#lkTitle"), "Kies een pincode", "backspace on an empty step 2 goes back"); await pad(page, "1234"); await page.keyboard.press("Enter"); await page.waitForTimeout(150);
+  await pad(page, "123"); await page.keyboard.press("Backspace"); eq((await dots(page)).on, 2, "backspace key removes a digit"); await pad(page, "34");
   ok(await opened(page) && !(await page.evaluate(() => document.body.inert)), "app opens as soon as the repeat matches (no Enter)");
   const pf = pinFile(); ok(pf && pf.hash && pf.salt && !JSON.stringify(pf).includes("1234"), "pin.json holds a salted hash, not the PIN", pf && Object.keys(pf)); eq(pf.len, 4, "pin.json keeps the length");
   ok(await page.isVisible("#statsView") && !(await page.isVisible("#pinPanel")), "the app opens on Statistics, the PIN is in Settings"); await goSet(page, "pin"); ok(await page.isVisible("#pinPanel") && (await page.textContent("#pinNote")).startsWith("Pincode staat aan"), "settings panel says a PIN is on");
@@ -122,13 +122,13 @@ const dataJson = () => { try { return JSON.parse(fs.readFileSync(path.join(D, "d
   const msgs = []; for (let i = 0; i < 5; i++) { await keys(page, "9999"); await page.waitForTimeout(450); msgs.push(await err(page)); }
   eq(msgs.slice(0, 4), ["Onjuiste pincode.", "Onjuiste pincode.", "Onjuiste pincode. Nog 2 pogingen voordat je even moet wachten.", "Onjuiste pincode. Nog 1 poging voordat je even moet wachten."], "warning only near the limit");
   ok(msgs[4].startsWith("Te veel pogingen. Probeer het over"), "5th wrong PIN starts a wait: " + msgs[4]);
-  ok(await page.isDisabled("#lkIn") && await page.isDisabled('#lockScreen [data-d="1"]'), "typing and keypad are off during the wait");
+  ok(await page.isDisabled("#lkIn") && await page.isDisabled('#lockScreen [data-act="go"]'), "typing and the confirm button are off during the wait");
   await keys(page, "1234"); await page.waitForTimeout(300); ok(await locked(page) && (await dots(page)).on === 0, "typing does nothing during the wait");
   await app.close(); ({ app, page } = await launch());
   ok((await err(page)).startsWith("Te veel pogingen") && await page.isDisabled("#lkIn"), "closing and reopening the app does not skip the wait");
   const pf2 = pinFile(); pf2.until = 0; pf2.fails = 0; fs.writeFileSync(PINF, JSON.stringify(pf2));
   await app.close(); ({ app, page } = await launch()); ok(!(await page.isDisabled("#lkIn")), "after the wait it works again");
-  await pad(page, "1234"); ok(await opened(page), "keypad clicks unlock on the last digit");
+  await pad(page, "1234"); ok(await opened(page), "typing unlocks on the last digit");
 
   // ---- change and turn off
   await goSet(page, "pin"); await page.click("#pinSetBtn"); ok(await page.$eval("#pinDlg", (d) => d.open) && !(await page.isVisible("#pinCurWrap")) === false, "change dialog opens with the current-PIN field");

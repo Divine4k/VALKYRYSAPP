@@ -66,8 +66,8 @@
   var setup = mode === "setup", step = setup ? (langChosen() ? "ask" : "lang") : "login", first = "", busy = false, timer = null;
   var LK_EYE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="e-on"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="e-off"><path d="M9.9 4.24A10.9 10.9 0 0 1 12 4c6.4 0 10 7 10 7a18.6 18.6 0 0 1-2.16 3.19"/><path d="M6.6 6.6C3.9 8.4 2 12 2 12s3.6 7 10 7a10.6 10.6 0 0 0 5.4-1.6"/><path d="M14.1 14.2a3 3 0 0 1-4.3-4.3"/><path d="M2 2l20 20"/></svg>';
   var show = false; // the eye beside the dots: digits instead of dots
-  var keys = ""; for (var d = 1; d <= 9; d++) keys += '<button type="button" tabindex="-1" data-d="' + d + '">' + d + "</button>";
-  keys += '<button type="button" tabindex="-1" data-act="del" class="lk-fn" aria-label="' + t("del") + '">⌫</button><button type="button" tabindex="-1" data-d="0">0</button><button type="button" tabindex="-1" data-act="go" class="primary" aria-label="' + t("go") + '">✓</button>';
+  // no on-screen digits: the PIN is typed on the keyboard. Only a confirm button, for the step whose length is not known yet (Enter works too)
+  var keys = '<button type="button" data-act="go" class="primary">' + t("go") + "</button>";
   root.innerHTML = '<div class="lk-main"><form class="lk-card" id="lkForm" autocomplete="off" novalidate>' +
     '<header class="band"><img src="img/logo-white.png" alt="Valkyrys"><span>' + t("appTitle") + "</span></header>" +
     '<div class="lk-body"><h2 id="lkTitle"></h2><p class="small lk-sub" id="lkSub"></p>' +
@@ -80,7 +80,7 @@
   var $ = function (id) { return document.getElementById(id); }, form = $("lkForm"), inp = $("lkIn"), dots = $("lkDots"), err = $("lkErr"), goBtn = root.querySelector('[data-act="go"]'), pad = root.querySelectorAll(".lk-pad button");
   var langBox = step === "lang" ? langButtons(function () { // texts made before the choice follow it, then the PIN question
     $("lkAskYes").textContent = t("askYes"); $("lkAskNo").textContent = t("askNo"); $("lkBack").textContent = t("back");
-    root.querySelector('[data-act="del"]').setAttribute("aria-label", t("del")); goBtn.setAttribute("aria-label", t("go"));
+    goBtn.textContent = t("go");
     setStep("ask"); $("lkAskYes").focus();
   }) : null;
   if (langBox) dots.parentNode.parentNode.insertBefore(langBox, dots.parentNode); // before the row with the dots and the eye

@@ -42,3 +42,7 @@
 .lk-eye .e-off, .lk-eye[aria-pressed="true"] .e-on { display: none; } .lk-eye[aria-pressed="true"] .e-off { display: block; }
 .lk-dots i.dig { width: auto; height: auto; min-width: 14px; border: 0; background: none; border-radius: 0; transform: none; font-style: normal; font-size: 22px; font-weight: 800; line-height: 18px; color: var(--ink); text-align: center; }
 .lk-asking .lk-dotrow, .lk-langstep .lk-dotrow { display: none; }
+/* no on-screen keypad: only the confirm button (choosing a PIN), typed on the keyboard */
+.lk-pad { display: flex; justify-content: center; grid-template-columns: none; margin-top: 8px; }
+#lockScreen .lk-pad button[data-act="go"] { width: auto; height: auto; min-height: 40px; padding: 8px 26px; border-radius: 8px; font-size: 15px; font-weight: 700; transform: none; }
+.lk-pad .lk-hide { display: none; }
