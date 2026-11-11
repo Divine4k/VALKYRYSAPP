@@ -135,7 +135,7 @@ case $cmd in
   test)  [ $# -gt 0 ] || { echo "which tests? ($ELECTRON_TESTS)"; exit 2; }; build_if_changed || exit 1; run_tests "$@";;
   units) units;;
   all)   build_if_changed || exit 1; units; run_tests $ELECTRON_TESTS;;
-  update) build && node tools/build_update.mjs "${@:2}" || exit 1;;   # dev.sh update --no-notes: a quiet fix (no changelog entry of its own)
+  update) build && node tools/build_update.mjs "$@" || exit 1;;   # dev.sh update --no-notes: a quiet fix (no changelog entry of its own)
   installer) installer;;
   release) build || exit 1; src_stamp > "$STAMP"; units; run_tests $ELECTRON_TESTS
            if [ -n "$FAILED" ]; then echo; echo "NOT RELEASED, failing:$FAILED  (files: $RUN)"; exit 1; fi
