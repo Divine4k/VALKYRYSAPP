@@ -177,5 +177,5 @@ VALK_I18N.pl = {
     dropHint: "Przeciągnij PDF-y zamówień w dowolne miejsce tej strony albo", dropRelease: "Upuść, aby dodać zamówienia",
     tDim: "Przygaszony",
     langTitle: "Język", langIntro: "Język aplikacji. Faktury pozostają po niderlandzku.",
-    rfMail: "Sprawdzanie poczty…", rfFolders: "Odczytywanie folderów…", rfDone: "Zaktualizowano", rfDoneMail: "Zaktualizowano, nic nowego w poczcie", rfGot1: "1 nowe zamówienie z poczty", rfGotN: "Nowe zamówienia z poczty: {0}", rfFound1: "1 nowe zamówienie w poczcie", rfFoundN: "Nowe zamówienia w poczcie: {0}", rfMailErr: "Nie udało się sprawdzić poczty",
+    rfMail: "Sprawdzanie poczty…", rfFolders: "Odczytywanie folderów…",
 };
