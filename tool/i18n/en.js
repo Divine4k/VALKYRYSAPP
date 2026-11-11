@@ -13,8 +13,8 @@ VALK_I18N.en = {
     dupIntro: "These work days appear on more than one purchase order. Sometimes that is right (two jobs on one day), sometimes a corrected purchase order was added. Check the PDFs and remove the wrong ones from the folder. The statistics count each day only once.",
     dupGroup: "{0} on {1} purchase orders", dupDates: "Days: {0}", dupOrdered: "ordered {0}", dupRate: "rate {0}", dupForDays: "{0} for these days", dupRateDiff: "Different rate", dupShow: "Show in folder", dupShowFail: "The folder could not be opened.",
     dupSameTitle: "Same purchase order in several files", dupSameIntro: "These purchase orders exist as more than one file in the folder. The statistics only count the newest file. Remove the others from the folder if you do not need them.", dupCounted: "Counted", dupModified: "modified {0}", dupAmountDiff: "Different amount",
-    dropTitle: "Drop purchase orders (PDF) here",
-    dropText: "One invoice is made per PO: the order number as description, the day rate as rate and the number of days as quantity.",
+   
+   
     pick: "Choose PDF files", clear: "Clear list", zipAll: "Download all (.zip)",
     saveAs: "Save as…", saveAsTitle: "Save as…", saveAsIntro: "{0} invoices: {1}. Choose where and what to save.", saveAsHow: "How to save?",
     saveAsDir: "Separate files into a folder I choose", saveAsZip: "One .zip file", saveAsWhat: "What goes in?",
@@ -174,4 +174,5 @@ VALK_I18N.en = {
     noPoNew: "Invoice without a purchase order", noPoTitle: "Invoice without a purchase order", noPoMeta: "For another client or extra work: fill in the client and the lines yourself.", noPoOther: "Another client (fill in below)", noPoSaveClient: "Save as client", noPoClientSaved: "Client “{0}” saved. You can now pick it on other invoices too.", noPoClient: "Fill in the client’s name.", noPoEmpty: "Fill in at least one line with a description, quantity and rate.", noPoAddLine: "+ Add line", noPoDelLine: "Remove line",
     noPoPlus: "New",
     stabMe: "My details", stabFolders: "Folders", stabMail: "Connections", stabLook: "Appearance", stabPin: "Security", stabUpd: "Updates",
+    dropHint: "Drop purchase order PDFs anywhere on this page, or", dropRelease: "Release to add the purchase orders",
 };

@@ -13,8 +13,8 @@ VALK_I18N.pl = {
     dupIntro: "Te dni pracy występują na więcej niż jednym zamówieniu zakupu. Czasem to prawda (dwa zlecenia jednego dnia), a czasem doszło poprawione zamówienie. Sprawdź pliki PDF i usuń błędne z folderu. Statystyki liczą każdy dzień tylko raz.",
     dupGroup: "{0} na {1} zamówieniach zakupu", dupDates: "Dni: {0}", dupOrdered: "zamówiono {0}", dupRate: "stawka {0}", dupForDays: "{0} za te dni", dupRateDiff: "Inna stawka", dupShow: "Pokaż w folderze", dupShowFail: "Nie udało się otworzyć folderu.",
     dupSameTitle: "To samo zamówienie w kilku plikach", dupSameIntro: "Te zamówienia zakupu są w folderze jako kilka plików. Statystyki liczą tylko najnowszy plik. Usuń pozostałe z folderu, jeśli nie są potrzebne.", dupCounted: "Liczone", dupModified: "zmieniono {0}", dupAmountDiff: "Inna kwota",
-    dropTitle: "Przeciągnij tutaj zamówienia zakupu (PDF)",
-    dropText: "Dla każdego zamówienia powstaje jedna faktura: numer zamówienia jako opis, stawka dzienna jako stawka, a liczba dni jako ilość.",
+   
+   
     pick: "Wybierz pliki PDF", clear: "Wyczyść listę", zipAll: "Pobierz wszystko (.zip)",
     saveAs: "Zapisz jako…", saveAsTitle: "Zapisz jako…", saveAsIntro: "Faktury ({0}): {1}. Wybierz, gdzie i co zapisać.", saveAsHow: "Jak zapisać?",
     saveAsDir: "Osobne pliki w wybranym folderze", saveAsZip: "Jeden plik .zip", saveAsWhat: "Co ma się znaleźć w środku?",
@@ -174,4 +174,5 @@ VALK_I18N.pl = {
     noPoNew: "Faktura bez zamówienia", noPoTitle: "Faktura bez zamówienia", noPoMeta: "Dla innego klienta lub dodatkowej pracy: sam wpisz klienta i pozycje.", noPoOther: "Inny klient (wpisz poniżej)", noPoSaveClient: "Zapisz jako klienta", noPoClientSaved: "Klient „{0}” zapisany. Możesz go teraz wybrać także na innych fakturach.", noPoClient: "Wpisz nazwę klienta.", noPoEmpty: "Wypełnij co najmniej jedną pozycję: opis, ilość i stawkę.", noPoAddLine: "+ Dodaj pozycję", noPoDelLine: "Usuń pozycję",
     noPoPlus: "Nowa",
     stabMe: "Moje dane", stabFolders: "Foldery", stabMail: "Połączenia", stabLook: "Wygląd", stabPin: "Bezpieczeństwo", stabUpd: "Aktualizacje",
+    dropHint: "Przeciągnij PDF-y zamówień w dowolne miejsce tej strony albo", dropRelease: "Upuść, aby dodać zamówienia",
 };

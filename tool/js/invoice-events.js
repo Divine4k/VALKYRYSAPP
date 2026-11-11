@@ -92,11 +92,14 @@ $("#settings").addEventListener("submit", async (e) => {
 });
 
 // file picking and dropping
-const drop = $("#drop"), file = $("#file");
+const drop = $("#viewInv > .col"), file = $("#file"); // the whole Invoices column takes dropped PDFs (the line at the top only says so)
 file.addEventListener("change", () => { addFiles(file.files); file.value = ""; });
-["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add("over"); }));
-["dragleave", "drop"].forEach((t) => drop.addEventListener(t, () => drop.classList.remove("over")));
-drop.addEventListener("drop", (e) => { e.preventDefault(); if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+const hasFiles = (e) => !!(e.dataTransfer && [...(e.dataTransfer.types || [])].includes("Files"));
+const dropOff = () => drop.classList.remove("dropping");
+["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => { if (!hasFiles(e)) return; e.preventDefault(); drop.dataset.drop = tr("dropRelease"); drop.classList.add("dropping"); }));
+drop.addEventListener("dragleave", (e) => { if (!e.relatedTarget || !drop.contains(e.relatedTarget)) dropOff(); });
+drop.addEventListener("drop", (e) => { e.preventDefault(); dropOff(); if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+window.addEventListener("dragend", dropOff);
 window.addEventListener("dragover", (e) => e.preventDefault());
 window.addEventListener("drop", (e) => { e.preventDefault(); if (!drop.contains(e.target) && e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
 

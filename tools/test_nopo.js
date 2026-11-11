@@ -20,6 +20,26 @@ const until = async (fn, ms = 8000) => { const t = Date.now(); while (Date.now()
   const geo = await page.evaluate(() => { const a = document.querySelector(".nextbox .nextmain").getBoundingClientRect(), b = document.querySelector("#newNoPo").getBoundingClientRect(); return { left: b.right <= a.left + 1, narrow: b.width < a.width / 2, same: Math.abs(a.top - b.top) < 2 }; });
   ok(geo.left && geo.narrow && geo.same, "...left of the number, much narrower", geo);
   ok(!(await page.$("#drop #newNoPo")), "no extra button in the drop zone");
+  // the drop zone: one slim line at the top, the whole column takes the PDFs
+  const dz = await page.evaluate(() => { const d = document.querySelector("#drop").getBoundingClientRect(); return { h: d.height, text: document.querySelector("#drop .dhint").textContent }; });
+  ok(dz.h < 70 && /ergens op deze pagina/.test(dz.text) && await page.isVisible("#pick"), "a slim line says PDFs can be dropped anywhere, with 'Kies PDF-bestanden'", dz);
+  await page.evaluate(() => scrollTo(0, 0)); await page.screenshot({ path: "/tmp/inv-top.png" });
+  await page.evaluate(() => { const dt = new DataTransfer(); dt.items.add(new File(["%PDF"], "x.pdf", { type: "application/pdf" })); document.querySelector("#viewInv > .col").dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true, dataTransfer: dt })); });
+  await page.screenshot({ path: "/tmp/inv-dragging.png" });
+  await page.evaluate(() => document.querySelector("#viewInv > .col").classList.remove("dropping"));
+  const b64 = fs.readFileSync(process.argv[3]).toString("base64");
+  const st = await page.evaluate(async (b64) => {
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)), dt = new DataTransfer(); dt.items.add(new File([bytes], "PO-008148.pdf", { type: "application/pdf" }));
+    const col = document.querySelector("#viewInv > .col"), target = document.querySelector("#noCards") || col;
+    target.dispatchEvent(new DragEvent("dragenter", { bubbles: true, cancelable: true, dataTransfer: dt }));
+    target.dispatchEvent(new DragEvent("dragover", { bubbles: true, cancelable: true, dataTransfer: dt }));
+    const during = [col.classList.contains("dropping"), getComputedStyle(col, "::after").content];
+    target.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: dt }));
+    return { during, after: col.classList.contains("dropping") };
+  }, b64);
+  ok(st.during[0] && /Laat los/.test(st.during[1]) && !st.after, "dragging over the column: an outline with 'Laat los…', gone after the drop", st);
+  ok(await until(async () => (await page.$$("#cards .po:not(.nopo)")).length === 1), "dropped below the old box (on the empty text): the PO card is added");
+  await page.click("#cards .po:not(.nopo) [data-act=remove]");
   await page.evaluate(() => scrollTo(0, 0)); await page.screenshot({ path: "/tmp/nopo-top.png", clip: { x: 900, y: 80, width: 380, height: 200 } });
   await page.click("#newNoPo");
   const card = ".po.nopo";

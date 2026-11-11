@@ -13,8 +13,8 @@ VALK_I18N.nl = {
     dupIntro: "Deze werkdagen staan op meer dan één inkooporder. Soms klopt dat (twee opdrachten op één dag), soms is er een gecorrigeerde inkooporder bijgekomen. Bekijk de PDF’s en haal de verkeerde uit de map. De statistieken tellen elke dag maar één keer.",
     dupGroup: "{0} op {1} inkooporders", dupDates: "Dagen: {0}", dupOrdered: "besteld {0}", dupRate: "tarief {0}", dupForDays: "{0} voor deze dagen", dupRateDiff: "Ander tarief", dupShow: "Toon in map", dupShowFail: "De map kon niet worden geopend.",
     dupSameTitle: "Dezelfde inkooporder in meerdere bestanden", dupSameIntro: "Deze inkooporders staan als meerdere bestanden in de map. De statistieken tellen alleen het nieuwste bestand. Haal de andere uit de map als je ze niet nodig hebt.", dupCounted: "Wordt geteld", dupModified: "gewijzigd {0}", dupAmountDiff: "Ander bedrag",
-    dropTitle: "Sleep inkooporders (PDF) hierheen",
-    dropText: "Per PO wordt een factuur gemaakt: het ordernummer als omschrijving, de dagprijs als tarief en het aantal dagen als aantal.",
+   
+   
     pick: "Kies PDF-bestanden", clear: "Lijst leegmaken", zipAll: "Alles downloaden (.zip)",
     saveAs: "Opslaan als…", saveAsTitle: "Opslaan als…", saveAsIntro: "{0} facturen: {1}. Kies waar en wat je wilt opslaan.", saveAsHow: "Hoe opslaan?",
     saveAsDir: "Losse bestanden in een map die ik kies", saveAsZip: "Eén .zip-bestand", saveAsWhat: "Wat moet erin?",
@@ -174,4 +174,5 @@ VALK_I18N.nl = {
     noPoNew: "Factuur zonder inkooporder", noPoTitle: "Factuur zonder inkooporder", noPoMeta: "Voor een andere klant of extra werk: vul de klant en de regels zelf in.", noPoOther: "Andere klant (hieronder invullen)", noPoSaveClient: "Bewaren als klant", noPoClientSaved: "Klant „{0}” bewaard. Je kunt hem nu ook op andere facturen kiezen.", noPoClient: "Vul de naam van de klant in.", noPoEmpty: "Vul minstens één regel in met een omschrijving, aantal en tarief.", noPoAddLine: "+ Regel toevoegen", noPoDelLine: "Regel verwijderen",
     noPoPlus: "Nieuw",
     stabMe: "Mijn gegevens", stabFolders: "Mappen", stabMail: "Verbindingen", stabLook: "Weergave", stabPin: "Beveiliging", stabUpd: "Updates",
+    dropHint: "Sleep PDF’s van inkooporders ergens op deze pagina, of", dropRelease: "Laat los om de inkooporders toe te voegen",
 };
