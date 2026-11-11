@@ -109,6 +109,11 @@ Logs: `logs/<test>.log` (copy of the latest run). Tests need xvfb (the script us
 - Also needed: Go (cross-compile), Node, Python, xvfb, Playwright, and libraries in `/opt/npm-tools` (pdf-lib, jszip) and `/home/claude/.npm-global` (pdfjs-dist, pdf-lib, docx).
 - Push the source with plain git (commit on main, `git push`). Do not commit installers, `app/web`, `installer/payload`, logs.
 
+## Android version (parked 2026-11-11, user is still deciding)
+- Plan if it goes ahead: Capacitor wrapping `tool/`, a new `android/` folder in this repo (no new repo), phone-only code there; APK updates in `valkyrys-updates` under `packages/android/` (or Play Store).
+- Build way chosen: **GitHub Actions** builds the APK (this workspace has Java 21 + Gradle but no Android SDK; dl.google.com, maven.google.com and npm are blocked by the session proxy).
+- Still open: view-only (statistics/documents on the go) vs full app (making invoices), and how data syncs (OneDrive / Google Drive / separate).
+
 ## Known limits
 - A PO layout with prices vertically centred between two text lines is not read (listed as "unread").
 - Wrapped second rows of a PO line are ignored.
