@@ -40,7 +40,8 @@ const CFG = { invoices: "folder", pos: "poFolder" }; // two folders: the finishe
 const cfgKey = (kind) => CFG[kind] || CFG.invoices;
 const folderPath = (kind) => { const f = readConfig()[cfgKey(kind)]; return typeof f === "string" && f ? f : ""; };
 // a folder on a USB stick / external drive that came back under another drive letter: the same folder there is used and remembered
-const findMoved = process.platform === "win32" ? require("./drives").finder(isDir) : () => "";
+const drives = require("./drives"); // loaded on every system, so a test run on Linux fails too when the file is missing from the package
+const findMoved = process.platform === "win32" ? drives.finder(isDir) : () => "";
 const liveFolder = (kind) => {
   const p = folderPath(kind); if (!p || isDir(p)) return p;
   const n = findMoved(p); if (!n) return p;

@@ -3,7 +3,7 @@
 import json, os, shutil, sys
 SP = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOADER = "main.js"
-APP_FILES = ["app-main.js", "updater.js", "preload.js", "server.js", "mailfetch.js"]
+APP_FILES = ["app-main.js", "updater.js", "preload.js", "server.js", "mailfetch.js", "drives.js"]
 
 def version():
     return json.load(open(f"{SP}/electron-app/package.json"))["version"]

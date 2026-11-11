@@ -34,6 +34,13 @@ const pj = JSON.parse(fs.readFileSync(path.join(appDir, "package.json"), "utf8")
 const version = args.version || pj.version;
 if (pj.version !== version) { console.error(`package.json of the app says ${pj.version}, not ${version}`); process.exit(1); }
 for (const f of U.REQUIRED) if (!fs.existsSync(path.join(appDir, f))) { console.error("missing in the app folder: " + f); process.exit(1); }
+// every local file the app's own scripts require must be in the package (1.3.10 shipped without drives.js and would not start)
+for (const f of fs.readdirSync(appDir).filter((n) => n.endsWith(".js"))) {
+  for (const m of fs.readFileSync(path.join(appDir, f), "utf8").matchAll(/require\(\s*["']\.\/([^"']+)["']\s*\)/g)) {
+    const r = m[1].endsWith(".js") || m[1].endsWith(".json") ? m[1] : m[1] + ".js";
+    if (!fs.existsSync(path.join(appDir, r))) { console.error(`missing in the app folder: ${r} (required by ${f})`); process.exit(1); }
+  }
+}
 
 const zip = new JSZip();
 const add = (dir, rel) => {

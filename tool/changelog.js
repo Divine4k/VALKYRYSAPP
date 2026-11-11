@@ -3,7 +3,7 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
-    version: "1.3.10", date: "2026-11-11",
+    version: "1.3.11", date: "2026-11-11",
     items: [
       { type: "improved",
         nl: "Mappen op een USB-stick of externe schijf: loskoppelen en weer aansluiten gaat vanzelf goed.",
