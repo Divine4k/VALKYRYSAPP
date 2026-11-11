@@ -81,7 +81,8 @@ Logs: `logs/<test>.log` (copy of the latest run). Tests need xvfb (the script us
 - Statistics: each PO line is a work day dated from the start of its Omschrijving; range "t/m" expands to Mon-Fri; hour lines are qty/8; one date is never more than 1 day across lines and POs. Duplicate days across POs (`poDupes`) and one PO number in several files (`state.poSame`) only inform (banner + list), they change no figure. Invoice source: `lineDays(rate, qty, desc)`, rate < 100 = hour rate.
 - Changing the PO reading? Bump `PARSER_VERSION` in js/folder.js so cached reads are redone.
 - Tests seed their own fake AppData (`seedProfile`), so they skip the PIN and first-start questions. Fixture folders are made per run and copied fresh for every test (see Commands: VK_TMP).
-- Every user-visible change: add an item to the top entry of `tool/changelog.js` (nl/en/pl); on release start a new entry with the new version and bump electron-app/package.json. The "Nieuw" item in the sidebar shows a dot until the latest version is opened (`settings/news.seen`); a fresh install marks it seen silently, nothing opens by itself.
+- What's new (`tool/changelog.js`): only main features, one short sentence each; no details, small fixes or polish (the user wants it short). Quiet fixes: new version without an entry, `dev.sh update --no-notes`.
+- Every main feature: add an item to the top entry of `tool/changelog.js` (nl/en/pl); on release start a new entry with the new version and bump electron-app/package.json. The "Nieuw" item in the sidebar shows a dot until the latest version is opened (`settings/news.seen`); a fresh install marks it seen silently, nothing opens by itself.
 - When the UI moves, fix `tools/test_helpers.js` first (tab selectors) before touching single tests.
 
 ## Invoice designs (templates)
