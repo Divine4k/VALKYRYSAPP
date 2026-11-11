@@ -147,6 +147,9 @@ function registerFolderIpc(getWin) {
     // a PO deleted here on purpose is not fetched from e-mail again (mailfetch.js forget)
     try { await shell.trashItem(full); if (kind === "pos" && mail) try { mail.forget(full); } catch (err) {} return { ok: true }; } catch (err) { return { error: String((err && err.message) || "trash") }; }
   }));
+  // help pages the page may open in the browser (the mail guide): only these, by name, never a URL from the page
+  const LINKS = { gTwoSv: "https://myaccount.google.com/signinoptions/twosv", gAppPw: "https://myaccount.google.com/apppasswords", wpMail: "https://poczta.wp.pl/", wpKonto: "https://konto.wp.pl/" };
+  ipcMain.handle("app:link", guard(async (e, k) => { const u = LINKS[k]; if (!u) return false; await shell.openExternal(u); return true; }));
   ipcMain.handle("app:welcomed", guard(() => readConfig().welcomed === true)); // the first-start question about the folders has been asked
   ipcMain.handle("app:welcomed-set", guard(() => { writeConfig(Object.assign(readConfig(), { welcomed: true })); return true; }));
   ipcMain.handle("folder:openfile", guard(async (e, rel, kind) => {

@@ -3,11 +3,13 @@ const { tmp, goTab, goSet, seedProfile, APP_DIR, saved } = require("./test_helpe
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
 const F = require("./fake_imap.js");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
+const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 const HOME = tmp("el-appdata-mail"), POF = tmp("mail-po"), PO = process.argv[3];
 const pdf = fs.readFileSync(PO), PASS = "geheim wachtwoord 1";
 const launch = async () => {
   const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu", "--no-splash"], env: { ...process.env, APPDATA: HOME, XDG_CONFIG_HOME: HOME, VALKYRYS_MAIL_PLAIN: "1" } });
   await app.firstWindow(); let page; for (let i = 0; i < 100 && !page; i++) { page = app.windows().find((w) => !w.url().includes("splash")); if (!page) await new Promise((r) => setTimeout(r, 200)); }
+  await app.evaluate(({ shell }) => { globalThis.__links = []; shell.openExternal = async (u) => { globalThis.__links.push(u); }; }); // no real browser in tests
   const errs = []; page.on("pageerror", (e) => errs.push(e.message));
   await page.setViewportSize({ width: 1280, height: 1000 }).catch(() => {});
   await page.waitForSelector("#pick", { state: "attached" }); await page.waitForTimeout(1200);
@@ -33,12 +35,15 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   ok(!(await page.isVisible("#mailNoPo")), "PO folder set: no warning");
   await page.click("#mailAdd");
   ok(await page.isVisible("#mailDlg"), "add dialog opens");
-  ok(/app-wachtwoord/i.test(await page.textContent("#mailHelp")) && (await page.textContent("#mailPassLbl")) === "App-wachtwoord", "Gmail first: asks for an app password");
+  ok((await page.$$("#mailGuide li")).length === 3 && /verificatie in twee stappen/.test(await page.textContent("#mailGuide")) && /app-wachtwoord/.test(await page.textContent("#mailGuide")) && (await page.textContent("#mailPassLbl")) === "App-wachtwoord", "Gmail first: a 3-step guide (2-step verification, app password, fill in)");
+  eq(await page.$$eval("#mailGuide [data-link]", (b) => b.map((x) => x.dataset.link)), ["gTwoSv", "gAppPw"], "...with buttons to the two Google pages");
+  await page.click('#mailGuide [data-link="gAppPw"]'); await page.waitForTimeout(300);
+  eq(await app.evaluate(() => globalThis.__links || []), ["https://myaccount.google.com/apppasswords"], "the button opens the app-password page in the browser");
   await page.click('.mprov label:has(input[value="wp"])');
-  ok(/WP Poczta/.test(await page.textContent("#mailHelp")) && !(await page.isVisible("#mailHostWrap")), "WP: its own help, no server field");
+  ok(/Opcje › IMAP\/POP/.test(await page.textContent("#mailGuide")) && (await page.$$("#mailGuide [data-link]")).length === 2 && !(await page.isVisible("#mailHostWrap")), "WP: its own guide (IMAP switch, two-step password), no server field");
   await page.click('.mprov label:has(input[value="imap"])');
   ok(await page.isVisible("#mailHostWrap"), "Other: a server field");
-  await page.screenshot({ path: "/tmp/mail-dialog.png" });
+  await page.click('.mprov label:has(input[value="gmail"])'); await page.screenshot({ path: "/tmp/mail-dialog.png" }); await page.click('.mprov label:has(input[value="imap"])');
   await page.click("#mailSave");
   ok(/e-mailadres en wachtwoord/i.test(await page.textContent("#mailErr")), "empty: asks for address and password");
   await page.fill("#mailPass", "geheim"); await page.click("#mailForm .pweye");

@@ -73,3 +73,8 @@
 /* Settings: tabs and panels both in the wide column (the narrow one stays empty, as before the tabs) */
 #settingsView > .stabs, #settingsView > #setCol { grid-column: 1; }
 #settingsView > .stabs { margin: 0; }
+/* the step-by-step guide in the connect dialog */
+.mguide { margin: 0; padding: 12px 14px 12px 34px; border: 1px solid var(--line); border-radius: 8px; background: var(--sunken); display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; line-height: 1.45; color: var(--text); }
+.mguide li::marker { font-weight: 800; color: var(--ink); }
+.mguide li span { margin-right: 4px; }
+.mguide .mglink { display: inline-flex; min-height: 28px; padding: 3px 10px; font-size: 12.5px; margin-top: 4px; vertical-align: middle; }

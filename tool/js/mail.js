@@ -94,9 +94,11 @@ async function mailDownload(keys) {
 }
 
 // ---- the add dialog
+const MAIL_GUIDE = { gmail: [["mgG1", "gTwoSv"], ["mgG2", "gAppPw"], ["mgG3"]], wp: [["mgW1", "wpMail"], ["mgW2", "wpKonto"], ["mgW3"]], imap: [["mgI1"], ["mgI2"]] };
 function mailProvUi() {
   const p = mailUi.prov;
-  $("#mailHelp").textContent = tr("mailHelp_" + p);
+  // the guide: numbered steps for this mail service; a step done on the provider's website gets a button that opens that page
+  $("#mailGuide").innerHTML = MAIL_GUIDE[p].map(([k, link]) => `<li><span>${esc(tr(k))}</span>${link && desk && desk.openLink ? ` <button type="button" class="mglink" data-link="${link}">${esc(tr("mgOpen"))}</button>` : ""}</li>`).join("");
   $("#mailPassLbl").textContent = tr(p === "gmail" ? "mailAppPass" : "mailPass");
   $("#mailHostWrap").hidden = p !== "imap";
   $("#mailUser").placeholder = p === "gmail" ? "naam@gmail.com" : p === "wp" ? "naam@wp.pl" : "";
@@ -119,6 +121,7 @@ if (MAIL && desk) {
   $("#mailDlgClose").addEventListener("click", () => $("#mailDlg").close());
   $("#mailForm").addEventListener("change", (e) => { if (e.target.name === "mailProv") { mailUi.prov = e.target.value; $("#mailErr").hidden = true; mailProvUi(); } });
   $("#mailForm").addEventListener("input", () => { $("#mailErr").hidden = true; });
+  $("#mailGuide").addEventListener("click", (e) => { const b = e.target.closest("[data-link]"); if (b && desk && desk.openLink) desk.openLink(b.dataset.link).catch(() => {}); });
   $("#mailForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const btn = $("#mailSave"); if (btn.disabled) return;
