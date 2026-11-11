@@ -3,16 +3,21 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
+    version: "1.3.2", date: "2026-11-11",
+    items: [
+      { type: "new",
+        nl: "Factuur zonder inkooporder: klik op + Nieuw naast het factuurnummer, bijvoorbeeld voor een andere klant.",
+        en: "Invoice without a purchase order: click + New next to the invoice number, for example for another client.",
+        pl: "Faktura bez zamówienia: kliknij + Nowa obok numeru faktury, na przykład dla innego klienta." },
+    ],
+  },
+  {
     version: "1.3.0", date: "2026-11-11",
     items: [
       { type: "new",
-        nl: "Inkooporders uit je e-mail: koppel Gmail, WP Poczta of een andere e-maildienst bij Instellingen › Verbindingen. De app haalt mails „Inkooporder PO-…” met de PDF zelf op en zet de PDF in je map met inkooporders, elke 5 minuten zolang de app openstaat. Aan je mail zelf verandert niets.",
-        en: "Purchase orders from your email: connect Gmail, WP Poczta or another email service in Settings › Connections. The app fetches “Inkooporder PO-…” mails with the PDF by itself and puts the PDF in your purchase order folder, every 5 minutes while the app is open. Nothing in your mail itself changes.",
-        pl: "Zamówienia zakupu z poczty: połącz Gmail, WP Pocztę lub inną pocztę w Ustawienia › Połączenia. Aplikacja sama pobiera maile „Inkooporder PO-…” z PDF-em i zapisuje PDF w folderze z zamówieniami zakupu, co 5 minut, gdy aplikacja jest otwarta. W samej poczcie nic się nie zmienia." },
-      { type: "new",
-        nl: "Een melding onderaan het scherm als er inkooporders uit je e-mail zijn opgehaald, ook als dat gebeurde vlak na het openen. Staat de app op de achtergrond, dan krijg je een Windows-melding en knippert de app in de taakbalk. Bij Verbindingen kies je of nieuwe inkooporders automatisch gedownload worden of dat de app het eerst vraagt.",
-        en: "A notice at the bottom of the screen when purchase orders were fetched from your email, also when that happened right after opening. When the app is in the background you get a Windows notification and the app flashes in the taskbar. In Connections you choose whether new purchase orders are downloaded automatically or the app asks first.",
-        pl: "Powiadomienie na dole ekranu, gdy z poczty pobrano zamówienia zakupu, także tuż po otwarciu aplikacji. Gdy aplikacja jest w tle, dostajesz powiadomienie Windows, a aplikacja miga na pasku zadań. W Połączeniach wybierasz, czy nowe zamówienia mają być pobierane automatycznie, czy aplikacja ma najpierw zapytać." },
+        nl: "Inkooporders uit je e-mail: koppel je mail bij Instellingen › Verbindingen en nieuwe inkooporders komen vanzelf in je map.",
+        en: "Purchase orders from your email: connect your mail in Settings › Connections and new purchase orders land in your folder by themselves.",
+        pl: "Zamówienia z poczty: połącz pocztę w Ustawienia › Połączenia, a nowe zamówienia same trafią do folderu." },
     ],
   },
   {
