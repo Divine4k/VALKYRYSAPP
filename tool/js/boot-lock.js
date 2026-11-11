@@ -5,17 +5,17 @@
       askTitle: "Wil je de app beveiligen met een pincode?", askText: "Met een pincode kan niemand anders de app op deze computer openen. Je kunt dit later altijd aanpassen bij Instellingen.", askYes: "Pincode instellen", askNo: "Nee, zonder pincode",
       loginTitle: "Voer je pincode in", loginText: "Valkyrys app is vergrendeld.", forgot: "Pincode vergeten?", forgotText: "Sluit de app, open de map %APPDATA%\\Valkyrys app en verwijder het bestand pin.json. Daarna start de app zonder pincode. Je facturen blijven bewaard.",
       eFormat: "Gebruik 4 tot 8 cijfers.", eMismatch: "De twee pincodes zijn niet hetzelfde.", eWrong: "Onjuiste pincode.", eLeft: "Onjuiste pincode. Nog {0} pogingen voordat je even moet wachten.", eLeft1: "Onjuiste pincode. Nog 1 poging voordat je even moet wachten.",
-      eWait: "Te veel pogingen. Probeer het over {0} seconden opnieuw.", eGeneric: "Dat is niet gelukt. Probeer het opnieuw.", del: "Laatste cijfer wissen", go: "Bevestigen" },
+      eWait: "Te veel pogingen. Probeer het over {0} seconden opnieuw.", eGeneric: "Dat is niet gelukt. Probeer het opnieuw.", del: "Laatste cijfer wissen", go: "Bevestigen", show: "Pincode tonen", hide: "Pincode verbergen" },
     en: { appTitle: "App", setupTitle: "Choose a PIN", setupText: "4 to 8 digits. You need it to open the app.", repTitle: "Repeat your PIN", repText: "Type the same PIN once more.", back: "Back", pinLabel: "PIN",
       askTitle: "Do you want to protect the app with a PIN?", askText: "With a PIN, nobody else can open the app on this computer. You can always change this later in Settings.", askYes: "Set up a PIN", askNo: "No, without a PIN",
       loginTitle: "Enter your PIN", loginText: "Valkyrys app is locked.", forgot: "Forgot your PIN?", forgotText: "Close the app, open the folder %APPDATA%\\Valkyrys app and delete the file pin.json. The app then starts without a PIN. Your invoices are kept.",
       eFormat: "Use 4 to 8 digits.", eMismatch: "The two PINs are not the same.", eWrong: "Wrong PIN.", eLeft: "Wrong PIN. {0} tries left before you have to wait a moment.", eLeft1: "Wrong PIN. 1 try left before you have to wait a moment.",
-      eWait: "Too many tries. Try again in {0} seconds.", eGeneric: "That did not work. Please try again.", del: "Delete last digit", go: "Confirm" },
+      eWait: "Too many tries. Try again in {0} seconds.", eGeneric: "That did not work. Please try again.", del: "Delete last digit", go: "Confirm", show: "Show PIN", hide: "Hide PIN" },
     pl: { appTitle: "App", setupTitle: "Wybierz kod PIN", setupText: "Od 4 do 8 cyfr. Będzie potrzebny do otwarcia aplikacji.", repTitle: "Powtórz kod PIN", repText: "Wpisz ten sam kod PIN jeszcze raz.", back: "Wstecz", pinLabel: "Kod PIN",
       askTitle: "Czy chcesz zabezpieczyć aplikację kodem PIN?", askText: "Z kodem PIN nikt inny nie otworzy aplikacji na tym komputerze. Zawsze możesz to później zmienić w Ustawieniach.", askYes: "Ustaw kod PIN", askNo: "Nie, bez kodu PIN",
       loginTitle: "Wpisz kod PIN", loginText: "Valkyrys app jest zablokowana.", forgot: "Nie pamiętasz kodu PIN?", forgotText: "Zamknij aplikację, otwórz folder %APPDATA%\\Valkyrys app i usuń plik pin.json. Aplikacja uruchomi się wtedy bez kodu PIN. Twoje faktury zostaną zachowane.",
       eFormat: "Użyj od 4 do 8 cyfr.", eMismatch: "Oba kody PIN nie są takie same.", eWrong: "Nieprawidłowy kod PIN.", eLeft: "Nieprawidłowy kod PIN. Pozostało prób: {0}, potem trzeba chwilę poczekać.", eLeft1: "Nieprawidłowy kod PIN. Pozostała 1 próba, potem trzeba chwilę poczekać.",
-      eWait: "Zbyt wiele prób. Spróbuj ponownie za {0} s.", eGeneric: "Nie udało się. Spróbuj ponownie.", del: "Usuń ostatnią cyfrę", go: "Potwierdź" }
+      eWait: "Zbyt wiele prób. Spróbuj ponownie za {0} s.", eGeneric: "Nie udało się. Spróbuj ponownie.", del: "Usuń ostatnią cyfrę", go: "Potwierdź", show: "Pokaż PIN", hide: "Ukryj PIN" }
   };
   function lang() { var l = window.ValkLockLang; if (!l) { try { l = localStorage.getItem("valkyrys-lang"); } catch (e) {} } return T[l] ? l : "nl"; }
   function t(k) { var s = T[lang()][k]; for (var i = 1; i < arguments.length; i++) s = s.replace("{" + (i - 1) + "}", arguments[i]); return s; }
@@ -64,6 +64,8 @@
   // checked as soon as the last digit is in, so no Enter is needed. Setup: "ask" (a PIN or not: never forced) -> "pick" (4-8 digits, then ✓/Enter) -> "rep" (checked when the length matches).
   // A fresh install (no PIN decision yet) whose language was never chosen starts with "lang" (the three languages), then "ask".
   var setup = mode === "setup", step = setup ? (langChosen() ? "ask" : "lang") : "login", first = "", busy = false, timer = null;
+  var LK_EYE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="e-on"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="e-off"><path d="M9.9 4.24A10.9 10.9 0 0 1 12 4c6.4 0 10 7 10 7a18.6 18.6 0 0 1-2.16 3.19"/><path d="M6.6 6.6C3.9 8.4 2 12 2 12s3.6 7 10 7a10.6 10.6 0 0 0 5.4-1.6"/><path d="M14.1 14.2a3 3 0 0 1-4.3-4.3"/><path d="M2 2l20 20"/></svg>';
+  var show = false; // the eye beside the dots: digits instead of dots
   var keys = ""; for (var d = 1; d <= 9; d++) keys += '<button type="button" tabindex="-1" data-d="' + d + '">' + d + "</button>";
   keys += '<button type="button" tabindex="-1" data-act="del" class="lk-fn" aria-label="' + t("del") + '">⌫</button><button type="button" tabindex="-1" data-d="0">0</button><button type="button" tabindex="-1" data-act="go" class="primary" aria-label="' + t("go") + '">✓</button>';
   root.innerHTML = '<div class="lk-main"><form class="lk-card" id="lkForm" autocomplete="off" novalidate>' +
@@ -71,7 +73,7 @@
     '<div class="lk-body"><h2 id="lkTitle"></h2><p class="small lk-sub" id="lkSub"></p>' +
     '<input id="lkIn" class="lk-in" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" spellcheck="false" aria-labelledby="lkTitle" aria-describedby="lkErr">' +
     (setup ? '<div class="lk-ask"><button type="button" class="primary" id="lkAskYes">' + t("askYes") + '</button><button type="button" id="lkAskNo">' + t("askNo") + "</button></div>" : "") +
-    '<div class="lk-dots" id="lkDots" aria-hidden="true"></div><p class="lk-err" id="lkErr" role="alert"></p><div class="lk-pad">' + keys + "</div>" +
+    '<div class="lk-dotrow"><div class="lk-dots" id="lkDots" aria-hidden="true"></div><button type="button" class="ghost lk-eye" id="lkEye" aria-pressed="false">' + LK_EYE + '</button></div><p class="lk-err" id="lkErr" role="alert"></p><div class="lk-pad">' + keys + "</div>" +
     '<div class="lk-actions">' + (setup ? '<button type="button" class="ghost" id="lkBack">' + t("back") + "</button>" : '<button type="button" class="ghost" id="lkForgotBtn" aria-expanded="false">' + t("forgot") + '</button><p class="small" id="lkForgot" hidden>' + t("forgotText") + "</p>") + "</div></div></form></div>";
   document.documentElement.appendChild(root);
   document.body.inert = true;
@@ -81,11 +83,12 @@
     root.querySelector('[data-act="del"]').setAttribute("aria-label", t("del")); goBtn.setAttribute("aria-label", t("go"));
     setStep("ask"); $("lkAskYes").focus();
   }) : null;
-  if (langBox) dots.parentNode.insertBefore(langBox, dots);
+  if (langBox) dots.parentNode.parentNode.insertBefore(langBox, dots.parentNode); // before the row with the dots and the eye
   function need() { return step === "login" ? (st.len || 0) : step === "rep" ? first.length : 0; } // 0 = length not known: up to 8, confirm with ✓
   function draw() {
     var n = need(), v = inp.value.length, h = "";
-    for (var i = 0; i < (n || 8); i++) h += '<i class="' + (i < v ? "on" : "") + (!n && i >= 4 ? " opt" : "") + '"></i>';
+    for (var i = 0; i < (n || 8); i++) h += show && i < v ? '<i class="on dig">' + inp.value.charAt(i) + "</i>" : '<i class="' + (i < v ? "on" : "") + (!n && i >= 4 ? " opt" : "") + '"></i>';
+    var eye = $("lkEye"); eye.setAttribute("aria-pressed", String(show)); eye.setAttribute("aria-label", t(show ? "hide" : "show")); eye.title = t(show ? "hide" : "show");
     dots.innerHTML = h; dots.classList.remove("bad");
     goBtn.classList.toggle("lk-hide", !!n); goBtn.disabled = inp.disabled || v < 4;
   }
@@ -141,6 +144,7 @@
   }
   function flash(sel) { var b = root.querySelector(".lk-pad " + sel); if (!b) return; b.classList.add("hit"); setTimeout(function () { b.classList.remove("hit"); }, 120); }
   inp.addEventListener("input", function () { if (busy) return; changed(); });
+  $("lkEye").addEventListener("click", function () { show = !show; draw(); focusIn(); }); // see the digits typed (or dots again)
   root.addEventListener("keydown", function (e) { // physical keyboard and numpad, wherever the focus is on this screen
     if (e.ctrlKey || e.altKey || e.metaKey || step === "ask" || step === "lang") return; // the question and the languages: their buttons work as usual
     var dg = /^[0-9]$/.test(e.key) ? e.key : (/^Numpad([0-9])$/.exec(e.code || "") || [])[1]; // numpad digits also with Num Lock off

@@ -99,6 +99,10 @@ const dataJson = () => { try { return JSON.parse(fs.readFileSync(path.join(D, "d
   await page.screenshot({ path: "/tmp/pin_login.png" });
   eq(await dbStatus(page), 401, "saved data is not served while locked");
   ok(await page.evaluate(() => !document.querySelector("#docsList li") && !document.querySelector("#docsInfo").textContent), "nothing from the folder is shown while locked");
+  await keys(page, "12"); await page.click("#lkEye");
+  eq([await page.$$eval("#lkDots i.dig", (d) => d.map((x) => x.textContent)), await page.getAttribute("#lkEye", "aria-label")], [["1", "2"], "Pincode verbergen"], "the eye shows the digits typed");
+  await page.screenshot({ path: "/tmp/pin_eye.png" });
+  await page.click("#lkEye"); eq([await page.$$eval("#lkDots i.dig", (d) => d.length), (await dots(page)).on], [0, 2], "...and hides them again"); await page.keyboard.press("Backspace"); await page.keyboard.press("Backspace");
   await keys(page, "0000"); await page.waitForTimeout(500);
   eq(await err(page), "Onjuiste pincode.", "wrong PIN: short message"); eq((await dots(page)).on, 0, "dots are cleared");
   ok(await page.$eval("#lkDots", (e) => e.classList.contains("lk-shake") && e.classList.contains("bad")), "dots shake");

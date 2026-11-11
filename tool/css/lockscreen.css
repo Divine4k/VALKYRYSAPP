@@ -34,3 +34,11 @@
 .lk-actions p { margin: 0 0 4px; text-align: left; }
 @media (prefers-reduced-motion: no-preference) { .lk-shake { animation: lkshake .35s; } }
 @keyframes lkshake { 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+/* the eye beside the dots: shows the digits typed (the row is padded on the left by as much, so the dots stay centred) */
+.lk-dotrow { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 24px 0 6px; padding-left: 48px; }
+.lk-dotrow .lk-dots { margin: 0; }
+#lockScreen .lk-eye { position: static; transform: none; flex: 0 0 36px; width: 36px; height: 32px; min-height: 32px; margin: 0; padding: 0; display: grid; place-items: center; color: var(--muted); border: 0; background: transparent; box-shadow: none; border-radius: 8px; }
+.lk-eye:hover { color: var(--ink); }
+.lk-eye .e-off, .lk-eye[aria-pressed="true"] .e-on { display: none; } .lk-eye[aria-pressed="true"] .e-off { display: block; }
+.lk-dots i.dig { width: auto; height: auto; min-width: 14px; border: 0; background: none; border-radius: 0; transform: none; font-style: normal; font-size: 22px; font-weight: 800; line-height: 18px; color: var(--ink); text-align: center; }
+.lk-asking .lk-dotrow, .lk-langstep .lk-dotrow { display: none; }

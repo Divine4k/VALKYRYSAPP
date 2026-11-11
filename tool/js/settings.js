@@ -54,7 +54,7 @@ function applyLang() {
   if (storeKey) $("#storeNote").textContent = tr(storeKey);
   updateFileHint();
   if ($("#dlg").open) $("#dlgTitle").textContent = tr("preview", $("#dlgTitle").dataset.nr || "");
-  renderThemeUi(); renderPin(); renderTplUi(); if ($("#tplDlg").open) renderTplDlg(); renderNewsDot(); if ($("#newsDlg").open) renderNews(); renderUpd(); renderMail(); window.ValkLockLang = state.lang; if (desk && $("#welcomeDlg").open) renderWelcome();
+  renderThemeUi(); renderPin(); renderTplUi(); if ($("#tplDlg").open) renderTplDlg(); renderNewsDot(); if ($("#newsDlg").open) renderNews(); renderUpd(); renderMail(); renderEyes(); window.ValkLockLang = state.lang; if (desk && $("#welcomeDlg").open) renderWelcome();
   render(); syncTabHead();
 }
 function saveLang() {

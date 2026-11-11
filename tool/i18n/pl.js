@@ -179,4 +179,5 @@ VALK_I18N.pl = {
     langTitle: "Język", langIntro: "Język aplikacji. Faktury pozostają po niderlandzku.",
     rfMail: "Sprawdzanie poczty…", rfFolders: "Odczytywanie folderów…",
     setInvoicesOnly: "Faktury",
+    pwShow: "Pokaż", pwHide: "Ukryj",
 };

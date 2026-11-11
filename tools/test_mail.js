@@ -41,6 +41,9 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   await page.screenshot({ path: "/tmp/mail-dialog.png" });
   await page.click("#mailSave");
   ok(/e-mailadres en wachtwoord/i.test(await page.textContent("#mailErr")), "empty: asks for address and password");
+  await page.fill("#mailPass", "geheim"); await page.click("#mailForm .pweye");
+  ok((await page.getAttribute("#mailPass", "type")) === "text" && (await page.getAttribute("#mailForm .pweye", "aria-pressed")) === "true", "the eye shows the password");
+  await page.click("#mailForm .pweye"); ok((await page.getAttribute("#mailPass", "type")) === "password", "...and hides it again");
   await page.fill("#mailUser", "jan@wp.pl"); await page.fill("#mailPass", "fout"); await page.fill("#mailHost", "127.0.0.1:" + srv.port);
   await page.click("#mailSave");
   ok(await until(() => page.isVisible("#mailErr")) && /Inloggen lukt niet/.test(await page.textContent("#mailErr")), "wrong password: 'Inloggen lukt niet'", await page.textContent("#mailErr"));

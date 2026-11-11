@@ -179,4 +179,5 @@ VALK_I18N.en = {
     langTitle: "Language", langIntro: "The language of the app. Your invoices stay in Dutch.",
     rfMail: "Checking email…", rfFolders: "Reading folders…",
     setInvoicesOnly: "Invoices",
+    pwShow: "Show", pwHide: "Hide",
 };
