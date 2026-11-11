@@ -57,12 +57,14 @@ async function launch() {
   ok(await until(async () => /2 facturen geselecteerd/.test(await page.textContent("#sendBarText"))), "untick one: 2");
   await page.click("#sendBarGo");
   ok(await until(() => page.isVisible("#sendFields")) && (await page.textContent("#sendDlgTitle")) === "2 facturen versturen", "the send window: '2 facturen versturen'");
-  eq([await page.inputValue("#sendTo"), await page.inputValue("#sendSubj")], ["", "{Factuur} {nummers}"], "first time: no address yet, the default subject");
+  eq([await page.inputValue("#sendTo"), await page.inputValue("#sendSubj"), await page.inputValue("#sendText")], ["", "", ""], "address, subject and message start empty");
+  ok(!(await page.isVisible("#sendBook")) && !(await page.isVisible("#sendSaveWrap")), "no saved addresses yet, nothing to save yet");
   ok(!(await page.isVisible("#sendFromWrap")), "one mailbox: no 'Van' list");
   ok(await until(async () => (await page.$$eval("#sendAttList li small", (s) => s.map((x) => x.textContent))).every((t) => /kB|MB/.test(t))), "both PDFs ready, with their size (one drawn again from the app)", await page.$$eval("#sendAttList li", (s) => s.map((x) => x.textContent)));
   eq(await page.$$eval("#sendAttList li span", (s) => s.map((x) => x.textContent)), ["VALKYRYS 1-2026.pdf", "VALKYRYS 3-2026.pdf"], "attachments: the folder's PDF, and one made from the record");
+  await page.fill("#sendSubj", "{Factuur} {nummers}"); await page.fill("#sendText", "Beste,\n\n{lijst}\n\nTotaal: {totaal}");
   await page.click("#sendPrev summary");
-  eq(await page.textContent("#sendPrevSubj"), "Facturen 1-2026, 3-2026", "preview: subject filled in");
+  eq(await page.textContent("#sendPrevSubj"), "Facturen 1-2026, 3-2026", "preview: placeholders in the subject filled in");
   ok(/• Factuur 1-2026 – PO-100002 – € 2\.250,00\n• Factuur 3-2026 – PO-100005 – € 800,00/.test(await page.textContent("#sendPrevText")) && /Totaal: € 3\.050,00/.test(await page.textContent("#sendPrevText")), "preview: the list and the total", await page.textContent("#sendPrevText"));
   await page.screenshot({ path: "/tmp/send-dialog.png" });
   await page.click("#sendSubmit");
@@ -72,6 +74,7 @@ async function launch() {
   await page.fill("#sendTo", "weg@piguillet.nl"); await page.click("#sendSubmit");
   ok(await until(async () => /weigert het adres „weg@piguillet\.nl”/.test(await page.textContent("#sendErr"))), "the server refuses an address: says which", await page.textContent("#sendErr"));
   await page.fill("#sendTo", "facturen@piguillet.nl, boekhouding@piguillet.nl");
+  ok(await page.isVisible("#sendSaveWrap") && (await page.isChecked("#sendSave")) && /Deze adressen bewaren: facturen@piguillet\.nl, boekhouding@piguillet\.nl/.test(await page.textContent("#sendSaveWrap")), "new addresses: 'bewaren' offered, ticked");
   await page.fill("#sendText", "Beste,\n\nHierbij de {factuur} {nummers}.\n\nGroet,\n{naam}");
   await page.click("#sendSubmit");
   ok(await until(() => smtp.sent.length === 1), "sent: one email");
@@ -87,11 +90,21 @@ async function launch() {
   ok(!(await page.isVisible("#sendBar")) && !(await page.$$eval("#docsList input[data-sel]:checked", (x) => x.length)), "selection cleared");
   ok(imap.boxes.Sent.length === 1, "a copy in the mailbox's Sent folder");
 
-  // ---- next time: the address (same client) and the text are remembered
+  // ---- next time: empty again, the saved addresses one click away
   await page.check('#docsList input[data-sel="2-2026"]'); await page.click("#sendBarGo");
-  ok(await until(async () => (await page.inputValue("#sendTo")) === "facturen@piguillet.nl, boekhouding@piguillet.nl"), "the client's address is remembered");
-  ok((await page.inputValue("#sendText")).startsWith("Beste,\n\nHierbij de {factuur} {nummers}."), "the text as written (with its placeholders) is remembered");
-  await page.click("#sendPrev summary").catch(() => {}); eq(await page.textContent("#sendPrevSubj"), "Factuur 2-2026", "one invoice: 'Factuur' (singular)");
+  ok(await until(() => page.isVisible("#sendBook")), "saved addresses shown");
+  eq([await page.inputValue("#sendTo"), await page.inputValue("#sendSubj"), await page.inputValue("#sendText")], ["", "", ""], "everything empty again");
+  eq(await page.$$eval("#sendBookList [data-addr]", (b) => b.map((x) => x.dataset.addr)), ["facturen@piguillet.nl", "boekhouding@piguillet.nl"], "both addresses saved");
+  await page.click('#sendBookList [data-addr="facturen@piguillet.nl"]');
+  eq([await page.inputValue("#sendTo"), await page.getAttribute('#sendBookList [data-addr="facturen@piguillet.nl"]', "aria-pressed")], ["facturen@piguillet.nl", "true"], "a click puts it in 'Aan'");
+  ok(!(await page.isVisible("#sendSaveWrap")), "a saved address: nothing to save");
+  await page.click('#sendBookList [data-addr="boekhouding@piguillet.nl"]'); eq(await page.inputValue("#sendTo"), "facturen@piguillet.nl, boekhouding@piguillet.nl", "a second click: both");
+  await page.click('#sendBookList [data-addr="facturen@piguillet.nl"]'); eq(await page.inputValue("#sendTo"), "boekhouding@piguillet.nl", "clicking again takes it out");
+  await page.screenshot({ path: "/tmp/send-book.png" });
+  await page.click('#sendBookList [data-forget="boekhouding@piguillet.nl"]');
+  ok(await until(async () => (await page.$$("#sendBookList [data-addr]")).length === 1), "× forgets an address");
+  ok(await until(() => { const d = JSON.parse(fs.readFileSync(path.join(dir, "data.json"), "utf8"))["settings/mailsend"]; return d && d.book.length === 1 && d.book[0] === "facturen@piguillet.nl"; }), "...also in the saved data");
+  await page.fill("#sendSubj", "{Factuur} {nummers}"); await page.click("#sendPrev summary").catch(() => {}); eq(await page.textContent("#sendPrevSubj"), "Factuur 2-2026", "one invoice: 'Factuur' (singular)");
   await page.click("#sendDlgClose");
   ok(!errs.length, "no page errors", errs);
   await app.close(); await imap.close(); await smtp.close();

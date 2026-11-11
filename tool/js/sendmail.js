@@ -1,9 +1,6 @@
 // Sending invoices by email (Documents tab): tick invoices, "Per e-mail versturen…", one email with their PDFs attached, through a connected mailbox
 // (electron-app/mailfetch.js sends it by SMTP). The recipient (per client), subject and text are remembered in settings/mailsend; {placeholders} are filled in.
 "use strict";
-// the email goes to the client, so the default text is Dutch whatever the app's language
-const SEND_SUBJ = "{Factuur} {nummers}";
-const SEND_TEXT = "Beste,\n\nIn de bijlage vindt u de {factuur}:\n{lijst}\n\nTotaal: {totaal}\n\nMet vriendelijke groet,\n{naam}";
 const sendUi = { sets: [], files: [], prefs: null, client: "", busy: false };
 
 /** the ticked invoices that still exist, lowest number first */
@@ -32,6 +29,17 @@ const sendSize = (n) => (n >= 1048576 ? (n / 1048576).toLocaleString(mailLocale(
 function renderSendAtt() {
   $("#sendAttList").innerHTML = sendUi.files.map((f) => `<li class="${f.bad ? "bad" : ""}"><span>${esc(f.name)}</span><small>${esc(f.bad ? tr("sendNoPdf") : f.bytes ? sendSize(f.bytes.length) : tr("sendLoading"))}</small></li>`).join("");
 }
+const sendAddrs = () => $("#sendTo").value.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
+const sendBook = () => (sendUi.prefs && Array.isArray(sendUi.prefs.book) ? sendUi.prefs.book : []);
+/** the saved addresses as buttons: a click puts one in "Aan" (or takes it out again); × forgets it. Below: save the new ones typed? */
+function renderSendBook() {
+  const book = sendBook(), now = sendAddrs().map((x) => x.toLowerCase());
+  $("#sendBook").hidden = !book.length;
+  $("#sendBookList").innerHTML = book.map((a) => { const on = now.includes(a.toLowerCase()); return `<span class="abook${on ? " on" : ""}"><button type="button" class="abpick" data-addr="${esc(a)}" aria-pressed="${on}">${on ? "✓ " : "+ "}${esc(a)}</button><button type="button" class="abdel" data-forget="${esc(a)}" aria-label="${esc(tr("sendForget", a))}" title="${esc(tr("sendForget", a))}">×</button></span>`; }).join("");
+  const fresh = sendAddrs().filter((x) => /^[^\s@<>(),;:"]+@[^\s@<>(),;:"]+\.[^\s@<>(),;:"]+$/.test(x) && !book.some((b) => b.toLowerCase() === x.toLowerCase()));
+  $("#sendSaveWrap").hidden = !fresh.length; $("#sendSaveLbl").textContent = tr(fresh.length === 1 ? "sendSave1" : "sendSaveN", fresh.join(", "));
+}
+const saveSendPrefs = async () => { try { await state.db.doc("settings/mailsend").set(sendUi.prefs || {}); } catch (x) {} };
 function renderSendPrev() {
   $("#sendPrevSubj").textContent = sendFill($("#sendSubj").value, sendUi.sets);
   $("#sendPrevText").textContent = sendFill($("#sendText").value, sendUi.sets);
@@ -64,19 +72,18 @@ async function openSend() {
   $("#sendFrom").innerHTML = accs.map((a) => `<option value="${esc(a.id)}">${esc(a.user)}</option>`).join(""); $("#sendFromWrap").hidden = accs.length < 2;
   let p = sendUi.prefs;
   if (!p) { p = {}; try { const doc = await state.db.doc("settings/mailsend").get(); if (doc.exists) p = doc.data() || {}; } catch (e) {} sendUi.prefs = p; }
-  const clients = [...new Set(sets.map((s) => s.client).filter(Boolean))]; sendUi.client = clients.length === 1 ? clients[0] : "";
+  if (!Array.isArray(p.book)) { p.book = String(p.lastTo || "").split(/[\s,;]+/).filter(Boolean); delete p.to; delete p.lastTo; delete p.subject; delete p.text; } // from the first version: its last address becomes a saved one
   if (p.from && accs.some((a) => a.id === p.from)) $("#sendFrom").value = p.from;
-  $("#sendTo").value = (sendUi.client && p.to && p.to[sendUi.client]) || p.lastTo || "";
-  $("#sendSubj").value = p.subject || SEND_SUBJ; $("#sendText").value = p.text || SEND_TEXT;
-  renderSendPrev();
-  (($("#sendTo").value ? $("#sendSubj") : $("#sendTo"))).focus();
+  $("#sendTo").value = ""; $("#sendSubj").value = ""; $("#sendText").value = ""; $("#sendSave").checked = true; // empty every time
+  renderSendBook(); renderSendPrev();
+  $("#sendTo").focus();
   await sendLoadFiles(sets);
 }
 async function sendSubmit(e) {
   e.preventDefault();
   if (sendUi.busy) return;
   const err = (k, ...a) => { const el = $("#sendErr"); el.textContent = tr(k, ...a); el.hidden = false; };
-  const to = $("#sendTo").value.split(/[\s,;]+/).map((x) => x.trim()).filter(Boolean);
+  const to = sendAddrs();
   if (!to.length) return err("sendE_to");
   const bad = to.find((x) => !/^[^\s@<>(),;:"]+@[^\s@<>(),;:"]+\.[^\s@<>(),;:"]+$/.test(x)); if (bad) return err("sendE_addr", bad);
   if (sendUi.files.some((f) => !f.bytes && !f.bad)) return err("sendE_wait");
@@ -89,11 +96,11 @@ async function sendSubmit(e) {
     const k = r && r.error, known = ["auth", "apppass", "net", "tls", "size", "to", "noaccount"];
     return k === "rcpt" ? err("sendE_rcpt", r.rcpt || "") : err(known.includes(k) ? "sendE_" + k : "sendE_other");
   }
-  // remembered: who it went to (per client), the account, and the subject and text as written (with their {placeholders})
-  const p = sendUi.prefs || {}, toRaw = to.join(", ");
-  p.to = Object.assign({}, p.to || {}); if (sendUi.client) p.to[sendUi.client] = toRaw;
-  Object.assign(p, { lastTo: toRaw, from, subject: subjT, text: textT }); sendUi.prefs = p;
-  try { await state.db.doc("settings/mailsend").set(p); } catch (x) {}
+  // remembered: the account, and the new addresses when "save" is ticked
+  const p = sendUi.prefs || {}; p.from = from;
+  if (!$("#sendSaveWrap").hidden && $("#sendSave").checked) p.book = [...sendBook(), ...to.filter((x) => !sendBook().some((b) => b.toLowerCase() === x.toLowerCase()))].slice(0, 100);
+  sendUi.prefs = p; await saveSendPrefs();
+  const toRaw = to.join(", ");
   for (const s of sets) state.sent.add(s.nr); saveSent();
   state.docs.sel.clear();
   $("#sendDlg").close(); renderDocs();
@@ -104,6 +111,15 @@ if (desk && MAIL) {
   $("#sendBarClear").addEventListener("click", () => { state.docs.sel.clear(); renderDocs(); });
   $("#sendDlgClose").addEventListener("click", () => $("#sendDlg").close());
   $("#sendForm").addEventListener("submit", sendSubmit);
-  $("#sendForm").addEventListener("input", (e) => { $("#sendErr").hidden = true; if (e.target.id === "sendSubj" || e.target.id === "sendText") renderSendPrev(); });
+  $("#sendForm").addEventListener("input", (e) => { $("#sendErr").hidden = true; if (e.target.id === "sendSubj" || e.target.id === "sendText") renderSendPrev(); if (e.target.id === "sendTo") renderSendBook(); });
+  $("#sendBookList").addEventListener("click", async (e) => {
+    const pick = e.target.closest("[data-addr]"), del = e.target.closest("[data-forget]");
+    if (pick) { // in or out of "Aan"
+      const a = pick.dataset.addr, cur = sendAddrs(), has = cur.some((x) => x.toLowerCase() === a.toLowerCase());
+      $("#sendTo").value = (has ? cur.filter((x) => x.toLowerCase() !== a.toLowerCase()) : [...cur, a]).join(", "); $("#sendErr").hidden = true;
+      renderSendBook(); const b = $(`#sendBookList [data-addr="${CSS.escape(a)}"]`); if (b) b.focus(); return;
+    }
+    if (del) { const a = del.dataset.forget; sendUi.prefs.book = sendBook().filter((x) => x !== a); await saveSendPrefs(); renderSendBook(); }
+  });
   $("#sendGoMail").addEventListener("click", () => { $("#sendDlg").close(); openSettings("mail"); });
 }

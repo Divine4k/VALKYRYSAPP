@@ -102,3 +102,13 @@ button.mkinv { min-height: 30px; padding: 4px 12px; font-size: 12.5px; white-spa
 .sendprev pre { margin: 0; white-space: pre-wrap; font: inherit; font-size: 13.5px; color: var(--text); }
 .sendnoacc { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 #sendForm, #sendFields { margin-top: 0; }
+.sendbook .fsub { margin: 0 0 6px; font-size: 12px; color: var(--muted); font-weight: 700; }
+.abooks { display: flex; flex-wrap: wrap; gap: 6px; }
+.abook { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; background: var(--sunken); overflow: hidden; }
+.abook.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+.abook button { margin: 0; min-height: 30px; border: 0; border-radius: 0; background: transparent; box-shadow: none; font-size: 13px; font-weight: 600; color: var(--ink); }
+.abook .abpick { padding: 4px 4px 4px 12px; }
+.abook .abdel { padding: 4px 10px 4px 6px; color: var(--muted); font-size: 15px; }
+.abook .abdel:hover { color: var(--err); }
+.sendsave { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--text); cursor: pointer; }
+.sendsave input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
