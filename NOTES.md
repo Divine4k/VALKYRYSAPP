@@ -18,7 +18,7 @@ tools/dev.sh release            all tests; only if all pass: installer + a check
 tools/dev.sh update             signed update package -> out/update/ (latest.json + valkyrys-app-<ver>.zip)
 tools/publish_update.sh <ver>   copy it into the clone of Divine4k/valkyrys-updates (/home/claude/valkyrys-updates), commit, push
 ```
-**Release = installer AND publish the update** (`dev.sh update` + `publish_update.sh`). Updates are plain files on `main` of the PUBLIC repo `Divine4k/valkyrys-updates` (`latest.json`, `packages/`), read via raw.githubusercontent.com (CDN cache ~5 min). Attach that repo with add_repo (push). The signing key is `keys/update-signing.pem` in THIS private repo — never copy it to the public repo. Only installs from the 1.2.0+ installer (loader v1) can update in-app.
+**Release = installer AND publish the update** (`dev.sh update` + `publish_update.sh`). Updates are plain files on `main` of the PUBLIC repo `Divine4k/valkyrys-updates` (`latest.json`, `packages/`), read via raw.githubusercontent.com (CDN cache ~5 min). Attach that repo with add_repo (push). The signing key `keys/update-signing.pem` is NOT in git (gitignored; committing it is blocked). The user keeps the master copy; in a new session ask them to attach it and copy it to `keys/update-signing.pem` before `dev.sh update`. Never put it in any repo. If it is lost, a new key means one more full install. Only installs from the 1.2.0+ installer (loader v1) can update in-app.
 Logs: `logs/<test>.log`. Tests need xvfb (the script uses `xvfb-run -a`). Do not leave `GOOS=windows` exported when running `go test`.
 
 ## Where things are
