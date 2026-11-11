@@ -116,9 +116,11 @@ button.mkinv { min-height: 30px; padding: 4px 12px; font-size: 12.5px; white-spa
 /* the tick boxes only while choosing invoices to send ("Facturen versturen") */
 .dtable:not(.selmode) .c-sel { display: none; }
 @media (min-width: 1001px) { .dtable.selmode .dhead, .dtable.selmode .drow { grid-template-columns: 22px minmax(80px, .8fr) minmax(120px, 1.6fr) 92px minmax(92px, 1fr) 104px 192px 116px 68px; } }
+.dbar .sendstart { order: 9; margin-left: 0; min-height: 38px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 7px; font-size: 14px; }
 .sendbar button:disabled { opacity: .5; }
-/* the line under the bar: what is in the folder (left); how many are sent and "Facturen versturen" (right), all on one quiet row */
-.dmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin: -2px 0 12px; min-height: 34px; }
-.dmeta .dinfo { flex: 1 1 260px; margin: 0; line-height: 1.4; }
-.dmeta .dprog { margin-left: auto; }
-.dmeta .sendstart { margin: 0; min-height: 32px; height: 32px; padding: 0 13px; display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; border-radius: 8px; white-space: nowrap; }
+.dbar .dprog { order: 8; }
+/* the line under the bar: what is in the folder (left), how many are sent and "Facturen versturen" (right) */
+.dmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 12px; }
+.dmeta .dinfo { flex: 1 1 260px; margin: 0; }
+.dmeta .dprog { margin-left: auto; order: 0; }
+.dmeta .sendstart { order: 0; margin: 0; min-height: 38px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 7px; font-size: 14px; }
