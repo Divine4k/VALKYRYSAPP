@@ -49,8 +49,10 @@ const buf = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE"
 // notes: the items of the top entry of tool/changelog.js
 const ctx = { window: {} }; vm.runInNewContext(fs.readFileSync(path.join(SP, "tool", "changelog.js"), "utf8"), ctx);
 const top = (ctx.window.VALK_CHANGELOG || [])[0] || { items: [] };
-if (top.version !== version) console.warn(`warning: the top changelog entry is ${top.version}, the update is ${version}`);
-const notes = (top.items || []).map((i) => ({ type: i.type, nl: i.nl, en: i.en, pl: i.pl }));
+// --no-notes: a quiet fix without its own changelog entry, released without notes (else it would show the notes of the version before)
+const quiet = process.argv.includes("--no-notes");
+if (top.version !== version && !quiet) console.warn(`warning: the top changelog entry is ${top.version}, the update is ${version}`);
+const notes = quiet ? [] : (top.items || []).map((i) => ({ type: i.type, nl: i.nl, en: i.en, pl: i.pl }));
 
 const out = args.out || path.join(SP, "out", "update");
 fs.mkdirSync(out, { recursive: true });

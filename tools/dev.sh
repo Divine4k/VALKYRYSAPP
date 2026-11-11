@@ -6,7 +6,7 @@
 #                                   (builds first only if tool/, electron-app/ or app/shim.js changed since the last build)
 #   tools/dev.sh units              the quick tests of the reading/counting code (no window)
 #   tools/dev.sh all                build if needed, then every test
-#   tools/dev.sh update             in-app update only: out/update/latest.json + valkyrys-app-<version>.zip (publish: tools/publish_update.sh <version>)
+#   tools/dev.sh update [--no-notes] in-app update only: out/update/latest.json + valkyrys-app-<version>.zip (publish: tools/publish_update.sh <version>)
 #   tools/dev.sh installer          Windows installer only, no tests:  out/Valkyrys-app-Setup.exe
 #   tools/dev.sh release            build, all tests, and only when everything passes the installer, then a check of what is inside it
 #   tools/dev.sh fixtures DIR       make the test fixtures (np-inv, po-folder, inv-folder2) in DIR
@@ -135,7 +135,7 @@ case $cmd in
   test)  [ $# -gt 0 ] || { echo "which tests? ($ELECTRON_TESTS)"; exit 2; }; build_if_changed || exit 1; run_tests "$@";;
   units) units;;
   all)   build_if_changed || exit 1; units; run_tests $ELECTRON_TESTS;;
-  update) build && node tools/build_update.mjs || exit 1;;
+  update) build && node tools/build_update.mjs "${@:2}" || exit 1;;   # dev.sh update --no-notes: a quiet fix (no changelog entry of its own)
   installer) installer;;
   release) build || exit 1; src_stamp > "$STAMP"; units; run_tests $ELECTRON_TESTS
            if [ -n "$FAILED" ]; then echo; echo "NOT RELEASED, failing:$FAILED  (files: $RUN)"; exit 1; fi
