@@ -3,6 +3,15 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
+    version: "1.3.6", date: "2026-11-11",
+    items: [
+      { type: "new",
+        nl: "Facturen per e-mail versturen: vink ze aan bij Documenten en klik op Per e-mail versturen.",
+        en: "Send invoices by email: tick them in Documents and click Send by email.",
+        pl: "Wysyłaj faktury e-mailem: zaznacz je w Dokumentach i kliknij Wyślij e-mailem." },
+    ],
+  },
+  {
     version: "1.3.5", date: "2026-11-11",
     items: [
       { type: "improved",
