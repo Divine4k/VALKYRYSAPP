@@ -3,6 +3,15 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
+    version: "1.3.8", date: "2026-11-11",
+    items: [
+      { type: "new",
+        nl: "Bèta: nieuwe inkooporders in één klik gefactureerd en naar de klant gemaild (vul bij de klant eerst „E-mail voor facturen” in).",
+        en: "Beta: new purchase orders invoiced and emailed to the client in one click (first fill in “Email for invoices” for the client).",
+        pl: "Beta: nowe zamówienia jednym kliknięciem zafakturowane i wysłane do klienta (najpierw wpisz u klienta „E-mail do faktur”)." },
+    ],
+  },
+  {
     version: "1.3.6", date: "2026-11-11",
     items: [
       { type: "new",
