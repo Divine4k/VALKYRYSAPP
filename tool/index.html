@@ -44,6 +44,7 @@
     <div class="panel dupbar" id="detBar" role="status" hidden><span class="dtext" id="detBarText"></span><button type="button" id="detBarGo" data-i18n="detBarGo">Gegevens invullen</button></div>
     <div class="panel dupbar stalebar" id="staleBar" role="status" hidden><span class="dtext" data-stale-text></span><button type="button" data-stale="del" data-i18n="staleDel">Uit de app verwijderen</button><button type="button" class="ghost" data-stale="keep" data-i18n="staleKeep">Behouden</button></div>
     <div id="mailNotes" hidden></div>
+    <div class="panel autocard" id="autoCard" hidden><span class="aico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></span><div class="atext"><p class="atitle"><span id="autoTitle"></span> <span class="betatag" data-i18n="betaTag">BETA</span></p><p class="asub" data-i18n="autoSub"></p></div><button type="button" class="primary" id="autoGo" data-i18n="autoGo">Automatisch…</button></div>
     <div class="drop" id="drop">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 18v-6"/><path d="M9.5 14.5 12 12l2.5 2.5"/></svg>
       <span class="dhint" data-i18n="dropHint">Sleep PDF’s van inkooporders ergens op deze pagina, of</span>
@@ -106,6 +107,7 @@
           <label class="f" for="cCity"><span data-i18n="cCity">Postcode en plaats</span><input id="cCity" type="text" autocomplete="off"></label>
           <label class="f" for="cKvk"><span data-i18n="cKvk">KVK</span><input id="cKvk" type="text" autocomplete="off"></label>
           <label class="f" for="cBtw"><span data-i18n="cBtw">BTW-nummer</span><input id="cBtw" type="text" autocomplete="off"></label>
+          <label class="f" for="cEmail"><span data-i18n="cEmail">E-mail voor facturen</span><input id="cEmail" type="email" autocomplete="off" spellcheck="false" placeholder="facturen@klant.nl"></label>
           <label class="f" for="sTerm"><span data-i18n="sTerm">Betaaltermijn</span><input id="sTerm" type="text"></label>
           <label class="f" for="sBtw"><span data-i18n="sBtw">Standaard BTW</span><select id="sBtw"><option value="verlegd" data-i18n="btw.verlegd">BTW verlegd</option><option value="21" data-i18n="btw.21">BTW 21%</option><option value="9" data-i18n="btw.9">BTW 9%</option></select></label>
           <button class="primary" type="submit" data-i18n="save">Instellingen opslaan</button>
@@ -336,6 +338,30 @@
     <button type="submit" class="primary" id="pinSave"></button>
   </form>
 </dialog>
+<dialog id="autoDlg" aria-labelledby="autoDlgTitle">
+  <div class="dlg-head"><strong id="autoDlgTitle"><span data-i18n="autoTitleDlg">Automatisch factureren en versturen</span> <span class="betatag" data-i18n="betaTag">BETA</span></strong><button type="button" id="autoDlgClose" data-i18n="close">Sluiten</button></div>
+  <div class="dlg-body stack" id="autoBody">
+    <div class="stack" id="autoStep1">
+      <div class="autowarn" role="alert"><p class="awt" data-i18n="autoWarnT">Let op: dit is een bètafunctie</p><p data-i18n="autoWarn1"></p><ul><li data-i18n="autoWarn2"></li><li data-i18n="autoWarn3"></li><li data-i18n="autoWarn4"></li></ul></div>
+      <label class="sendsave"><input type="checkbox" id="autoAgree"><span data-i18n="autoAgree">Ik begrijp het risico en wil doorgaan</span></label>
+      <button type="button" class="primary" id="autoNext" data-i18n="autoNext" disabled>Verder</button>
+    </div>
+    <form class="stack" id="autoStep2" novalidate hidden>
+      <div class="autolist"><p class="fsub" id="autoListT"></p><ul id="autoList"></ul></div>
+      <label class="f" for="autoClient"><span data-i18n="autoClient">Klant</span><select id="autoClient"></select><small class="hint" id="autoClientHint"></small></label>
+      <label class="f" for="autoFrom" id="autoFromWrap"><span data-i18n="sendFrom">Van</span><select id="autoFrom"></select></label>
+      <label class="f" for="autoSubj"><span data-i18n="sendSubj">Onderwerp</span><input id="autoSubj" type="text" autocomplete="off"></label>
+      <label class="f" for="autoText"><span data-i18n="sendText">Bericht</span><textarea id="autoText" rows="6"></textarea><small class="hint" data-i18n="sendVars"></small></label>
+      <p class="chip error" id="autoErr" hidden role="alert"></p>
+      <button type="submit" class="primary" id="autoRun" data-i18n="autoRun">Facturen maken en versturen</button>
+    </form>
+    <div class="stack" id="autoStep3" hidden>
+      <ol class="autosteps" id="autoSteps"></ol>
+      <p class="chip" id="autoDone" hidden role="status"></p>
+      <button type="button" class="primary" id="autoClose2" data-i18n="close" hidden>Sluiten</button>
+    </div>
+  </div>
+</dialog>
 <dialog id="sendDlg" aria-labelledby="sendDlgTitle">
   <div class="dlg-head"><strong id="sendDlgTitle" data-i18n="sendTitle">Facturen versturen</strong><button type="button" id="sendDlgClose" data-i18n="close">Sluiten</button></div>
   <form class="dlg-body stack" id="sendForm" autocomplete="off" novalidate>
@@ -478,6 +504,7 @@
 <script src="js/news.js"></script>
 <script src="js/mail.js"></script>
 <script src="js/sendmail.js"></script>
+<script src="js/autopilot.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/settabs.js"></script>
 <script src="js/invoice-events.js"></script>

@@ -456,7 +456,7 @@ function fillSettingsForm() {
   const s = state.settings;
   $("#sFile").value = s.fileTemplate || DEFAULTS.fileTemplate; updateFileHint(); $("#sStart").value = s.startNumber; $("#sTerm").value = s.betaaltermijn; $("#sBtw").value = s.btw;
   $("#cName").value = s.client.name || ""; $("#cStreet").value = s.client.street || ""; $("#cCity").value = s.client.city || "";
-  $("#cKvk").value = s.client.kvk || ""; $("#cBtw").value = s.client.btw || "";
+  $("#cKvk").value = s.client.kvk || ""; $("#cBtw").value = s.client.btw || ""; $("#cEmail").value = s.email || "";
   if (!s.client.name) $("#clientBox").open = true; // no client filled in yet: show its box
   renderClients();
 }

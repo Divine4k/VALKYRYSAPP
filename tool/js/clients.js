@@ -6,14 +6,16 @@
 const CL = { list: [], active: null };
 const CL_KEYS = ["name", "street", "city", "kvk", "btw"];
 const clientFields = (s) => ({ client: Object.fromEntries(CL_KEYS.map((k) => [k, String((s && s.client && s.client[k]) || "").trim()])),
-  betaaltermijn: String((s && s.betaaltermijn) || "").trim() || DEFAULTS.betaaltermijn, btw: (s && s.btw) || DEFAULTS.btw });
-const formClientFields = () => clientFields({ client: { name: $("#cName").value, street: $("#cStreet").value, city: $("#cCity").value, kvk: $("#cKvk").value, btw: $("#cBtw").value }, betaaltermijn: $("#sTerm").value, btw: $("#sBtw").value });
+  betaaltermijn: String((s && s.betaaltermijn) || "").trim() || DEFAULTS.betaaltermijn, btw: (s && s.btw) || DEFAULTS.btw,
+  email: String((s && s.email) || "").trim() }); // where invoices for this client go (the automatic "beta" run sends them there); not printed on the invoice
+const formClientFields = () => clientFields({ client: { name: $("#cName").value, street: $("#cStreet").value, city: $("#cCity").value, kvk: $("#cKvk").value, btw: $("#cBtw").value }, betaaltermijn: $("#sTerm").value, btw: $("#sBtw").value, email: $("#cEmail").value });
 const sameFields = (a, b) => JSON.stringify(clientFields(a)) === JSON.stringify(clientFields(b));
 const clientById = (id) => (id && CL.list.find((c) => c.id === id)) || null;
 const newClientId = () => "k" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 function putClientFields(f) {
   $("#cName").value = f.client.name; $("#cStreet").value = f.client.street; $("#cCity").value = f.client.city; $("#cKvk").value = f.client.kvk; $("#cBtw").value = f.client.btw;
   $("#sTerm").value = f.betaaltermijn; $("#sBtw").value = f.btw;
+  $("#cEmail").value = f.email || "";
 }
 /** the client a card's invoice goes to: its own preset when it was made for another than the active one, else what settings/main says */
 function cardClient(c) {

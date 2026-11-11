@@ -46,3 +46,27 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .mailnote .mnact { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .mailnote .mnact button { min-height: 34px; padding: 6px 14px; font-size: 13px; }
 .mailnote .mnact button.xbtn { width: 34px; padding: 0; display: grid; place-items: center; }
+/* the automatic "beta" run: a card on the Invoices tab and its window */
+.autocard { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 16px; padding: 14px 14px 14px 18px; border-left: 4px solid var(--warn); }
+.autocard .aico { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--warn-bg); color: var(--warn); }
+.autocard .atext { flex: 1 1 260px; min-width: 0; }
+.autocard .atitle { margin: 0; font-size: 15.5px; font-weight: 800; color: var(--ink); }
+.autocard .asub { margin: 3px 0 0; font-size: 13px; color: var(--muted); }
+.autocard button { min-height: 34px; padding: 6px 14px; font-size: 13px; }
+.betatag { display: inline-block; vertical-align: 2px; margin-left: 6px; padding: 1px 6px; border-radius: 5px; background: var(--warn-bg); color: var(--warn); font-size: 10.5px; font-weight: 900; letter-spacing: .08em; }
+#autoDlg { width: min(600px, calc(100% - 24px)); }
+#autoDlg .dlg-body { background: var(--surface); }
+#autoDlg .stack { margin: 0; }
+.autowarn { padding: 14px 16px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); font-size: 14px; line-height: 1.45; }
+.autowarn p { margin: 0 0 6px; } .autowarn .awt { font-weight: 900; font-size: 15px; }
+.autowarn ul { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.autolist ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow: auto; }
+.autolist li { display: flex; justify-content: space-between; gap: 10px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--sunken); font-size: 13.5px; }
+.autolist li small { color: var(--muted); }
+#autoDlg textarea { width: 100%; min-height: 110px; resize: vertical; font: inherit; font-size: 14px; line-height: 1.45; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
+#autoDlg .hint { font-weight: 400; letter-spacing: 0; font-size: 12px; color: var(--muted); }
+.autosteps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.autosteps li { display: flex; gap: 10px; align-items: baseline; font-size: 14px; color: var(--text); }
+.autosteps li::before { content: "•"; width: 16px; flex: 0 0 16px; text-align: center; color: var(--muted); font-weight: 900; }
+.autosteps li.run::before { content: "…"; color: var(--ink); } .autosteps li.ok::before { content: "\2713"; color: var(--ok); } .autosteps li.bad::before { content: "\00D7"; color: var(--err); } .autosteps li.skip::before { content: "–"; }
+.autosteps li.bad { color: var(--err); }

@@ -118,6 +118,7 @@ function newPoItems() {
 const NP_ROWS = 6;
 function renderNewPos() {
   renderDocs(); // the Documents tab follows the same updates (folders read, invoices changed, purchase orders read)
+  if (typeof renderAuto === "function") renderAuto(); // the automatic (beta) run card
   renderStale(); renderDocWarns();
   const panel = $("#newPo"); panel.hidden = !desk || !state.poChecked; if (panel.hidden) return;
   const note = $("#npNote"), list = $("#npList"), on = (id, v) => { $(id).hidden = !v; };

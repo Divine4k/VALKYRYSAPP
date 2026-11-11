@@ -70,7 +70,7 @@ function renderMailNotes() {
 }
 function mailSet(st) {
   if (!st || !Array.isArray(st.accounts)) return;
-  mailUi.st = st; renderMail();
+  mailUi.st = st; renderMail(); if (typeof renderAuto === "function") renderAuto();
   const away = !document.hasFocus();
   if (st.saved && st.saved.length) {
     refreshPoFolder();

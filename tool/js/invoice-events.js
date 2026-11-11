@@ -81,7 +81,7 @@ $("#settings").addEventListener("submit", async (e) => {
   const s = {
     ...state.settings, startNumber: Math.max(1, parseInt($("#sStart").value, 10) || 1), startYear: new Date().getFullYear(),
     betaaltermijn: $("#sTerm").value.trim() || "14 dagen", btw: $("#sBtw").value, fileTemplate: $("#sFile").value.trim() || DEFAULTS.fileTemplate,
-    client: { name: $("#cName").value.trim(), street: $("#cStreet").value.trim(), city: $("#cCity").value.trim(), kvk: $("#cKvk").value.trim(), btw: $("#cBtw").value.trim() },
+    client: { name: $("#cName").value.trim(), street: $("#cStreet").value.trim(), city: $("#cCity").value.trim(), kvk: $("#cKvk").value.trim(), btw: $("#cBtw").value.trim() }, email: $("#cEmail").value.trim(),
   };
   state.settings = s;
   state.cards.forEach((c) => { c.manual = false; });
