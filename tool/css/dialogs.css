@@ -1,0 +1,14 @@
+
+#toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: 14px; max-width: calc(100% - 32px); z-index: 20; }
+dialog { border: 0; border-radius: var(--r); padding: 0; background: var(--surface); color: var(--text); width: min(720px, calc(100% - 24px)); max-height: calc(100% - 24px); }
+dialog::backdrop { background: rgba(0, 0, 0, .55); }
+.dlg-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); }
+.dlg-body { padding: 14px; background: var(--sunken); }
+.dlg-body canvas { width: 100%; height: auto; display: block; box-shadow: 0 1px 6px rgba(0, 0, 0, .25); background: #fff; }
+.pickwrap { position: relative; display: inline-block; }
+.pickwrap input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 0; }
+.band-tools { margin-left: auto; display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.band-tools .langsel { margin-left: 0; }
+button.themebtn { padding: 4px 12px; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; font-weight: 700; }
+button.themebtn:hover { border-color: #8E9096; }
+.themebtn svg { flex: 0 0 auto; }

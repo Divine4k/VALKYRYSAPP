@@ -1,10 +1,10 @@
 // The nine real purchase orders (work days in June, two hourly Saturdays): make invoices of them, then read the statistics from the invoices and from the POs.
-const { goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
 // Usage: node test_realpo.js <electron> <dir with the PO PDFs>
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
-const dataHome = "/tmp/el-appdata-real", PO = "/tmp/po-real", SRC = process.argv[3];
+const dataHome = tmp("el-appdata-real"), PO = tmp("po-real"), SRC = process.argv[3];
 (async () => {
   fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome);
   fs.rmSync(PO, { recursive: true, force: true }); fs.mkdirSync(PO, { recursive: true });

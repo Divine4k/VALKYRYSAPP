@@ -1,10 +1,10 @@
 // Statistics from purchase orders drawn like the real ones (wrapped cells, ranges, hours, the same day on two POs, half days):
-const { goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
 // right days and amounts, the breakdown of a period, and the PDF preview (new-orders list and breakdown).
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path"), cp = require("child_process");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
-const dataHome = "/tmp/el-appdata-pd", PO = "/tmp/po-layouts", HERE = path.resolve(__dirname, "..");
+const dataHome = tmp("el-appdata-pd"), PO = tmp("po-layouts"), HERE = path.resolve(__dirname, "..");
 (async () => {
   fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome);
   cp.execFileSync("node", [path.join(HERE, "tools/make_po_layouts.mjs"), PO]); fs.rmSync(PO + "/layouts.json");

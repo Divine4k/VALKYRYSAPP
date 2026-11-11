@@ -1,11 +1,11 @@
 // The same work day on more than one purchase order: the notice on the statistics, the list to check them in (preview, show in folder),
-const { goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
 // and the same PO number in several files. It only informs: the figures of the statistics do not change.
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 const PDFLib = require("/home/claude/.npm-global/lib/node_modules/pdf-lib");
-const dataHome = "/tmp/el-appdata-dup", PO = "/tmp/po-dups";
+const dataHome = tmp("el-appdata-dup"), PO = tmp("po-dups");
 const money = (n) => "€ " + n.toLocaleString("nl-NL", { minimumFractionDigits: 2 });
 async function makePo(file, po, order, items, mtime) {
   const doc = await PDFLib.PDFDocument.create(), page = doc.addPage([595, 842]), f = await doc.embedFont(PDFLib.StandardFonts.Helvetica);

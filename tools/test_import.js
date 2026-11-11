@@ -1,9 +1,9 @@
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
-const { goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
-const F = "/tmp/inv-folder2", exp = JSON.parse(fs.readFileSync(F + "-expected.json", "utf8"));
-const dataHome = "/tmp/el-appdata-i";
+const F = tmp("inv-folder2"), exp = JSON.parse(fs.readFileSync(F + "-expected.json", "utf8"));
+const dataHome = tmp("el-appdata-i");
 const launch = async () => {
   const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu", "--no-splash"], env: { ...process.env, APPDATA: dataHome, XDG_CONFIG_HOME: dataHome } });
   await app.evaluate(({ dialog, shell }, F) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [F] }); }, F);

@@ -1,0 +1,20 @@
+.themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; margin-top: 12px; }
+.tcard { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 8px; padding: 8px; text-align: left; font-size: 13px; font-weight: 700; min-height: 0; }
+.tcard[aria-checked="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink); }
+.tprev { display: block; height: 58px; border-radius: 6px; border: 1px solid rgba(128, 128, 128, .35); position: relative; overflow: hidden; }
+.tprev.auto { background: linear-gradient(135deg, #F1F2F4 0 50%, #0D0E0F 50% 100%); }
+.tprev i { position: absolute; inset: 8px; border-radius: 4px; box-shadow: 0 0 0 1px rgba(128, 128, 128, .3); }
+.tprev u { position: absolute; left: 7px; top: 8px; width: 55%; height: 4px; border-radius: 2px; text-decoration: none; }
+.tprev u.m { top: 17px; width: 38%; }
+.tprev b { position: absolute; left: 7px; bottom: 6px; width: 34px; height: 9px; border-radius: 3px; }
+.tname { overflow-wrap: anywhere; color: var(--ink); }
+.cbox { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.cgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 8px; }
+.cf { display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 700; color: var(--ink); }
+.cin { display: flex; align-items: center; gap: 8px; }
+.cin input[type="color"] { width: 46px; height: 38px; padding: 2px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; flex: 0 0 auto; }
+.cin input[type="text"] { width: 104px; text-transform: uppercase; font-variant-numeric: tabular-nums; }
+.cbase { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+.cbase select { width: auto; min-height: 36px; }
+.langsel { flex: 0 0 auto; width: auto; margin-left: auto; min-height: 34px; padding: 4px 28px 4px 10px; font-size: 13px; color: var(--band-text); background-color: transparent; border: 1px solid #44464B; border-radius: 8px; }
+.langsel option { color: #111; background: #fff; }

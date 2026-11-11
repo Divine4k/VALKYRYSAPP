@@ -1,14 +1,14 @@
 // The Documents tab: one row per invoice number with its PDF and Word file from the invoice folder, its purchase order from the PO folder, and invoices made in the app
 // that were never saved as a file. Sorting, search, the "sent" check marks (kept after a reload and a restart), the filter, and the previews (PDF, Word, PO).
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path"), { execFileSync } = require("child_process");
-const { goTab, setLang, seedProfile, APP_DIR } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile, APP_DIR } = require("./test_helpers");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 const TOOL = path.join(__dirname, "..", "tool");
 const core = require(TOOL + "/invoice-core.js"), { buildDocx } = require(TOOL + "/invoice-docx.js");
 const PDFLib = require("/home/claude/.npm-global/lib/node_modules/pdf-lib"), docx = require("/home/claude/.npm-global/lib/node_modules/docx");
 
-const HOME = "/tmp/el-appdata-docs", INV = "/tmp/docs-inv", PO = "/tmp/docs-po";
+const HOME = tmp("el-appdata-docs"), INV = tmp("docs-inv"), PO = tmp("docs-po");
 async function fixtures() {
   execFileSync("node", [path.join(__dirname, "make_po_folder.mjs"), TOOL, PO]); // PO-100001 … PO-100009 (some in a subfolder)
   for (const p of ["archief/PO-100001.pdf", "archief/PO-100008.pdf", "archief/PO-100009.pdf"]) fs.rmSync(`${PO}/${p}`, { force: true }); // left without an invoice: PO-100006, and PO-100007 (skipped)

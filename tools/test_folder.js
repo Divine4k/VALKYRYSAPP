@@ -1,9 +1,9 @@
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
-const { goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, saved: fileSaved, goTab, setLang, seedProfile } = require("./test_helpers");
 const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process.exitCode = 1; };
 (async () => {
-  const dataHome = "/tmp/el-appdata-f"; fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome);
-  const F = "/tmp/inv-folder"; fs.rmSync(F, { recursive: true, force: true }); fs.mkdirSync(F + "/2025", { recursive: true });
+  const dataHome = tmp("el-appdata-f"); fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome);
+  const F = tmp("inv-folder"); fs.rmSync(F, { recursive: true, force: true }); fs.mkdirSync(F + "/2025", { recursive: true });
   for (const n of ["VALKYRYS 64-2026.pdf", "VALKYRYS 64-2026.docx", "Factuur 15-01-2026.pdf", "~$VALKYRYS 64-2026.docx", "notes.txt", "2025/VALKYRYS 10-2025.pdf"]) fs.writeFileSync(path.join(F, n), "x");
   const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu", "--no-splash"], env: { ...process.env, APPDATA: dataHome, XDG_CONFIG_HOME: dataHome } });
   // stub the OS dialogs / file opening
@@ -45,13 +45,13 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
     const r = await page.$$eval(`#docsList li[data-nr="${n}"]`, (li) => li.length ? [...li[0].querySelectorAll("button")].filter((b) => !b.disabled && b.dataset.doc !== "po" && !b.dataset.reveal && !b.dataset.missignore).map((b) => b.dataset.doc || (b.dataset.remake ? "remake" : b.dataset.draw ? "draw" : b.dataset.deldoc ? "del" : "?")) : null);
     await goTab(page, "inv"); return r; };
   ok(!(await page.$("#hist")) && !(await page.$("#histEmpty")), "no 'Gemaakte facturen' list on the Invoices tab");
-  await page.click('article.po [data-act="download"]'); await page.waitForTimeout(2500);
+  await page.click('article.po [data-act="download"]'); await page.waitForTimeout(1000); await fileSaved(F + "/VALKYRYS 65-2026.pdf");
   ok(fs.existsSync(F + "/VALKYRYS 65-2026.pdf") && fs.statSync(F + "/VALKYRYS 65-2026.pdf").size > 10000, "PDF saved into the folder (" + (fs.existsSync(F + "/VALKYRYS 65-2026.pdf") && fs.statSync(F + "/VALKYRYS 65-2026.pdf").size) + " bytes)");
   console.log("toast:", await page.textContent("#toast"));
   ok(JSON.stringify(await hbtns("65-2026")) === '["pdf","del"]', "Documents: only PDF on while only the PDF exists: " + (await hbtns("65-2026")));
   ok(JSON.stringify(rec("65-2026").formats) === '["pdf"]', "record formats [pdf]: " + JSON.stringify(rec("65-2026").formats));
   const ft2 = await foot(); ok(ft2.includes("download:Opnieuw opslaan (PDF)") && ft2.includes("download-both*:Opnieuw opslaan (PDF + Word)") && ft2.includes("download-docx:Opnieuw opslaan (Word)") && (await page.textContent("article.po .done")).includes("Opgeslagen als 65-2026"), "after saving: note + 'opnieuw' labels: " + ft2);
-  await page.click('article.po [data-act="download-docx"]'); await page.waitForTimeout(2500);
+  await page.click('article.po [data-act="download-docx"]'); await page.waitForTimeout(1000); await fileSaved(F + "/VALKYRYS 65-2026.docx");
   ok(fs.existsSync(F + "/VALKYRYS 65-2026.docx"), "Word saved into the folder");
   ok(!fs.readdirSync(F).some((n) => n.endsWith(".part")), "no temp files left");
   const r65 = rec("65-2026");
@@ -76,7 +76,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   ok(!fs.readdirSync(F).some((n) => n.includes("(2)")), "re-saving the same invoice replaces the file");
   ok(JSON.stringify(rec("65-2026").savedFiles) === '["VALKYRYS 65-2026.pdf","VALKYRYS 65-2026.docx"]', "file names not doubled in the record");
   // no file left in the folder: Documents shows it as the app draws it (eye), the stale banner names it
-  fs.renameSync(`${F}/VALKYRYS 65-2026.pdf`, "/tmp/65.pdf"); fs.renameSync(`${F}/VALKYRYS 65-2026.docx`, "/tmp/65.docx");
+  fs.renameSync(`${F}/VALKYRYS 65-2026.pdf`, tmp("65.pdf")); fs.renameSync(`${F}/VALKYRYS 65-2026.docx`, tmp("65.docx"));
   await page.click("#newPo button[data-refresh]").catch(() => {}); await goTab(page, "docs"); await page.click("#docsView button[data-refresh]"); await page.waitForTimeout(1500); await goTab(page, "inv");
   { const b = await hbtns("65-2026"); ok(JSON.stringify(b) === '["draw","del"]', "Documents: eye + delete when no file is in the folder: " + b); }
   ok(await page.isVisible("#staleBar") && (await page.textContent("#staleBar")).includes("65-2026"), "the stale banner names 65-2026");
@@ -85,7 +85,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   await page.click("#poDlgClose"); await page.waitForTimeout(300);
   ok(!fs.existsSync(`${F}/VALKYRYS 65-2026.pdf`), "viewing writes nothing");
   // only the Word file missing: "Opnieuw maken" in its row makes it again
-  fs.renameSync("/tmp/65.pdf", `${F}/VALKYRYS 65-2026.pdf`); await page.click("#docsView button[data-refresh]"); await page.waitForTimeout(1500); await goTab(page, "inv");
+  fs.renameSync(tmp("65.pdf"), `${F}/VALKYRYS 65-2026.pdf`); await page.click("#docsView button[data-refresh]"); await page.waitForTimeout(1500); await goTab(page, "inv");
   { const b = await hbtns("65-2026"); ok(JSON.stringify(b) === '["pdf","del","remake"]', "Documents: PDF + 'Opnieuw maken' when the Word file is missing: " + b); }
   await goTab(page, "docs");
   ok((await page.textContent('#docsList li[data-nr="65-2026"] button[data-remake]')) === "Opnieuw maken", "button says 'Opnieuw maken'");
@@ -114,7 +114,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   ok((await page.textContent('article.po [data-act="download"]')).startsWith("Opnieuw downloaden") || (await page.textContent('article.po [data-act="download"]')).startsWith("Download"), "button back to download");
   // "Save all to the folder" with several POs: consecutive numbers (saving re-reads the folder; that must not shift the waiting cards)
   await goTab(page, "settings"); await page.click("#folderPick"); await page.waitForTimeout(800); await goTab(page, "inv");
-  const pos = ["PO-100003", "PO-100004", "PO-100005", "PO-100006"].map((p) => "/tmp/po-folder/" + p + ".pdf");
+  const pos = ["PO-100003", "PO-100004", "PO-100005", "PO-100006"].map((p) => tmp("po-folder/") + p + ".pdf");
   await page.setInputFiles("#file", pos); await page.waitForFunction(() => document.querySelectorAll("article.po h3").length === 5, null, { timeout: 20000 });
   const nrs = () => page.$$eval('article.po [data-k="nr"]', (i) => i.map((x) => x.value).filter((v) => v !== "65-2026")); const planned = await nrs(); console.log("planned:", planned);
   const pn = planned.map((x) => +x.split("-")[0]).sort((a, b) => a - b);

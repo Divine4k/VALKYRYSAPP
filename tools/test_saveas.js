@@ -1,11 +1,11 @@
 // "Save as…" on the batch bar: any folder (separate files) or one .zip with only the ticked contents; records the invoices once.
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
 const JSZip = require("/opt/npm-tools/node_modules/jszip");
-const { goTab, seedProfile, APP_DIR } = require("./test_helpers");
+const { tmp, goTab, seedProfile, APP_DIR } = require("./test_helpers");
 const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process.exitCode = 1; };
 (async () => {
-  const dataHome = "/tmp/el-appdata-saveas"; fs.rmSync(dataHome, { recursive: true, force: true });
-  const F = "/tmp/saveas-inv", D = "/tmp/saveas-anydir", Z = "/tmp/saveas-zip/out.zip", P = "/tmp/saveas-po";
+  const dataHome = tmp("el-appdata-saveas"); fs.rmSync(dataHome, { recursive: true, force: true });
+  const F = tmp("saveas-inv"), D = tmp("saveas-anydir"), Z = tmp("saveas-zip/out.zip"), P = tmp("saveas-po");
   for (const d of [F, D, path.dirname(Z), P]) { fs.rmSync(d, { recursive: true, force: true }); fs.mkdirSync(d, { recursive: true }); }
   fs.copyFileSync(process.argv[3], P + "/PO-008148.pdf"); fs.copyFileSync(process.argv[3], P + "/PO-copy.pdf");
   seedProfile(dataHome, { folder: F });
@@ -79,15 +79,15 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   ok(Object.keys(db2).filter((k) => k.startsWith("invoices/")).length === 2, "still two invoices");
 
   // the bridge only writes where the user picked, and only plain file names
-  const sec = await page.evaluate(async ([D]) => {
+  const sec = await page.evaluate(async ([D, T, Z]) => {
     const b = new Uint8Array([1, 2, 3]);
-    return { otherDir: (await window.valkyrys.saveToDir("/tmp", "x.pdf", b)).error, traversal: (await window.valkyrys.saveToDir(D, "../x.pdf", b)).error,
-      badExt: (await window.valkyrys.saveToDir(D, "x.exe", b)).error, otherZip: (await window.valkyrys.writePicked("/tmp/other.zip", b)).error,
-      reused: (await window.valkyrys.writePicked("/tmp/saveas-zip/out.zip", b)).error };
-  }, [D]);
+    return { otherDir: (await window.valkyrys.saveToDir(T, "x.pdf", b)).error, traversal: (await window.valkyrys.saveToDir(D, "../x.pdf", b)).error,
+      badExt: (await window.valkyrys.saveToDir(D, "x.exe", b)).error, otherZip: (await window.valkyrys.writePicked(T + "/other.zip", b)).error,
+      reused: (await window.valkyrys.writePicked(Z, b)).error };
+  }, [D, tmp(), Z]);
   console.log("security:", sec);
   ok(sec.otherDir === "dir" && sec.traversal === "name" && sec.badExt === "name" && sec.otherZip === "path" && sec.reused === "path", "unpicked folders, bad names and unpicked zip paths are refused");
-  ok(!fs.existsSync("/tmp/x.pdf") && !fs.existsSync("/tmp/other.zip"), "nothing written outside");
+  ok(!fs.existsSync(tmp("x.pdf")) && !fs.existsSync(tmp("other.zip")), "nothing written outside");
 
   // English labels
   await page.evaluate(() => { const s = document.querySelector("#lang"); s.value = "en"; s.dispatchEvent(new Event("change", { bubbles: true })); });

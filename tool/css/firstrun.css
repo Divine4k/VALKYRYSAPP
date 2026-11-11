@@ -1,0 +1,9 @@
+/* first start */
+.wstep { display: flex; gap: 14px; align-items: center; justify-content: space-between; margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; }
+.wstep.ok { border-color: var(--ok); }
+.wstep .wl { flex: 1 1 auto; min-width: 0; }
+.wstep .wl p { margin: 0; }
+.wstep .fpath { margin-top: 8px; }
+.wstep button { flex: 0 0 auto; }
+.wact { margin-top: 18px; }
+@media (max-width: 560px) { .wstep { flex-direction: column; align-items: stretch; } }

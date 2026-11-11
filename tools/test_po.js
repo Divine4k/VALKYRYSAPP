@@ -1,9 +1,9 @@
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
-const { goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
-const PO = "/tmp/po-folder", INV = "/tmp/inv-folder2", D = JSON.parse(fs.readFileSync(PO + "-items.json", "utf8"));
-const dataHome = "/tmp/el-appdata-p";
+const PO = tmp("po-folder"), INV = tmp("inv-folder2"), D = JSON.parse(fs.readFileSync(PO + "-items.json", "utf8"));
+const dataHome = tmp("el-appdata-p");
 // ---- expectations, computed independently from the item list (plain date maths, ISO weeks via the Thursday rule)
 const parse = (s) => { const [d, m, y] = s.split("-").map(Number); return { y, m: m - 1, d }; };
 const isoWeek = ({ y, m, d }) => { const t = new Date(Date.UTC(y, m, d)); const dow = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - dow); const y0 = Date.UTC(t.getUTCFullYear(), 0, 1); return Math.ceil(((t - y0) / 864e5 + 1) / 7); };
@@ -90,10 +90,10 @@ const hiLabel = (page) => page.$$eval("#chart .bv", (v) => v.map((x) => x.textCo
   await page.click('#statMode [data-mode="year"]'); await page.waitForTimeout(300);
   eq((await bars(page)).map((x) => x[1]), [eur0(sum(inY(2025))), eur0(sum(y26))], "years side by side (2025 / 2026)");
   // ---- CSV
-  await page.click('#statMode [data-mode="month"]'); await page.selectOption("#statYear", "2026"); fs.rmSync("/tmp/po-dl", { recursive: true, force: true });
-  await app.evaluate(({ session }) => { session.defaultSession.on("will-download", (e, item) => item.setSavePath("/tmp/po-dl-" + item.getFilename())); });
+  await page.click('#statMode [data-mode="month"]'); await page.selectOption("#statYear", "2026"); fs.rmSync(tmp("po-dl"), { recursive: true, force: true });
+  await app.evaluate(({ session }, pre) => { session.defaultSession.on("will-download", (e, item) => item.setSavePath(pre + item.getFilename())); }, tmp("po-dl-"));
   await page.click("#statCsv"); await page.waitForTimeout(1200);
-  const csv = "/tmp/po-dl-Inkooporders 2026.csv"; ok(fs.existsSync(csv), "PO csv saved");
+  const csv = tmp("po-dl-Inkooporders 2026.csv"); ok(fs.existsSync(csv), "PO csv saved");
   if (fs.existsSync(csv)) { const L = fs.readFileSync(csv, "utf8").replace(/^﻿/, "").trim().split("\r\n"); console.log(L.slice(0, 3)); eq(L.length, 1 + pos(y26), "one csv line per PO");
     ok(L.some((l) => l.startsWith('"PO-100003";"28/01/2026";"29/01/2026"') && l.endsWith(";4;1800,00") || l.startsWith('"PO-100003";"28/01/2026";"29/01/2026"')), "PO-100003 line"); }
   // ---- other source keeps its own state; folders are separate

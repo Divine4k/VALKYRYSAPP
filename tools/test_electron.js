@@ -1,9 +1,9 @@
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
-const { goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
 (async () => {
-  const dataHome = "/tmp/el-appdata"; fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome);
+  const dataHome = tmp("el-appdata"); fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome);
   const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu", process.argv[3]], env: { ...process.env, APPDATA: dataHome, XDG_CONFIG_HOME: dataHome } });
-  await app.evaluate(({ session }) => { session.defaultSession.on("will-download", (e, item) => item.setSavePath("/tmp/el-dl-" + item.getFilename())); });
+  await app.evaluate(({ session }, pre) => { session.defaultSession.on("will-download", (e, item) => item.setSavePath(pre + item.getFilename())); }, tmp("el-dl-"));
   await app.firstWindow(); let page; for (let i = 0; i < 100 && !page; i++) { page = app.windows().find((w) => !w.url().includes("splash")); if (!page) await new Promise((r) => setTimeout(r, 200)); } const errs = []; page.on("pageerror", (e) => errs.push(e.message));
   await page.waitForSelector("#pick", { state: "attached", timeout: 20000 }); await goTab(page, "inv"); await page.waitForTimeout(800);
   console.log("title:", await page.title(), "| url:", page.url().replace(/:\d+/, ":PORT"), "| next:", await page.textContent("#nextNr"));
@@ -12,7 +12,7 @@ const { goTab, setLang, seedProfile } = require("./test_helpers");
   console.log("card:", await page.textContent("article.po h3"), await page.inputValue('[data-k="nr"]'));
   await page.click('article.po [data-act="download"]'); await page.waitForTimeout(2500);
   await page.click('article.po [data-act="download-docx"]'); await page.waitForTimeout(2500);
-  console.log("downloads:", fs.readdirSync("/tmp").filter((f) => f.startsWith("el-dl-")).map((f) => f + ":" + fs.statSync("/tmp/" + f).size));
+  console.log("downloads:", fs.readdirSync(tmp()).filter((f) => f.startsWith("el-dl-")).map((f) => f + ":" + fs.statSync(tmp(f)).size));
   await page.click('article.po [data-act="preview"]'); await page.waitForTimeout(2500);
   console.log("preview ok:", await page.evaluate(() => { const c = document.querySelector("#dlgCanvas"); return c.width + "x" + c.height; }));
   await page.screenshot({ path: "/tmp/el-shot.png" });

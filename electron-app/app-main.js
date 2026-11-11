@@ -251,7 +251,7 @@ let pageLoaded = false;
 const markOk = () => { if (pageLoaded && global.valkyrysLoader) try { global.valkyrysLoader.markOk(); } catch (e) {} };
 app.on("before-quit", markOk);
 
-const APP_PORT = 47831;
+const APP_PORT = process.env.VALKYRYS_PORT ? Number(process.env.VALKYRYS_PORT) : 47831; // VALKYRYS_PORT: tests running side by side each get their own
 const arg = process.argv.find((a) => a.startsWith("--splash-ms="));
 // --splash-ms=N: keep the splash at least N ms from start (tests). Without it the splash page decides: it says when its animation
 // plus a short hold of the finished logo is done (window.splashDone, ~4.2 s); SPLASH_FALLBACK_MS is the minimum if the page can't answer.

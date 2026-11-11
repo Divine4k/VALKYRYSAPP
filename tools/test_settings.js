@@ -1,9 +1,9 @@
 // The Settings tab, Statistics as the first tab, the first-start question about the folders, and moving the data of "Valkyrys Facturen" along to "Valkyrys app".
-const { goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
-const INV = "/tmp/np-inv", PO = "/tmp/po-folder", HOME = "/tmp/el-appdata-set";
+const INV = tmp("np-inv"), PO = tmp("po-folder"), HOME = tmp("el-appdata-set");
 const D = (h = HOME, n = "Valkyrys app") => path.join(h, n);
 const seed = (home, files, dirName = "Valkyrys app") => { if (!files["data.json"]) files = { ...files, "data.json": { "settings/main": { ...require("../electron-app/server.js").DEFAULT_SETTINGS, template: "valkyrys" } } }; // the design is chosen already (test_templates covers choosing it)
   fs.rmSync(home, { recursive: true, force: true }); fs.mkdirSync(path.join(home, dirName), { recursive: true }); for (const [n, c] of Object.entries(files)) fs.writeFileSync(path.join(home, dirName, n), typeof c === "string" ? c : JSON.stringify(c)); };
@@ -132,11 +132,11 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   ok(await page.isVisible("#folderOpen") && await page.isVisible("#folderClear") && await page.isVisible("#poFolderOpen") && await page.isVisible("#poFolderClear"), "open and disconnect for both");
   await page.click("#poFolderOpen"); await page.waitForTimeout(200); eq(await app.evaluate(() => globalThis.__opened), [PO], "open folder opens the PO folder");
   // change the PO folder here and see it on the statistics
-  fs.rmSync("/tmp/po-other", { recursive: true, force: true }); fs.mkdirSync("/tmp/po-other"); await pick("/tmp/po-other");
-  await page.click("#poFolderPick"); await page.waitForTimeout(800); eq(await page.textContent("#poFolderPath"), "/tmp/po-other", "PO folder changed in Settings"); eq(cfg().poFolder, "/tmp/po-other", "...and remembered");
+  fs.rmSync(tmp("po-other"), { recursive: true, force: true }); fs.mkdirSync(tmp("po-other")); await pick(tmp("po-other"));
+  await page.click("#poFolderPick"); await page.waitForTimeout(800); eq(await page.textContent("#poFolderPath"), tmp("po-other"), "PO folder changed in Settings"); eq(cfg().poFolder, tmp("po-other"), "...and remembered");
   await goTab(page, "stats"); await page.click('#statSource [data-src="pos"]'); await page.waitForTimeout(500); eq(await page.textContent("#statsEmpty"), "Geen inkooporders gevonden in deze map.", "the statistics read from the new (empty) PO folder"); ok(!(await page.isVisible("#statsGoSettings")), "...the folder is set, so no button to Settings");
   // the PO folder disappears: the statistics warn in their empty state (no permanent line) and offer a way to Settings
-  fs.rmSync("/tmp/po-other", { recursive: true, force: true }); await page.evaluate(() => window.dispatchEvent(new Event("focus"))); await page.waitForTimeout(1500);
+  fs.rmSync(tmp("po-other"), { recursive: true, force: true }); await page.evaluate(() => window.dispatchEvent(new Event("focus"))); await page.waitForTimeout(1500);
   eq(await page.textContent("#statsEmpty"), "Deze map is niet gevonden. Is de schijf aangesloten? Kies de map opnieuw.", "missing PO folder: said in the statistics");
   ok(await page.$eval("#statsEmpty", (e) => e.classList.contains("bad")), "...as a warning");
   eq(await page.textContent("#statsGoSettings"), "Naar instellingen", "...with a button to Settings"); await page.click("#statsGoSettings"); await page.waitForTimeout(200);

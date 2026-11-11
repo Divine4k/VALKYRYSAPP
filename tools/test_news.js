@@ -1,9 +1,9 @@
 // "What's new": button at the bottom of the sidebar, dot until opened, dialog follows the language, remembered after a restart; a fresh install gets no dot.
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
-const { goTab, setLang, seedProfile, APP_DIR } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile, APP_DIR } = require("./test_helpers");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
-const dataHome = "/tmp/el-appdata-news", shots = process.env.NEWS_SHOTS; // NEWS_SHOTS=1 also writes /tmp/news_*.png
+const dataHome = tmp("el-appdata-news"), shots = process.env.NEWS_SHOTS; // NEWS_SHOTS=1 also writes /tmp/news_*.png
 const launch = async (home = dataHome) => {
   const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu", "--no-splash"], env: { ...process.env, APPDATA: home, XDG_CONFIG_HOME: home } });
   await app.firstWindow(); let page; for (let i = 0; i < 100 && !page; i++) { page = app.windows().find((w) => !w.url().includes("splash")); if (!page) await new Promise((r) => setTimeout(r, 200)); }

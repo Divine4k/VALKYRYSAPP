@@ -1,10 +1,10 @@
 // Deleting an invoice (history × and the bin on a Documents row): the app's record, and if wanted its files (to the Recycle Bin, stubbed here),
 // the PO only on request; refreshing the folders (buttons, coming back to the app); records whose files vanished outside the app (banner).
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
-const { goTab, seedProfile, APP_DIR } = require("./test_helpers");
+const { tmp, goTab, seedProfile, APP_DIR } = require("./test_helpers");
 const PDFLib = require("/home/claude/.npm-global/lib/node_modules/pdf-lib");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
-const INV = "/tmp/del-inv", PO = "/tmp/del-po", TRASH = "/tmp/trash-test", dataHome = "/tmp/el-appdata-del";
+const INV = tmp("del-inv"), PO = tmp("del-po"), TRASH = tmp("trash-test"), dataHome = tmp("el-appdata-del");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function makePo(file, po, order, items) {
   const doc = await PDFLib.PDFDocument.create(), page = doc.addPage([595, 842]), f = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
@@ -130,7 +130,7 @@ const eq2 = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a
   ok(db()["invoices/64-2026"] && exists("VALKYRYS 64-2026.pdf"), "cancel deletes nothing");
 
   // ---- 3. the IPC refuses paths outside the folder and other files
-  const refused = await page.evaluate(async () => Promise.all([window.valkyrys.trashFile("../del-po/PO-200001.pdf"), window.valkyrys.trashFile("/tmp/del-po/PO-200001.pdf"), window.valkyrys.trashFile("../../etc/passwd"), window.valkyrys.trashFile("nope.pdf")]));
+  const refused = await page.evaluate(async (abs) => Promise.all([window.valkyrys.trashFile("../del-po/PO-200001.pdf"), window.valkyrys.trashFile(abs), window.valkyrys.trashFile("../../etc/passwd"), window.valkyrys.trashFile("nope.pdf")]), path.join(PO, "PO-200001.pdf"));
   ok(refused.every((r) => r && r.error && !r.ok), "outside / missing paths refused", refused);
   ok(fs.existsSync(path.join(PO, "PO-200001.pdf")), "file outside the folder untouched");
 

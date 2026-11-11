@@ -1,0 +1,25 @@
+/* settings tab */
+.fset { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.fsub { font-weight: 700; font-size: 14px; margin: 0 0 4px; color: var(--ink); }
+.fset .small { margin: 0; }
+.look { align-items: center; margin-top: 4px; }
+.look .langsel { margin-left: 0; color: var(--ink); background-color: var(--surface); border-color: var(--line); min-height: 38px; font-size: 14px; }
+.look button.themebtn { min-height: 38px; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+.tplgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-top: 14px; }
+.tplopt { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 8px; padding: 10px; text-align: left; min-height: 0; }
+.tplopt[aria-checked="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--ink); }
+.tplopt img, .tplcur img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
+.tplopt .tdesc { font-weight: 400; font-size: 12.5px; color: var(--muted); }
+.tplcur { display: flex; gap: 14px; align-items: flex-start; }
+.tplcur img { width: 96px; flex: 0 0 auto; }
+.tplcur .small { margin: 0 0 10px; }
+.wact { margin-top: 16px; }
+#tplStep2 { display: flex; flex-direction: column; gap: 10px; }
+.tplitem { position: relative; display: flex; } .tplitem > .tplopt { flex: 1 1 auto; }
+.tplopt.tpladd { border-style: dashed; justify-content: center; align-items: center; text-align: center; min-height: 180px; }
+.tplopt .tplplus { font-size: 40px; line-height: 1; font-weight: 300; color: var(--muted); }
+.tplempty { grid-column: 1 / -1; margin: 0; padding: 14px 16px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
+.tplempty strong { display: block; font-size: 16px; }
+.tplempty span { display: block; margin-top: 4px; color: var(--muted); font-size: 14px; }
+.tplitem .tdel { position: absolute; top: 6px; right: 6px; min-height: 0; padding: 2px 9px; font-size: 16px; line-height: 1.2; background: var(--bg, #fff); }
+.look button.themebtn:hover { border-color: var(--muted); }

@@ -1,10 +1,10 @@
 // Invoice designs: a new install starts without designs (add your own Word design, or later; invoices wait), the person's own details, changing the design in Settings,
 // an installation from before the designs existed (it stays on the Valkyrys design), and that old invoices keep the design they were made in.
-const { goTab, setLang, seedProfile, chooseDesign } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile, chooseDesign } = require("./test_helpers");
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path"), { execFileSync } = require("child_process");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
-const HOME = "/tmp/el-appdata-tpl", INV = "/tmp/tpl-inv";
+const HOME = tmp("el-appdata-tpl"), INV = tmp("tpl-inv");
 const D = path.join(HOME, "Valkyrys app");
 const pdfText = (f) => execFileSync("pdftotext", ["-layout", f, "-"], { encoding: "utf8" });
 const docxXml = (f) => execFileSync("unzip", ["-p", f, "word/document.xml"], { encoding: "utf8", maxBuffer: 1e8 });
@@ -26,7 +26,7 @@ const fillWz = async (page, p) => { for (const [k, v] of Object.entries(D1)) awa
 (async () => {
   // ---------------------------------------------------------------- 1. a fresh install: no built-in designs; the person adds their own Word design (or later)
   const JSZip = require("/opt/npm-tools/node_modules/jszip"), { OWN, makeCustomDocx } = require("./make_custom_docx.js");
-  const FIX = "/tmp/tpl-fixture/Bouw ontwerp.docx"; fs.mkdirSync(path.dirname(FIX), { recursive: true });
+  const FIX = tmp("tpl-fixture/Bouw ontwerp.docx"); fs.mkdirSync(path.dirname(FIX), { recursive: true });
   fs.writeFileSync(FIX, await makeCustomDocx(JSZip, fs.readFileSync(path.join(__dirname, "../tool/templates/extreme.docx"))));
   const mockOpen = (app) => app.evaluate(({ dialog }, F) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [F] }); }, FIX);
   const year = new Date().getFullYear(), PO = process.argv[3];

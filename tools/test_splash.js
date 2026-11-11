@@ -1,8 +1,8 @@
 // Launch the real app (Linux Electron), grab splash frames at fixed animation times.
-const { goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
 const { _electron: electron } = require("playwright"); const fs = require("fs");
 (async () => {
-  const dataHome = "/tmp/el-appdata2"; fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome);
+  const dataHome = tmp("el-appdata2"); fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome);
   const t0 = Date.now();
   const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu", "--splash-ms=60000"], env: { ...process.env, APPDATA: dataHome, XDG_CONFIG_HOME: dataHome } });
   await app.firstWindow(); const splash = app.windows().find((w) => w.url().includes("splash")); if (!splash) throw new Error("no splash window: " + app.windows().map((w) => w.url()));

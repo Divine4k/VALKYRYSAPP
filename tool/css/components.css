@@ -1,0 +1,45 @@
+button, .btn { font: inherit; font-size: 14px; font-weight: 700; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 9px 14px; cursor: pointer; min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.primary:hover { filter: brightness(.96); }
+button.ghost { border-color: transparent; background: transparent; color: var(--muted); padding-inline: 8px; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+
+.batch { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.batch p { margin: 0; color: var(--muted); }
+.saveopt { border: 1px solid var(--line); border-radius: var(--r); padding: 10px 14px 12px; margin: 0; display: flex; flex-direction: column; gap: 8px; background: var(--surface); }
+.saveopt legend { font-weight: 700; padding: 0 4px; font-size: 14px; }
+.saveopt label { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; }
+.saveopt input { width: 18px; height: 18px; margin: 0; flex: 0 0 auto; accent-color: var(--ink); }
+.saveopt label.off { opacity: .55; cursor: default; }
+.saveopt small { color: var(--muted); }
+#saveDlg { width: min(520px, calc(100% - 24px)); }
+#delDlg { width: min(500px, calc(100% - 24px)); }
+#delDlg .dlg-body { background: var(--surface); }
+.delwhat { margin: 0; padding: 0 0 0 20px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; overflow-wrap: anywhere; }
+.delwhat li.keep { color: var(--muted); text-decoration: line-through; }
+button.danger { background: #C42B21; border-color: #C42B21; color: #FFFFFF; font-weight: 700; }
+button.danger:hover { background: #A8231A; border-color: #A8231A; color: #FFFFFF; filter: none; }
+.saveopt small.fname { display: block; color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+/* invoices missing a file / two invoices for one purchase order */
+.dwarn { display: flex; flex-direction: column; gap: 10px; }
+.npwarn { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 0; }
+.npwarn p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 13.5px; font-weight: 600; color: var(--warn); background: var(--warn-bg); border-radius: 8px; padding: 7px 10px; }
+.npwarn p span { flex: 1 1 220px; }
+.npwarn button, .c-warn button { min-height: 28px; padding: 3px 10px; font-size: 12px; }
+.c-warn { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: -2px; }
+.c-warn .tagw { white-space: nowrap; }
+.drow.miss { background: color-mix(in srgb, var(--warn-bg) 30%, transparent); }
+button.dchip.miss:disabled { color: var(--warn); border-color: var(--warn); opacity: .9; }
+button.refresh { min-height: 32px; width: 32px; padding: 0; color: var(--muted); }
+button.refresh:hover { color: var(--ink); border-color: var(--line); }
+button.xbtn { min-height: 34px; width: 34px; padding: 0; border-radius: 50%; flex: 0 0 auto; margin: -4px -6px 0 0; }
+button.xbtn:hover { color: var(--ink); background: var(--sunken); border-color: transparent; }
+#poDupDlg { width: min(500px, calc(100% - 24px)); }
+#poDupDlg .dlg-body { background: var(--surface); }
+button.refresh.spin svg { animation: rspin .8s linear infinite; }
+@keyframes rspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { button.refresh.spin svg { animation-duration: 2.4s; } }
+.ehead { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: -6px 0 0; }
+.ehead .eyebrow { margin: 0; }
+

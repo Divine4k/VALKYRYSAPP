@@ -1,9 +1,9 @@
 // The Facturen tab lists purchase orders from the Piguillet folder that have no invoice yet, and loads them like dropped PDFs.
-const { goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, saved: fileSaved, goTab, setLang, seedProfile } = require("./test_helpers");
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
-const PO = "/tmp/po-folder", INV = "/tmp/np-inv", dataHome = "/tmp/el-appdata-np";
+const PO = tmp("po-folder"), INV = tmp("np-inv"), dataHome = tmp("el-appdata-np");
 const PDFLib = require("/home/claude/.npm-global/lib/node_modules/pdf-lib");
 const launch = async () => {
   const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu", "--no-splash"], env: { ...process.env, APPDATA: dataHome, XDG_CONFIG_HOME: dataHome } });
@@ -25,7 +25,7 @@ async function makePo(file, po, order, items) {
   lines.forEach((t, i) => page.drawText(t, { x: 40, y: 800 - i * 18, size: 10, font: f })); fs.writeFileSync(file, await doc.save());
 }
 (async () => {
-  fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome); fs.rmSync("/tmp/po-folder/PO-100010.pdf", { force: true });
+  fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome); fs.rmSync(tmp("po-folder/PO-100010.pdf"), { force: true });
   let { app, page } = await launch(); const errs = []; page.on("pageerror", (e) => errs.push(e.message));
 
   // ---- A. nothing connected yet: a friendly prompt
@@ -53,7 +53,7 @@ async function makePo(file, po, order, items) {
   await page.waitForFunction(() => document.querySelectorAll("#npList li").length === 6 && ![...document.querySelectorAll("#npList .t")].some((e) => e.textContent === "PO-100002"));
   ok(true, "PO-100002 left the list while its card is open");
   const bytesBefore = (await page.textContent("#npNote"));
-  await page.click('article.po [data-act="download"]'); await page.waitForTimeout(2500);
+  await page.click('article.po [data-act="download"]'); await page.waitForTimeout(1000); await fileSaved(INV + "/VALKYRYS 62-2026.pdf");
   ok(fs.existsSync(INV + "/VALKYRYS 62-2026.pdf"), "invoice saved in the invoice folder");
   await page.click('article.po [data-act="remove"]'); await page.waitForTimeout(1500);
   ok(!(await pos(page)).includes("PO-100002"), "after removing the card, PO-100002 stays out (it has an invoice now)");
@@ -104,6 +104,6 @@ async function makePo(file, po, order, items) {
   ok((await note(page)).startsWith("Kies de map met de inkooporders van Piguillet") && (await rows(page)).length === 0, "PO folder disconnected: prompt is back");
 
   console.log("errors:", errs); ok(!errs.length, "no page errors");
-  fs.rmSync("/tmp/po-folder/PO-100010.pdf", { force: true });
+  fs.rmSync(tmp("po-folder/PO-100010.pdf"), { force: true });
   await app.close(); console.log(fails ? "FAILED: " + fails : "ALL PASSED"); process.exit(fails ? 1 : 0);
 })().catch((e) => { console.log("FAIL " + e.message); process.exit(1); });

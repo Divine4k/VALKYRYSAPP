@@ -1,11 +1,11 @@
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
-const { goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 const inv = (nr, datum, lines, btw, client, extra = {}) => { const [n, y] = nr.split("-").map(Number); return { factuurnr: nr, nummer: n, jaar: y, po: "PO-" + nr, datum, betaaltermijn: "14 dagen", client: { name: client || "Piguillet BV" }, lines, btw: btw || "verlegd", totaal: 0, dagen: [], createdAt: "2026-01-01T10:00:00Z", ...extra }; };
 const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
 (async () => {
-  const dataHome = "/tmp/el-appdata-s"; fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome);
+  const dataHome = tmp("el-appdata-s"); fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome);
   fs.mkdirSync(path.join(dataHome, "Valkyrys app"), { recursive: true });
   const docs = { "settings/main": { startNumber: 7, startYear: 2026, betaaltermijn: "14 dagen", btw: "verlegd", fileTemplate: "VALKYRYS {nummer}", client: { name: "Piguillet BV", street: "a", city: "b", kvk: "1", btw: "2" } } };
   for (const i of [
@@ -15,7 +15,7 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
   ]) docs["invoices/" + i.factuurnr] = i;
   fs.writeFileSync(path.join(dataHome, "Valkyrys app", "data.json"), JSON.stringify(docs));
   const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu", "--no-splash"], env: { ...process.env, APPDATA: dataHome, XDG_CONFIG_HOME: dataHome } });
-  await app.evaluate(({ session }) => { session.defaultSession.on("will-download", (e, item) => item.setSavePath("/tmp/st-dl-" + item.getFilename())); });
+  await app.evaluate(({ session }, pre) => { session.defaultSession.on("will-download", (e, item) => item.setSavePath(pre + item.getFilename())); }, tmp("st-dl-"));
   await app.firstWindow(); let page; for (let i = 0; i < 100 && !page; i++) { page = app.windows().find((w) => !w.url().includes("splash")); if (!page) await new Promise((r) => setTimeout(r, 200)); }
   const errs = []; page.on("pageerror", (e) => errs.push(e.message));
   await page.setViewportSize({ width: 1280, height: 1000 }).catch(() => {});
@@ -109,7 +109,7 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
   eq(await page.$$eval("#chart .bc.now", (b) => b.length), 0, "no current-month marker in a past year");
   // CSV for 2025
   await page.click("#statCsv"); await page.waitForTimeout(1200);
-  const csvPath = "/tmp/st-dl-Facturen 2025.csv"; ok(fs.existsSync(csvPath), "CSV downloaded");
+  const csvPath = tmp("st-dl-Facturen 2025.csv"); ok(fs.existsSync(csvPath), "CSV downloaded");
   if (fs.existsSync(csvPath)) { const raw = fs.readFileSync(csvPath, "utf8"); ok(raw.charCodeAt(0) === 0xfeff, "CSV starts with a BOM (Excel reads accents)"); const lines = raw.replace(/^﻿/, "").trim().split("\r\n"); console.log(lines.slice(0, 3));
     eq(lines.length, 5, "CSV: header + 4 invoices of 2025"); eq(lines[2], '"6-2025";"05/11/2025";"PO-6-2025";"Piguillet BV";2000,00;0,00;2000,00;5', "CSV row for 6-2025"); }
   // language

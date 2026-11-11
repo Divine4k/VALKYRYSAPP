@@ -1,10 +1,11 @@
 // Real launch with default timing: when does the splash show, when does the app window appear, when does the splash close?
 const { _electron: electron } = require("playwright");
 const fs = require("fs");
+const { tmp } = require("./test_helpers");
 (async () => {
   const t0 = Date.now();
-  { const d = "/tmp/el-ad4/Valkyrys app"; fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(d + "/pin.json", '{"v":1,"skipped":true}'); fs.writeFileSync(d + "/config.json", '{"welcomed":true}'); }
-  const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu"], env: { ...process.env, APPDATA: "/tmp/el-ad4", XDG_CONFIG_HOME: "/tmp/el-ad4" } });
+  { const d = tmp("el-ad4/Valkyrys app"); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(d + "/pin.json", '{"v":1,"skipped":true}'); fs.writeFileSync(d + "/config.json", '{"welcomed":true}'); }
+  const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu"], env: { ...process.env, APPDATA: tmp("el-ad4"), XDG_CONFIG_HOME: tmp("el-ad4") } });
   const t1 = Date.now(); console.log("attached after", t1 - t0, "ms (launch time included)");
   const ev = [];
   let last = "";

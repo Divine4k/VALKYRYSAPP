@@ -1,0 +1,20 @@
+.band { background: var(--band); color: var(--band-text); border-bottom: 3px solid var(--brand); }
+.band-in, main { max-width: 1140px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.band-in { padding-block: 18px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.band img { height: 24px; width: auto; display: block; }
+.band h1 { color: var(--band-text); font-size: 15px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.band p { margin: 0; color: var(--band-muted); font-size: 13px; flex: 1 1 260px; }
+
+main { padding-block: 20px 48px; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+@media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); } }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; min-width: 0; }
+.eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+
+.drop { border: 2px dashed var(--line); border-radius: var(--r); background: var(--surface); padding: 28px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; transition: border-color .15s, background .15s; }
+.drop.over { border-color: var(--accent); background: var(--sunken); }
+.drop h2 { font-size: 19px; font-weight: 900; }
+.drop p { margin: 0; color: var(--muted); max-width: 52ch; }
+.drop svg { color: var(--muted); }
+

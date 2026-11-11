@@ -3,10 +3,10 @@
 //   node tools/test_update.js EXE
 const { _electron: electron } = require("playwright");
 const fs = require("fs"), path = require("path"), http = require("http"), crypto = require("crypto"), { execFileSync, spawnSync } = require("child_process");
-const { seedProfile } = require("./test_helpers");
+const { tmp, seedProfile } = require("./test_helpers");
 const SP = path.resolve(__dirname, ".."), EXE = process.argv[2];
 const APPSRC = path.join(path.dirname(EXE), "resources", "app");
-const home = "/tmp/el-upd", work = "/tmp/el-upd-srv";
+const home = tmp("el-upd"), work = tmp("el-upd-srv");
 const DATA = path.join(home, "Valkyrys app"), VERS = path.join(DATA, "versions");
 const bundled = JSON.parse(fs.readFileSync(path.join(APPSRC, "package.json"), "utf8")).version;
 let fails = 0;

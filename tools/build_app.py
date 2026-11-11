@@ -1,4 +1,5 @@
 # builds app/web from the published tool (CDN libraries -> local copies, plus a shim for storage and downloads)
+# tool/index.html is the markup; css/, i18n/, js/ are copied as they are (the CDN script tags are only in index.html)
 import shutil, re, os, sys
 SP = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 T, W = f"{SP}/tool", f"{SP}/app/web"
@@ -8,6 +9,7 @@ for f in os.listdir(f"{T}/img"): shutil.copy(f"{T}/img/{f}", f"{W}/img/{f}")
 for f in os.listdir(f"{T}/fonts"): shutil.copy(f"{T}/fonts/{f}", f"{W}/fonts/{f}")
 for f in ["invoice-core.js", "invoice-docx.js", "invoice-templates.js", "changelog.js"]: shutil.copy(f"{T}/{f}", f"{W}/{f}")
 shutil.copytree(f"{T}/templates", f"{W}/templates")
+for d in ["css", "i18n", "js"]: shutil.copytree(f"{T}/{d}", f"{W}/{d}")  # the page's styles, texts and scripts (index.html is markup only)
 shutil.copy(f"{T}/vendor/docx.iife.js", f"{W}/vendor/docx.iife.js")
 shutil.copy("/opt/npm-tools/node_modules/pdf-lib/dist/pdf-lib.min.js", f"{W}/vendor/pdf-lib.min.js")
 shutil.copy("/opt/npm-tools/node_modules/jszip/dist/jszip.min.js", f"{W}/vendor/jszip.min.js")

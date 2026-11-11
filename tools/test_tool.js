@@ -12,11 +12,12 @@ const LOCAL = {
   worker: "/home/claude/.npm-global/lib/node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
 };
 // pdf.js 3 UMD is not available offline: a shim exposes the same calls on top of the local pdf.js module
-const SHIM = `window.pdfjsLib = { GlobalWorkerOptions: {}, getDocument(src) {
-  const p = import('http://localhost:8765/local/pdf.mjs').then(m => { m.GlobalWorkerOptions.workerSrc = 'http://localhost:8765/local/pdf.worker.mjs'; return m.getDocument(src).promise; });
+let PORT = 0; // a free port, so two runs at the same time do not collide
+const SHIM = () => `window.pdfjsLib = { GlobalWorkerOptions: {}, getDocument(src) {
+  const p = import('http://localhost:${PORT}/local/pdf.mjs').then(m => { m.GlobalWorkerOptions.workerSrc = 'http://localhost:${PORT}/local/pdf.worker.mjs'; return m.getDocument(src).promise; });
   return { promise: p }; } };`;
 
-const types = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".png": "image/png", ".ttf": "font/ttf" };
+const types = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".mjs": "text/javascript", ".png": "image/png", ".ttf": "font/ttf" };
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split("?")[0]);
   let file = p === "/" ? path.join(toolDir, "_page.html") : p.startsWith("/local/") ? (p.endsWith("worker.mjs") ? LOCAL.worker : LOCAL.pdfjs) : path.join(toolDir, p);
@@ -27,8 +28,8 @@ const server = http.createServer((req, res) => {
 
 (async () => {
   // the published page is wrapped in a skeleton; do the same here
-  fs.writeFileSync(path.join(toolDir, "_page.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>${fs.readFileSync(path.join(toolDir, "index.html"), "utf8").replace("// file picking and dropping", "window.__t = { state, renumber, render };\n  // file picking and dropping")}</body></html>`);
-  await new Promise((r) => server.listen(8765, r));
+  fs.writeFileSync(path.join(toolDir, "_page.html"), `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"></head><body>${fs.readFileSync(path.join(toolDir, "index.html"), "utf8")}<script>window.__t = { state, renumber, render };</script></body></html>`);
+  await new Promise((r) => server.listen(0, r)); PORT = server.address().port;
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 1500 } });
   const errors = [];
@@ -37,7 +38,7 @@ const server = http.createServer((req, res) => {
 
   await page.route(/cdnjs\.cloudflare\.com\/ajax\/libs\/pdf-lib\//, (r) => r.fulfill({ path: LOCAL.pdflib, contentType: "text/javascript" }));
   await page.route(/cdnjs\.cloudflare\.com\/ajax\/libs\/jszip\//, (r) => r.fulfill({ path: LOCAL.jszip, contentType: "text/javascript" }));
-  await page.route(/cdnjs\.cloudflare\.com\/ajax\/libs\/pdf\.js\/.*pdf\.min\.js/, (r) => r.fulfill({ body: SHIM, contentType: "text/javascript" }));
+  await page.route(/cdnjs\.cloudflare\.com\/ajax\/libs\/pdf\.js\/.*pdf\.min\.js/, (r) => r.fulfill({ body: SHIM(), contentType: "text/javascript" }));
   await page.route(/jsdelivr|fonts\.googleapis|fonts\.gstatic/, (r) => r.abort());
 
   // stand-ins for the platform's db and downloads, seeded like the real store
@@ -62,7 +63,7 @@ const server = http.createServer((req, res) => {
     window.__db = db;
   });
 
-  await page.goto("http://localhost:8765/");
+  await page.goto(`http://localhost:${PORT}/`);
   await page.waitForTimeout(800); await page.click("#tabInv");
   console.log("next number shown:", await page.textContent("#nextNr"));
 
@@ -184,7 +185,7 @@ const server = http.createServer((req, res) => {
   console.log(fails ? `${fails} check(s) failed` : "all 1.1.2 checks passed");
   const phone = await browser.newPage({ viewport: { width: 390, height: 900 } });
   await phone.route(/./, (r) => r.request().url().startsWith("http://localhost") ? r.continue() : r.abort());
-  await phone.goto("http://localhost:8765/");
+  await phone.goto(`http://localhost:${PORT}/`);
   await phone.waitForTimeout(600);
   const overflow = await phone.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   console.log("phone horizontal overflow px:", overflow);

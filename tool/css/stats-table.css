@@ -1,0 +1,20 @@
+.chart.dense { gap: 2px; }
+.chart.dense .bn { display: none; }
+.chart.dense .bx { font-size: 10.5px; min-height: 15px; margin-top: 4px; opacity: .85; }
+.tablewrap { overflow-x: auto; }
+.stbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+.stbl th { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 0 10px 8px; white-space: nowrap; }
+.stbl td { padding: 9px 10px; text-align: right; border-top: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.stbl th:first-child, .stbl td:first-child { text-align: left; padding-left: 0; }
+.stbl td:last-child, .stbl th:last-child { padding-right: 0; }
+.stbl td.z { color: var(--muted); }
+.stbl tfoot td { font-weight: 900; color: var(--ink); border-top: 2px solid var(--ink); }
+.stbl tr.now td:first-child { font-weight: 900; color: var(--ink); }
+.stbl th button.thb { border: 0; background: none; color: inherit; font: inherit; font-size: inherit; letter-spacing: inherit; text-transform: inherit; padding: 2px 0; min-height: 0; gap: 4px; border-radius: 4px; }
+.stbl th:first-child button.thb { flex-direction: row-reverse; } /* arrow after the text when left-aligned, before it when right-aligned: the text keeps its edge */
+.stbl th button.thb:hover, .stbl th[aria-sort] button.thb { color: var(--ink); border: 0; }
+.thb .sa { display: inline-flex; width: 8px; height: 10px; opacity: 0; transition: opacity .12s; }
+.thb .sa svg { width: 8px; height: 10px; }
+.thb:hover .sa, .thb:focus-visible .sa { opacity: .45; }
+.stbl th[aria-sort] .thb .sa { opacity: 1; }
+.hint { font-weight: 400; font-size: 12px; color: var(--muted); }

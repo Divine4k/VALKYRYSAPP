@@ -2,10 +2,10 @@
 // The real bridge (window.valkyrysUpdate from the preload) cannot be replaced, so a stand-in goes into window.__valkUpdateFake (read first by the page).
 // Its starting state comes from localStorage "fake-upd" ({state} or {none: true} = a plain browser), set before a reload.
 const { _electron: electron } = require("playwright"); const fs = require("fs");
-const { goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
-const HOME = "/tmp/el-appdata-upd";
+const HOME = tmp("el-appdata-upd");
 const LATEST = (v = "1.2.1") => ({ version: v, date: "2026-11-12", size: 95 * 1048576, notes: [
   { type: "fixed", nl: "Fout opgelost", en: "Bug fixed", pl: "Błąd naprawiony" },
   { type: "new", nl: "Nieuw ding", en: "New thing", pl: "Nowa rzecz" }] });

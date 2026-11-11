@@ -1,9 +1,9 @@
 // Client presets in "Facturen en klant": save, switch, update, delete, per-card client, kept after a restart, and the first preset made from the client that was filled in.
-const { goTab, seedProfile, APP_DIR } = require("./test_helpers");
+const { tmp, goTab, seedProfile, APP_DIR } = require("./test_helpers");
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
-const HOME = "/tmp/el-appdata-clients", F = "/tmp/clients-inv", PO = process.argv[3];
+const HOME = tmp("el-appdata-clients"), F = tmp("clients-inv"), PO = process.argv[3];
 const dataFile = path.join(HOME, APP_DIR, "data.json");
 const db = () => { try { return JSON.parse(fs.readFileSync(dataFile, "utf8")); } catch (e) { return {}; } };
 const waitDb = async (fn, ms = 6000) => { const t = Date.now(); let d; while (Date.now() - t < ms) { d = db(); try { if (fn(d)) return d; } catch (e) {} await new Promise((r) => setTimeout(r, 150)); } return d; };

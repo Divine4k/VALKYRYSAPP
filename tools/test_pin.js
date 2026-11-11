@@ -1,8 +1,8 @@
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
-const { goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
-const dataHome = "/tmp/el-appdata-pin", D = path.join(dataHome, "Valkyrys app"), PINF = path.join(D, "pin.json");
+const dataHome = tmp("el-appdata-pin"), D = path.join(dataHome, "Valkyrys app"), PINF = path.join(D, "pin.json");
 const launch = async (waitApp = false, home = dataHome) => {
   const app = await electron.launch({ executablePath: process.argv[2], args: ["--no-sandbox", "--disable-gpu", "--no-splash"], env: { ...process.env, APPDATA: home, XDG_CONFIG_HOME: home } });
   await app.firstWindow(); let page; for (let i = 0; i < 100 && !page; i++) { page = app.windows().find((w) => !w.url().includes("splash")); if (!page) await new Promise((r) => setTimeout(r, 200)); }
@@ -47,7 +47,7 @@ const dataJson = () => { try { return JSON.parse(fs.readFileSync(path.join(D, "d
 
   // ---- an install whose design is chosen but without a PIN decision: language (by keyboard), then the PIN question
   fs.rmSync(dataHome, { recursive: true, force: true }); fs.mkdirSync(D, { recursive: true });
-  fs.writeFileSync(path.join(D, "config.json"), JSON.stringify({ folder: "/tmp/np-inv" }));
+  fs.writeFileSync(path.join(D, "config.json"), JSON.stringify({ folder: tmp("np-inv") }));
   fs.writeFileSync(path.join(D, "data.json"), JSON.stringify({ "settings/main": { ...require("../electron-app/server.js").DEFAULT_SETTINGS, template: "valkyrys" } })); // the design is chosen already: only the PIN is asked
   ({ app, page } = await launch()); page.on("pageerror", (e) => errs.push(e.message));
   eq(await page.textContent("#lkTitle"), LANG_TITLE, "the language step again (a new profile)");
