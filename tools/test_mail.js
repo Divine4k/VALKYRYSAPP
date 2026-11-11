@@ -1,5 +1,5 @@
 // Settings › Connections: connect a mailbox (fake IMAP server, tools/fake_imap.js), purchase orders fetched into the PO folder, check now, switch off, disconnect.
-const { tmp, goTab, seedProfile, APP_DIR, saved } = require("./test_helpers");
+const { tmp, goTab, goSet, seedProfile, APP_DIR, saved } = require("./test_helpers");
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
 const F = require("./fake_imap.js");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
@@ -11,7 +11,7 @@ const launch = async () => {
   const errs = []; page.on("pageerror", (e) => errs.push(e.message));
   await page.setViewportSize({ width: 1280, height: 1000 }).catch(() => {});
   await page.waitForSelector("#pick", { state: "attached" }); await page.waitForTimeout(1200);
-  await goTab(page, "settings"); await page.waitForTimeout(300);
+  await goSet(page, "mail"); await page.waitForTimeout(300);
   return { app, page, errs };
 };
 const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now() - t < ms) { try { if (await fn()) return true; } catch (e) {} await new Promise((r) => setTimeout(r, 200)); } return false; };
@@ -25,6 +25,7 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   ];
   const srv = await F.start({ users: { "jan@wp.pl": PASS }, boxes: { INBOX: inbox } });
   seedProfile(HOME, { poFolder: POF });
+  fs.writeFileSync(path.join(HOME, APP_DIR, "mail.json"), JSON.stringify({ mode: "auto" })); // 'ask first' is the default; this part tests downloading by itself
   let { app, page, errs } = await launch();
 
   ok(await page.isVisible("#mailPanel"), "Connections panel in Settings");
@@ -61,7 +62,7 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   ok(await until(async () => (await page.isVisible("#mailNotes [data-mnote=got]")) && /Je hebt een nieuwe inkooporder in je mail!/.test(await page.textContent("#mailNotes")) && /PO-008148 staat al in je map/.test(await page.textContent("#mailNotes"))), "Invoices tab: 'Je hebt een nieuwe inkooporder in je mail!'", await page.textContent("#mailNotes"));
   ok(await page.evaluate(() => { const n = document.querySelector("#mailNotes"), d = document.querySelector("#drop"); return !!(n.compareDocumentPosition(d) & Node.DOCUMENT_POSITION_FOLLOWING); }), "...at the top, above the drop zone");
   await page.screenshot({ path: "/tmp/mail-note.png" });
-  await goTab(page, "settings"); await page.waitForTimeout(200);
+  await goSet(page, "mail"); await page.waitForTimeout(200);
   await page.waitForTimeout(400);
   await page.screenshot({ path: "/tmp/mail-settings.png" });
   await page.$eval("#mailPanel", (el) => el.scrollIntoView()); await page.screenshot({ path: "/tmp/mail-panel.png" });
@@ -86,10 +87,10 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   await page.click("#mailNotes [data-mnote-act=ok]");
   ok(await until(async () => !(await page.isVisible("#mailNotes [data-mnote]")) && !(await page.isVisible("#invDot"))), "'Top, bedankt': notice and dot gone");
   ok(await until(() => JSON.parse(fs.readFileSync(path.join(HOME, APP_DIR, "mail.json"), "utf8")).unseen.length === 0), "...remembered as seen");
-  await goTab(page, "settings"); await page.waitForTimeout(300);
+  await goSet(page, "mail"); await page.waitForTimeout(300);
 
   // ask first
-  ok(await page.isVisible("#mailMode") && (await page.isChecked('#mailMode input[value="auto"]')), "mode choice shown, 'Automatisch downloaden' by default");
+  ok(await page.isVisible("#mailMode") && (await page.isChecked('#mailMode input[value="auto"]')), "mode choice shown ('Automatisch downloaden' as set)");
   await page.click('#mailMode label:has(input[value="ask"])');
   ok(await until(() => JSON.parse(fs.readFileSync(path.join(HOME, APP_DIR, "mail.json"), "utf8")).mode === "ask"), "'Eerst vragen' stored");
   inbox.push({ uid: 7, date: new Date(), subject: "Inkooporder PO-008150", raw: F.poMail({ po: "008150", pdf }) });
@@ -106,7 +107,7 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   ok(await saved(path.join(POF, "PO-008150.pdf"), 10000), "Downloaden from the notice: saved");
   ok(!fs.existsSync(path.join(POF, "PO-008151.pdf")), "the ignored one not");
   ok(await until(async () => !(await page.isVisible("#mailNotes [data-mnote]")) && (await page.isHidden("#mailPend"))), "notice and list gone");
-  await goTab(page, "settings"); await page.waitForTimeout(200);
+  await goSet(page, "mail"); await page.waitForTimeout(200);
   ok(await until(async () => /Gedownload: PO-008150/.test(await page.textContent("#toast"))), "toast: downloaded");
 
   // a PO deleted from the folder outside the app comes back at the next check

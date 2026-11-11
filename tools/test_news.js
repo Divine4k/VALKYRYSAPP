@@ -33,6 +33,17 @@ const items = (page) => page.$$eval("#newsList .nrel:first-child li", (l) => l.m
   const TYPES = ["new", "improved", "fixed"].filter((t) => CL[0].items.some((i) => i.type === t)); // the groups the newest release has
   await page.click("#newsBtn"); await page.waitForTimeout(200);
   ok(await page.$eval("#newsDlg", (d) => d.open), "dialog opens");
+  { const r = await page.evaluate(async () => { // scrolled anywhere: the text goes under the title bar, never over it
+      const d = document.querySelector("#newsDlg"), h0 = d.querySelector(".dlg-head"), bad = [];
+      if (d.scrollHeight <= d.clientHeight + 50) return "not scrollable " + d.scrollHeight + "/" + d.clientHeight;
+      for (let y = 0; y <= d.scrollHeight - d.clientHeight; y += 15) {
+        d.scrollTop = y; await new Promise((r) => requestAnimationFrame(r));
+        const h = h0.getBoundingClientRect();
+        for (let x = h.left + 10; x < h.right - 10; x += 20) for (const yy of [h.top + 4, h.top + h.height / 2, h.bottom - 4]) { const el = document.elementFromPoint(x, yy); if (el && !el.closest(".dlg-head")) bad.push(y + ":" + el.tagName); }
+      }
+      d.scrollTop = 0; return bad.length ? bad.slice(0, 5).join(" ") : true;
+    });
+    ok(r === true, "scrolled down: the text goes under the title bar, not over it", r); }
   eq(await page.textContent("#newsTitle"), "Wat is er nieuw", "title");
   eq(await page.$$eval("#newsList .nrel", (s) => s.map((x) => x.dataset.version)), CL.map((r) => r.version), "releases newest first");
   eq(await page.$$eval("#newsList .nrel:first-child .ngrp", (g) => g.map((x) => x.dataset.type)), TYPES, "grouped New / Improved / Fixed");

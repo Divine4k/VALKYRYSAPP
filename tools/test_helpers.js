@@ -18,6 +18,9 @@ const TABS = { stats: "#tabStats", inv: "#tabInv", docs: "#tabDocs", settings: "
 /** open a tab of the app: "stats" (statistics), "inv" (invoices), "docs" (documents) or "settings" */
 const goTab = (page, name) => page.click(TABS[name]);
 
+/** open Settings at one of its tabs: "me" (details + design), "folders", "mail", "look" (theme + language), "pin", "upd" */
+const goSet = async (page, sub) => { await page.click(TABS.settings); await page.click(`#stab-${sub}`); };
+
 /** switch the interface language ("nl", "en", "pl") whichever tab is open (the list itself lives in Settings) */
 const setLang = (page, lang) => page.evaluate((v) => { const s = document.querySelector("#lang"); s.value = v; s.dispatchEvent(new Event("change", { bubbles: true })); }, lang);
 
@@ -59,4 +62,4 @@ async function saved(file, ms = 20000) {
   return fs.existsSync(file);
 }
 
-module.exports = { tmp, VK_TMP, saved, APP_DIR, goTab, setLang, seedProfile, chooseDesign };
+module.exports = { tmp, VK_TMP, saved, APP_DIR, goTab, goSet, setLang, seedProfile, chooseDesign };

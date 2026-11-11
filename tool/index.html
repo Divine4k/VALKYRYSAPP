@@ -110,15 +110,23 @@
 </main>
 
 <main id="settingsView" role="region" aria-labelledby="tabSettings" hidden>
-  <section class="col" aria-label="Instellingen">
-    <div class="panel" id="lookPanel">
+  <nav class="stabs" id="setTabs" role="tablist" data-i18n-aria="tabSettings" aria-label="Instellingen">
+    <button type="button" role="tab" data-stab="me" id="stab-me" aria-controls="setCol"><span data-i18n="stabMe">Mijn gegevens</span></button>
+    <button type="button" role="tab" data-stab="folders" id="stab-folders" aria-controls="setCol"><span data-i18n="stabFolders">Mappen</span></button>
+    <button type="button" role="tab" data-stab="mail" id="stab-mail" aria-controls="setCol"><span data-i18n="stabMail">Verbindingen</span></button>
+    <button type="button" role="tab" data-stab="look" id="stab-look" aria-controls="setCol"><span data-i18n="stabLook">Weergave</span></button>
+    <button type="button" role="tab" data-stab="pin" id="stab-pin" aria-controls="setCol"><span data-i18n="stabPin">Beveiliging</span></button>
+    <button type="button" role="tab" data-stab="upd" id="stab-upd" aria-controls="setCol"><span data-i18n="stabUpd">Updates</span><span class="newsdot" id="stabUpdDot" hidden></span></button>
+  </nav>
+  <section class="col" id="setCol" role="tabpanel" aria-label="Instellingen">
+    <div class="panel" id="lookPanel" data-stab="look">
       <p class="eyebrow" data-i18n="lookTitle">Weergave</p>
       <div class="frow look">
         <button type="button" id="themeBtn" class="langsel themebtn" aria-haspopup="dialog" aria-controls="themeDlg"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7.2" r="1"/><circle cx="15" cy="7.5" r="1"/></svg><span data-i18n="themeBtn">Thema</span></button>
         <select id="lang" class="langsel" aria-label="Taal / Language / Język"></select>
       </div>
     </div>
-    <div class="panel" id="updPanel" hidden>
+    <div class="panel" id="updPanel" data-stab="upd" hidden>
       <p class="eyebrow" data-i18n="updTitle">Updates</p>
       <p class="fsub" id="updVer"></p>
       <p class="small updstatus" id="updStatus" role="status" aria-live="polite"></p>
@@ -130,7 +138,7 @@
       </div>
       <details class="updnotes" id="updNotes" hidden><summary id="updNotesSum"></summary><div id="updNotesList"></div></details>
     </div>
-    <div class="panel" id="setFolders" hidden>
+    <div class="panel" id="setFolders" data-stab="folders" hidden>
       <p class="eyebrow" data-i18n="foldersTitle">Mappen</p>
       <p class="small" style="margin:0" data-i18n="foldersIntro">Kies waar je facturen en inkooporders staan. De statistieken en de lijst met nieuwe inkooporders worden hieruit gelezen.</p>
       <div class="fset">
@@ -154,7 +162,7 @@
         </div>
       </div>
     </div>
-    <div class="panel" id="mailPanel" hidden>
+    <div class="panel" id="mailPanel" data-stab="mail" hidden>
       <p class="eyebrow" data-i18n="mailTitle">Verbindingen</p>
       <p class="small" style="margin:0" data-i18n="mailIntro"></p>
       <p class="chip warn mnopo" id="mailNoPo" hidden data-i18n="mailNoPo"></p>
@@ -171,11 +179,7 @@
       </div>
       <div class="frow"><button type="button" class="primary" id="mailAdd" data-i18n="mailAdd">E-mail koppelen…</button></div>
     </div>
-    <div class="panel" id="tplPanel">
-      <p class="eyebrow" data-i18n="tplTitle">Factuurontwerp</p>
-      <div class="tplcur"><img id="tplCurImg" alt="" width="96"><div><p class="fsub" id="tplCurName"></p><p class="small" id="tplCurDesc"></p><p class="small" id="tplCurHint" data-i18n="tplCurHint"></p><div class="frow"><button type="button" id="tplChange" data-i18n="tplChange">Ontwerp wijzigen…</button></div></div></div>
-    </div>
-    <div class="panel" id="detPanel">
+    <div class="panel" id="detPanel" data-stab="me">
       <p class="eyebrow" data-i18n="detTitle">Jouw gegevens</p>
       <p class="small" style="margin:0" data-i18n="detIntro"></p>
       <form id="detForm" class="stack" novalidate>
@@ -185,7 +189,11 @@
         <button class="primary" type="submit" data-i18n="detSave">Gegevens opslaan</button>
       </form>
     </div>
-    <div class="panel" id="pinPanel" hidden>
+    <div class="panel" id="tplPanel" data-stab="me">
+      <p class="eyebrow" data-i18n="tplTitle">Factuurontwerp</p>
+      <div class="tplcur"><img id="tplCurImg" alt="" width="96"><div><p class="fsub" id="tplCurName"></p><p class="small" id="tplCurDesc"></p><p class="small" id="tplCurHint" data-i18n="tplCurHint"></p><div class="frow"><button type="button" id="tplChange" data-i18n="tplChange">Ontwerp wijzigen…</button></div></div></div>
+    </div>
+    <div class="panel" id="pinPanel" data-stab="pin" hidden>
       <p class="eyebrow" data-i18n="pinTitle">Pincode</p>
       <p class="small" id="pinNote" style="margin:0"></p>
       <div class="frow"><button type="button" id="pinSetBtn"></button><button type="button" class="ghost" id="pinOffBtn" hidden></button></div>
@@ -442,6 +450,7 @@
 <script src="js/news.js"></script>
 <script src="js/mail.js"></script>
 <script src="js/settings.js"></script>
+<script src="js/settabs.js"></script>
 <script src="js/invoice-events.js"></script>
 <script src="js/designs.js"></script>
 <script src="js/init.js"></script>

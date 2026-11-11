@@ -1,5 +1,5 @@
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
-const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile, goSet } = require("./test_helpers");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 const F = tmp("inv-folder2"), exp = JSON.parse(fs.readFileSync(F + "-expected.json", "utf8"));
@@ -19,7 +19,7 @@ const foot = async (page) => page.$$eval("#stTable tfoot td", (t) => t.map((x) =
   await goTab(page, "stats"); await page.waitForTimeout(300);
   ok(await page.isVisible("#statsEmpty"), "no folder yet: friendly empty message");
   console.log("empty:", await page.textContent("#statsEmpty"));
-  await goTab(page, "settings"); await page.click("#folderPick"); await page.waitForTimeout(500); await goTab(page, "inv");
+  await goSet(page, "folders"); await page.click("#folderPick"); await page.waitForTimeout(500); await goTab(page, "inv");
   await goTab(page, "stats"); const t1 = await waitStats(page); console.log("first scan took", t1, "ms");
   await page.click('#statMode [data-mode="year"]'); await page.waitForTimeout(300);
   const Y = exp.years, all = { n: Y[2025].n + Y[2026].n, sub: Y[2025].sub + Y[2026].sub, vat: Y[2025].vat + Y[2026].vat, total: Y[2025].total + Y[2026].total, days: Y[2025].days + Y[2026].days };
@@ -73,7 +73,7 @@ const foot = async (page) => page.$$eval("#stTable tfoot td", (t) => t.map((x) =
   eq((await kv(page))[1][0], String(all.n + 1), "saved invoice counted once (list + folder)");
   ok((await page.textContent("#statsNote")).startsWith(`Gebaseerd op ${all.n + 1} facturen: 1 uit de lijst Gemaakte facturen en ${all.n} uit je map.`), "note updates");
   // disconnect the folder: only the app's own invoices remain
-  await goTab(page, "settings"); await page.click("#folderClear"); await page.waitForTimeout(800); await goTab(page, "stats"); await page.waitForTimeout(500);
+  await goSet(page, "folders"); await page.click("#folderClear"); await page.waitForTimeout(800); await goTab(page, "stats"); await page.waitForTimeout(500);
   eq((await kv(page))[1][0], "1", "without a folder only the invoice made in the app is counted");
   ok(!(await page.isVisible("#statsUnread")), "unread list gone");
   console.log("errors:", errs); ok(!errs.length, "no page errors");

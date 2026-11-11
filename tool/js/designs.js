@@ -39,7 +39,7 @@ const currentSender = () => (hasDesign() ? TP.senderFor(currentTemplate(), state
 const DET_LABEL = { name: "dName", person: "dPerson", street: "dStreet", city: "dCity", phone: "dPhone", email: "dEmail", iban: "dIban", btw: "dBtw", kvk: "dKvk" };
 const missingLabels = (miss) => miss.map((k) => tr(DET_LABEL[k])).join(", ");
 const detailsOk = () => hasDesign() && !TP.missing(currentSender()).length;
-function needDetails() { toast(hasDesign() ? tr("detMissing", missingLabels(TP.missing(currentSender()))) : tr("tplNoneToast")); setTab("settings"); return false; }
+function needDetails() { toast(hasDesign() ? tr("detMissing", missingLabels(TP.missing(currentSender()))) : tr("tplNoneToast")); openSettings("me"); return false; }
 const mountDetails = (host, p) => { host.innerHTML = $("#detTpl").innerHTML.replace(/\{p\}/g, p); };
 const readDetails = (p) => Object.fromEntries(TP.FIELDS.map((k) => [k, $("#" + p + k).value.trim()]));
 const fillDetails = (p, s) => TP.FIELDS.forEach((k) => { $("#" + p + k).value = s[k] || ""; });
@@ -195,7 +195,7 @@ $("#detForm").addEventListener("submit", async (e) => {
   if (await saveSettingsDoc({ ...state.settings, ...(hasDesign() ? { template: currentTemplate() } : {}), sender: readDetails("sd") })) toast(tr("detSaved"));
   renderTplUi(); render();
 });
-$("#detBarGo").addEventListener("click", () => { setTab("settings"); if (!hasDesign()) return openTpl("change"); const m = TP.missing(currentSender())[0]; if (m) $("#sd" + m).focus(); });
+$("#detBarGo").addEventListener("click", () => { openSettings("me"); if (!hasDesign()) return openTpl("change"); const m = TP.missing(currentSender())[0]; if (m) $("#sd" + m).focus(); });
 /** first start: the design is chosen (and the details filled in) before the folders are asked for */
 async function firstRun() {
   if (state.firstRunDone) return; state.firstRunDone = true;

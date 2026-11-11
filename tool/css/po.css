@@ -2,7 +2,6 @@
 .fpath.bad { border-color: var(--err); color: var(--err); }
 .frow { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
 .frow button { min-height: 34px; padding: 6px 12px; font-size: 13px; }
-.newpo { border-left: 4px solid var(--ink); }
 .newpo .np-note { margin: 0; }
 .np { margin-top: 6px; }
 .np .t { overflow-wrap: anywhere; }

@@ -124,8 +124,13 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   eq(await page.textContent("#tagline"), "Mappen, e-mail, pincode en weergave.", "its tagline"); eq(await page.textContent("#pageTitle"), "Instellingen", "page title follows the tab");
   ok(await page.$eval("#tabSettings", (b) => getComputedStyle(b, "::before").content !== "none"), "Settings item highlighted like a tab while open");
   eq([await page.getAttribute("#tabSettings", "aria-pressed"), await page.$$eval("#tabs [aria-selected=true]", (t) => t.length)], ["true", 0], "the gear button shows it is open, no tab is selected");
-  eq(await page.$eval("#settingsView .col", (c) => [...c.children].filter((x) => !x.hidden)[0].id), "lookPanel", "theme and language come first in Settings");
-  for (const [sel, what] of [["#setFolders", "folders"], ["#pinPanel", "PIN"], ["#lookPanel", "appearance"], ["#themeBtn", "theme button"], ["#lang", "language list"], ["#folderPick", "invoice folder button"], ["#poFolderPick", "PO folder button"]]) ok(await page.isVisible(sel), "Settings has: " + what);
+  eq(await page.$$eval("#setTabs [role=tab]:not([hidden])", (t) => t.map((x) => x.textContent.trim())).then((l) => l.filter((x) => x !== "Updates")), ["Mijn gegevens", "Mappen", "Verbindingen", "Weergave", "Beveiliging"], "Settings has its own tabs");
+  eq([await page.$eval("#setTabs [aria-selected=true]", (t) => t.dataset.stab), await page.isVisible("#detPanel"), await page.isVisible("#tplPanel"), await page.isVisible("#lookPanel")], ["me", true, true, false], "it opens on 'Mijn gegevens' (details and invoice design), the rest is on other tabs");
+  for (const [stab, sel, what] of [["folders", "#setFolders", "folders"], ["pin", "#pinPanel", "PIN"], ["look", "#lookPanel", "appearance"], ["look", "#themeBtn", "theme button"], ["look", "#lang", "language list"], ["folders", "#folderPick", "invoice folder button"], ["folders", "#poFolderPick", "PO folder button"], ["mail", "#mailPanel", "connections"]]) {
+    await page.click(`#stab-${stab}`); ok(await page.isVisible(sel) && (await page.$$eval("#setCol > .panel", (p) => p.filter((x) => x.offsetParent).map((x) => x.dataset.stab))).every((k) => k === stab), `Settings › ${stab} has: ${what} (and only its own panels)`);
+  }
+  await page.focus("#stab-folders"); await page.keyboard.press("ArrowRight"); eq(await page.$eval("#setTabs [aria-selected=true]", (t) => t.dataset.stab), "mail", "arrow keys move through the Settings tabs");
+  await page.click("#stab-folders");
   eq(await page.textContent("#folderPath"), INV, "invoice folder shown"); eq(await page.textContent("#poFolderPath"), PO, "PO folder shown");
   eq(await page.$$eval("#setFolders .fsub", (e) => e.map((x) => x.textContent)), ["Map met facturen", "Map met inkooporders"], "both folders have their own block");
   eq([await page.textContent("#folderPick"), await page.textContent("#poFolderPick")], ["Andere map…", "Andere map…"], "buttons say 'change' when a folder is set");
@@ -141,6 +146,7 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   ok(await page.$eval("#statsEmpty", (e) => e.classList.contains("bad")), "...as a warning");
   eq(await page.textContent("#statsGoSettings"), "Naar instellingen", "...with a button to Settings"); await page.click("#statsGoSettings"); await page.waitForTimeout(200);
   ok(await page.isVisible("#settingsView") && !(await page.isVisible("#statsView")), "which opens Settings");
+  eq(await page.$eval("#setTabs [aria-selected=true]", (t) => t.dataset.stab), "folders", "...at the Folders tab");
   await goTab(page, "settings"); await page.click("#poFolderClear"); await page.waitForTimeout(500);
   ok(!(await page.isVisible("#poFolderPath")) && (await page.textContent("#poFolderPick")) === "Kies map…", "disconnecting the PO folder works from Settings");
   await pick(PO); await page.click("#poFolderPick"); await page.waitForTimeout(600);
@@ -148,6 +154,7 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   await page.evaluate(() => { document.querySelector("#newsDot").hidden = false; }); // the dot must fit next to the longest "What's new" too
   eq(await labelsFit(), [], "180px: every sidebar label fits on one line (nl)");
   // language and theme live here now
+  await page.click("#stab-look");
   await page.selectOption("#lang", "en"); await page.waitForTimeout(300);
   eq(await page.$$eval("#tabs [role=tab]", (t) => t.map((x) => x.textContent.trim())), ["Statistics", "Invoices", "Documents"], "language list in Settings switches the app (English)"); eq(await page.getAttribute("#tabSettings", "aria-label"), "Settings", "gear button label in English"); eq(await labelsFit(), [], "180px: every sidebar label fits on one line (en)");
   eq(await page.textContent("#pageTitle"), "Settings", "page title in English");
@@ -216,7 +223,7 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   await page.setViewportSize({ width: 1280, height: 1000 }); await page.waitForTimeout(200);
   ok(await page.$eval("#tabStats", (b) => !b.title), "wide again: no tooltips on the labelled items");
   // the Settings tab on a phone
-  await goTab(page, "settings"); await page.setViewportSize({ width: 390, height: 800 }); await page.waitForTimeout(300);
+  await goTab(page, "settings"); await page.click("#stab-me"); await page.setViewportSize({ width: 390, height: 800 }); await page.waitForTimeout(300);
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), "Settings fits a phone-width window");
   await page.screenshot({ path: "/tmp/settings-phone.png", fullPage: true });
   await page.setViewportSize({ width: 1280, height: 1000 }); await page.waitForTimeout(200); await page.screenshot({ path: "/tmp/settings-wide.png", fullPage: true });

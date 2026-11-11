@@ -44,7 +44,7 @@ $("#tabs").addEventListener("keydown", (e) => {
   setTab(next); document.querySelector(`#tabs [data-tab="${next}"]`).focus(); e.preventDefault();
 });
 $("#tabSettings").addEventListener("click", () => setTab("settings"));
-$("#statsGoSettings").addEventListener("click", () => setTab("settings"));
+$("#statsGoSettings").addEventListener("click", () => openSettings("folders"));
 $("#dupOpen").addEventListener("click", openDup);
 $("#dupDlgClose").addEventListener("click", () => $("#dupDlg").close());
 $("#dupBody").addEventListener("click", async (e) => {

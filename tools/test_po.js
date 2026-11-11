@@ -1,5 +1,5 @@
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
-const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile, goSet } = require("./test_helpers");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 const PO = tmp("po-folder"), INV = tmp("inv-folder2"), D = JSON.parse(fs.readFileSync(PO + "-items.json", "utf8"));
@@ -34,7 +34,7 @@ const hiLabel = (page) => page.$$eval("#chart .bv", (v) => v.map((x) => x.textCo
   eq(await page.textContent("#statsEmpty"), "Kies bij Instellingen de map met je inkooporders: dan worden ze meegeteld.", "empty message for the PO source");
   eq(await page.textContent("#statsGoSettings"), "Map instellen", "...with a button to set the folder in Settings");
   ok(await page.isVisible("#poBasisLbl"), "basis (work date / order date) selector visible for POs");
-  await pick(app, PO); await goTab(page, "settings"); await page.click("#poFolderPick"); await goTab(page, "stats"); await waitStats(page);
+  await pick(app, PO); await goSet(page, "folders"); await page.click("#poFolderPick"); await goTab(page, "stats"); await waitStats(page);
   ok(!(await page.isVisible("#statsEmpty")) && !(await page.isVisible("#statsGoSettings")), "PO folder chosen: no empty message, no button to Settings");
   // ---- 2026, per month (work-date basis)
   await page.click('#statMode [data-mode="month"]'); await page.selectOption("#statYear", "2026"); await page.waitForTimeout(300);
@@ -101,7 +101,7 @@ const hiLabel = (page) => page.$$eval("#chart .bv", (v) => v.map((x) => x.textCo
   ok(await page.isVisible("#statsEmpty"), "invoice source is empty (no invoices): no invoice folder chosen, the PO folder is not used");
   eq(await page.textContent("#statsGoSettings"), "Map instellen", "...and it offers to set the invoice folder in Settings");
   ok(!(await page.isVisible("#poBasisLbl")), "basis selector hidden again");
-  await goTab(page, "settings"); ok(!(await page.isVisible("#folderPath")) && await page.isVisible("#poFolderPath"), "in Settings the invoice folder is still unset and the PO folder is set"); await goTab(page, "stats");
+  await goSet(page, "folders"); ok(!(await page.isVisible("#folderPath")) && await page.isVisible("#poFolderPath"), "in Settings the invoice folder is still unset and the PO folder is set"); await goTab(page, "stats");
   // ---- restart: choices and results are remembered
   await goTab(page, "stats"); await page.click('#statSource [data-src="pos"]'); await page.waitForTimeout(500);
   await app.close(); ({ app, page } = await launch());
@@ -123,7 +123,7 @@ const hiLabel = (page) => page.$$eval("#chart .bv", (v) => v.map((x) => x.textCo
     ok(/^Ø € [\d.]+ tygodniowo$/.test(await page.textContent("#chartAvg")), "Polish average label: " + (await page.textContent("#chartAvg")));
     eq(await page.textContent("#chart .bc.now .bnow"), "teraz", "Polish 'now' marker"); }
   await setLang(page, "nl"); await page.waitForTimeout(200);
-  await goTab(page, "settings"); await page.click("#poFolderClear"); await page.waitForTimeout(600); await goTab(page, "stats");
+  await goSet(page, "folders"); await page.click("#poFolderClear"); await page.waitForTimeout(600); await goTab(page, "stats");
   ok(await page.isVisible("#statsEmpty") && (await page.textContent("#statsEmpty")).includes("Instellingen") && await page.isVisible("#statsGoSettings"), "disconnecting the PO folder returns to the prompt");
   console.log("errors:", errs); ok(!errs.length, "no page errors");
   await app.close(); console.log(fails ? "FAILED: " + fails : "ALL PASSED"); process.exit(fails ? 1 : 0);

@@ -1,5 +1,5 @@
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
-const { tmp, saved: fileSaved, goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, saved: fileSaved, goTab, setLang, seedProfile, goSet } = require("./test_helpers");
 const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process.exitCode = 1; };
 (async () => {
   const dataHome = tmp("el-appdata-f"); fs.rmSync(dataHome, { recursive: true, force: true }); seedProfile(dataHome);
@@ -14,7 +14,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   ok(await page.isVisible("#tabDocs"), "Documents tab in the desktop app");
   ok((await page.textContent("#nextNr")) === "62-2026", "next number before folder = " + (await page.textContent("#nextNr")));
   await goTab(page, "docs"); ok(await page.isVisible("#docsNoFolder") && await page.isVisible("#docsGoSet"), "Documents tab says where to set the folder");
-  await goTab(page, "settings"); ok(await page.isVisible("#setFolders") && !(await page.isVisible("#folderOpen")) && !(await page.isVisible("#folderPath")), "Settings: folder not chosen yet, no path");
+  await goSet(page, "folders"); ok(await page.isVisible("#setFolders") && !(await page.isVisible("#folderOpen")) && !(await page.isVisible("#folderPath")), "Settings: folder not chosen yet, no path");
   ok((await page.textContent("#dlgTitle")) !== null, "page alive");
   await page.click("#folderPick"); await page.waitForTimeout(800);
   ok((await page.textContent("#folderPath")) === F, "path shown: " + (await page.textContent("#folderPath")));
@@ -107,13 +107,13 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   ok((await page.textContent("#toast")).includes("niet gevonden"), "missing folder gives a clear message");
   fs.renameSync(F + "-gone", F);
   // disconnect (in Settings)
-  await goTab(page, "settings"); await page.click("#folderClear"); await page.waitForTimeout(800);
+  await goSet(page, "folders"); await page.click("#folderClear"); await page.waitForTimeout(800);
   ok(!(await page.isVisible("#folderPath")), "disconnect: the path is gone in Settings");
   await goTab(page, "docs"); ok(await page.isVisible("#docsNoFolder"), "disconnect returns to the folder card on the Documents tab"); await goTab(page, "inv");
   ok((await page.textContent("#zipAll")) === "Alles downloaden (.zip)", "batch button back to zip");
   ok((await page.textContent('article.po [data-act="download"]')).startsWith("Opnieuw downloaden") || (await page.textContent('article.po [data-act="download"]')).startsWith("Download"), "button back to download");
   // "Save all to the folder" with several POs: consecutive numbers (saving re-reads the folder; that must not shift the waiting cards)
-  await goTab(page, "settings"); await page.click("#folderPick"); await page.waitForTimeout(800); await goTab(page, "inv");
+  await goSet(page, "folders"); await page.click("#folderPick"); await page.waitForTimeout(800); await goTab(page, "inv");
   const pos = ["PO-100003", "PO-100004", "PO-100005", "PO-100006"].map((p) => tmp("po-folder/") + p + ".pdf");
   await page.setInputFiles("#file", pos); await page.waitForFunction(() => document.querySelectorAll("article.po h3").length === 5, null, { timeout: 20000 });
   const nrs = () => page.$$eval('article.po [data-k="nr"]', (i) => i.map((x) => x.value).filter((v) => v !== "65-2026")); const planned = await nrs(); console.log("planned:", planned);

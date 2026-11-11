@@ -173,4 +173,5 @@ VALK_I18N.en = {
     mailNoteTitle1: "You’ve got a new purchase order in your email!", mailNoteTitleN: "You’ve got new purchase orders in your email!", mailNoteGot1: "{0} is already in your folder and below under New purchase orders.", mailNoteGotN: "{0} are already in your folder and below under New purchase orders.", mailNoteAsk1: "{0}. Download it?", mailNoteAskN: "{0}. Download them?", mailNoteOk: "Great, thanks",
     noPoNew: "Invoice without a purchase order", noPoTitle: "Invoice without a purchase order", noPoMeta: "For another client or extra work: fill in the client and the lines yourself.", noPoOther: "Another client (fill in below)", noPoSaveClient: "Save as client", noPoClientSaved: "Client “{0}” saved. You can now pick it on other invoices too.", noPoClient: "Fill in the client’s name.", noPoEmpty: "Fill in at least one line with a description, quantity and rate.", noPoAddLine: "+ Add line", noPoDelLine: "Remove line",
     noPoPlus: "New",
+    stabMe: "My details", stabFolders: "Folders", stabMail: "Connections", stabLook: "Appearance", stabPin: "Security", stabUpd: "Updates",
 };

@@ -1,5 +1,5 @@
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
-const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile, goSet } = require("./test_helpers");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 const dataHome = tmp("el-appdata-pin"), D = path.join(dataHome, "Valkyrys app"), PINF = path.join(D, "pin.json");
@@ -89,7 +89,7 @@ const dataJson = () => { try { return JSON.parse(fs.readFileSync(path.join(D, "d
   await pad(page, "123"); await page.click('#lockScreen [data-act="del"]'); eq((await dots(page)).on, 2, "backspace key removes a digit"); await pad(page, "34");
   ok(await opened(page) && !(await page.evaluate(() => document.body.inert)), "app opens as soon as the repeat matches (no Enter)");
   const pf = pinFile(); ok(pf && pf.hash && pf.salt && !JSON.stringify(pf).includes("1234"), "pin.json holds a salted hash, not the PIN", pf && Object.keys(pf)); eq(pf.len, 4, "pin.json keeps the length");
-  ok(await page.isVisible("#statsView") && !(await page.isVisible("#pinPanel")), "the app opens on Statistics, the PIN is in Settings"); await goTab(page, "settings"); ok(await page.isVisible("#pinPanel") && (await page.textContent("#pinNote")).startsWith("Pincode staat aan"), "settings panel says a PIN is on");
+  ok(await page.isVisible("#statsView") && !(await page.isVisible("#pinPanel")), "the app opens on Statistics, the PIN is in Settings"); await goSet(page, "pin"); ok(await page.isVisible("#pinPanel") && (await page.textContent("#pinNote")).startsWith("Pincode staat aan"), "settings panel says a PIN is on");
   await goTab(page, "docs"); await page.waitForFunction(() => document.querySelector("#docsInfo").textContent.includes("Facturen in de map"), null, { timeout: 15000 }); ok(true, "invoice folder works after unlocking");
 
   // ---- every start: log in, instantly on the last digit
@@ -127,7 +127,7 @@ const dataJson = () => { try { return JSON.parse(fs.readFileSync(path.join(D, "d
   await pad(page, "1234"); ok(await opened(page), "keypad clicks unlock on the last digit");
 
   // ---- change and turn off
-  await goTab(page, "settings"); await page.click("#pinSetBtn"); ok(await page.$eval("#pinDlg", (d) => d.open) && !(await page.isVisible("#pinCurWrap")) === false, "change dialog opens with the current-PIN field");
+  await goSet(page, "pin"); await page.click("#pinSetBtn"); ok(await page.$eval("#pinDlg", (d) => d.open) && !(await page.isVisible("#pinCurWrap")) === false, "change dialog opens with the current-PIN field");
   await page.fill("#pinCur", "0000"); await page.fill("#pinNew", "54321"); await page.fill("#pinRep", "54321"); await page.click("#pinSave"); await page.waitForTimeout(400);
   eq(await page.textContent("#pinErr"), "De huidige pincode klopt niet.", "wrong current PIN is refused");
   await page.fill("#pinCur", "1234"); await page.fill("#pinRep", "1111"); await page.click("#pinSave"); await page.waitForTimeout(200);
@@ -138,7 +138,7 @@ const dataJson = () => { try { return JSON.parse(fs.readFileSync(path.join(D, "d
   eq((await dots(page)).n, 5, "five dots for the new PIN"); await keys(page, "1234"); await page.waitForTimeout(400); ok(await locked(page) && (await dots(page)).on === 4, "4 of 5 digits: not checked yet");
   await keys(page, "5"); await page.waitForTimeout(500); ok(await locked(page) && (await err(page)) === "Onjuiste pincode.", "old PIN no longer works");
   await keys(page, "54321"); ok(await opened(page), "new PIN works");
-  await goTab(page, "settings"); await page.click("#pinOffBtn"); ok(!(await page.isVisible("#pinNewWrap")), "turn-off dialog only asks for the current PIN");
+  await goSet(page, "pin"); await page.click("#pinOffBtn"); ok(!(await page.isVisible("#pinNewWrap")), "turn-off dialog only asks for the current PIN");
   await page.fill("#pinCur", "54321"); await page.click("#pinSave"); await page.waitForTimeout(500);
   ok((await page.textContent("#toast")).includes("Pincode uitgeschakeld") && (await page.textContent("#pinNote")).startsWith("Geen pincode"), "PIN turned off");
   await app.close(); ({ app, page } = await launch()); ok(!(await locked(page)), "next start: no lock screen, and no new setup prompt after turning it off"); await page.waitForSelector("#pick", { state: "attached" });
@@ -149,7 +149,7 @@ const dataJson = () => { try { return JSON.parse(fs.readFileSync(path.join(D, "d
   await page.click("#lkAskNo"); await page.waitForSelector("#statsView", { state: "visible" }); ok(!(await locked(page)), "'Nee, zonder pincode' opens the app");
   eq(pinFile(), { v: 1, skipped: true }, "the choice is remembered in pin.json");
   await app.close(); ({ app, page } = await launch()); ok(!(await locked(page)), "and it does not ask again"); await page.waitForSelector("#pick", { state: "attached" }); await goTab(page, "inv"); await page.waitForTimeout(500);
-  await goTab(page, "settings"); await page.click("#pinSetBtn"); ok(!(await page.isVisible("#pinCurWrap")), "set dialog has no current-PIN field");
+  await goSet(page, "pin"); await page.click("#pinSetBtn"); ok(!(await page.isVisible("#pinCurWrap")), "set dialog has no current-PIN field");
   await page.fill("#pinNew", "2468"); await page.fill("#pinRep", "2468"); await page.click("#pinSave"); await page.waitForTimeout(500);
   ok((await page.textContent("#toast")).includes("Pincode ingesteld"), "PIN set later from settings"); eq(pinFile().len, 4, "setting it from settings saves the length");
 

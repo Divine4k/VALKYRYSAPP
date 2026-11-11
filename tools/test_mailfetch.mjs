@@ -40,6 +40,8 @@ const srv = await F.start({ users: { "jan@wp.pl": 'p@ss "w0rd" ł' }, boxes: { I
 const events = [];
 const mf = M.create({ dataDir: data, poFolder: () => po, plain: true, encrypt: (s) => "ENC:" + Buffer.from(s).toString("base64"), decrypt: (s) => Buffer.from(s.slice(4), "base64").toString(), send: (st) => events.push(st) });
 const host = "127.0.0.1:" + srv.port;
+eq(mf.state().mode, "ask", "'ask first' by default");
+mf.setMode("auto");
 let r = await mf.add({ provider: "imap", user: "jan@wp.pl", pass: "wrong", host });
 eq(r.error, "auth", "wrong password: not added, error 'auth'");
 eq(mf.state().accounts.length, 0, "...and nothing stored");

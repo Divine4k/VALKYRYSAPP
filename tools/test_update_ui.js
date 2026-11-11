@@ -2,7 +2,7 @@
 // The real bridge (window.valkyrysUpdate from the preload) cannot be replaced, so a stand-in goes into window.__valkUpdateFake (read first by the page).
 // Its starting state comes from localStorage "fake-upd" ({state} or {none: true} = a plain browser), set before a reload.
 const { _electron: electron } = require("playwright"); const fs = require("fs");
-const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile, goSet } = require("./test_helpers");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 const HOME = tmp("el-appdata-upd");
@@ -44,7 +44,7 @@ const bars = async (page) => ((await vis(page, "#updBars")) ? page.$$eval("#updB
 
   // ---- panel: version + up to date
   ok(!(await vis(page, "#updDot")) && !(await bars(page)).length, "up to date: no dot, no bar");
-  await goTab(page, "settings"); await page.waitForTimeout(150);
+  await goSet(page, "upd"); await page.waitForTimeout(150);
   ok(await vis(page, "#updPanel"), "Updates panel shows in Settings");
   eq(await page.$$eval("#settingsView .col > .panel", (p) => p.map((x) => x.id).slice(0, 2)), ["lookPanel", "updPanel"], "panel right after the look panel");
   eq(await txt(page, "#updPanel .eyebrow"), "Updates", "panel title");
@@ -113,7 +113,7 @@ const bars = async (page) => ((await vis(page, "#updBars")) ? page.$$eval("#updB
   eq(await bars(page), ["dl"], "bar turns into a download bar");
   await page.evaluate(() => window.__fake.push({ ...window.__fake.st, status: "downloading", progress: 0.45 })); await page.waitForTimeout(100);
   eq([await txt(page, "#updBars .utext"), await page.$eval("#updBars .updprog > span", (s) => s.style.width)], ["Versie 1.2.2 wordt gedownload… 45%", "45%"], "bar progress 45%");
-  await goTab(page, "settings"); await page.waitForTimeout(100);
+  await goSet(page, "upd"); await page.waitForTimeout(100);
   eq([await txt(page, "#updStatus"), await page.$eval("#updProgBar", (s) => s.style.width), await vis(page, "#updProg")], ["Downloaden… 45%", "45%", true], "panel progress bar 45%");
   ok(await page.$eval("#updCheck", (b) => b.disabled) && !(await vis(page, "#updInstall")), "check disabled, install hidden while downloading");
   await page.evaluate(() => window.__fake.push({ ...window.__fake.st, status: "downloading", progress: 0.8 })); await page.waitForTimeout(100);
@@ -122,7 +122,7 @@ const bars = async (page) => ((await vis(page, "#updBars")) ? page.$$eval("#updB
   eq(await bars(page), ["ready"], "ready bar");
   eq(await txt(page, "#updBars .utext"), "De update is klaar. Herstart om te voltooien.", "ready text");
   eq(await page.$$eval("#updBars .updbar button", (b) => b.map((x) => x.textContent.trim())), ["Nu herstarten", "Later"], "ready buttons");
-  await goTab(page, "settings"); await page.waitForTimeout(100);
+  await goSet(page, "upd"); await page.waitForTimeout(100);
   ok((await vis(page, "#updRestart")) && !(await vis(page, "#updCheck")) && !(await vis(page, "#updProg")), "panel: restart button");
   eq(await txt(page, "#updStatus"), "Versie 1.2.2 is klaar. Herstart om te voltooien.", "panel: ready text");
   eq(await bars(page), ["ready"], "ready bar also in Settings");
@@ -147,15 +147,15 @@ const bars = async (page) => ((await vis(page, "#updBars")) ? page.$$eval("#updB
 
   // ---- error
   await restart({ state: { running: "1.2.0", status: "error", error: "Geen verbinding" } });
-  await goTab(page, "settings"); await page.waitForTimeout(100);
+  await goSet(page, "upd"); await page.waitForTimeout(100);
   eq(await txt(page, "#updStatus"), "Bijwerken is niet gelukt: Geen verbinding", "error text");
   ok(await vis(page, "#updCheck") && !(await page.$eval("#updCheck", (b) => b.disabled)), "can check again after an error");
 
   // ---- plain browser: no update UI
   await restart({ none: true });
   await goTab(page, "settings"); await page.waitForTimeout(100);
-  ok(!(await vis(page, "#updPanel")) && !(await vis(page, "#updBars")) && !(await vis(page, "#updDot")), "without the bridge: no panel, no bar, no dot");
-  ok(await vis(page, "#lookPanel"), "rest of Settings still there");
+  ok(!(await vis(page, "#updPanel")) && !(await vis(page, "#updBars")) && !(await vis(page, "#updDot")) && !(await vis(page, "#stab-upd")), "without the bridge: no panel, no bar, no dot, no Updates tab in Settings");
+  await page.click("#stab-look"); ok(await vis(page, "#lookPanel"), "rest of Settings still there");
 
   console.log("errors:", errs); ok(!errs.length, "no page errors");
   await app.close();

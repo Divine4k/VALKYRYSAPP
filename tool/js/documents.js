@@ -234,7 +234,7 @@ $("#docsSort").addEventListener("change", (e) => { if (DOC_SORTS.includes(e.targ
 $("#docsDir").addEventListener("click", () => { state.docs.dir = state.docs.dir === "asc" ? "desc" : "asc"; saveDocsPrefs(); renderDocs(); });
 $("#docsFilter").addEventListener("click", (e) => { const b = e.target.closest("button[data-f]"); if (b) { state.docs.filter = b.dataset.f; saveDocsPrefs(); renderDocs(); } });
 $("#docsSearch").addEventListener("input", (e) => { state.docs.q = e.target.value; renderDocs(); });
-$("#docsGoSet").addEventListener("click", () => setTab("settings"));
+$("#docsGoSet").addEventListener("click", () => openSettings("folders"));
 
 // ------------------------------------------------------------ deleting an invoice: the app's record and, if wanted, its files in the folder (to the Recycle Bin).
 // One flow for the × in "Gemaakte facturen" and the bin on a Documents row. The files are the ones docSets() matched to the number.

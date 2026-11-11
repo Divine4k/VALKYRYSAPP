@@ -103,7 +103,7 @@ $("#updBars").addEventListener("click", (e) => {
   const lv = (st.latest && st.latest.version) || "", k = bar.dataset.upd;
   switch (b.dataset.updAct) {
     case "x": if (k === "rb") lsSet(UPD_RB, st.rolledBack); else if (k === "avail") lsSet(UPD_DISMISS, lv); else if (k === "dl") upd.fromBar = false; break;
-    case "view": setTab("settings"); $("#updNotes").open = true; $("#updPanel").scrollIntoView({ block: "start" }); $("#updInstall").focus({ preventScroll: true }); break;
+    case "view": openSettings("upd"); $("#updNotes").open = true; $("#updPanel").scrollIntoView({ block: "start" }); $("#updInstall").focus({ preventScroll: true }); break;
     case "install": upd.fromBar = true; updInstall(); break;
     case "restart": UPD.restart(); break;
     case "later": upd.later = lv; break;

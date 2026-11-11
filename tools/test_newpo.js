@@ -1,5 +1,5 @@
 // The Facturen tab lists purchase orders from the Piguillet folder that have no invoice yet, and loads them like dropped PDFs.
-const { tmp, saved: fileSaved, goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, saved: fileSaved, goTab, setLang, seedProfile, goSet } = require("./test_helpers");
 const { _electron: electron } = require("playwright"); const fs = require("fs"), path = require("path");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
@@ -34,7 +34,7 @@ async function makePo(file, po, order, items) {
   ok(await page.isVisible("#npPick") && !(await page.isVisible("#npAll")), "prompt has a choose-folder button only");
 
   // ---- B. connect both folders
-  await pick(app, INV); await goTab(page, "settings"); await page.click("#folderPick"); await page.waitForTimeout(800); await goTab(page, "inv");
+  await pick(app, INV); await goSet(page, "folders"); await page.click("#folderPick"); await page.waitForTimeout(800); await goTab(page, "inv");
   await pick(app, PO); await page.click("#npPick"); await waitRows(page, 6);
   eq(await pos(page), ["PO-100009", "PO-100008", "PO-100002", "PO-100004", "PO-100007", "PO-100005"], "6 of the 7 new POs shown, oldest order first (100001 and 100003 have invoices; copy of 100002 counts once)");
   ok((await note(page)).startsWith("7 inkooporders in je map hebben nog geen factuur."), "note counts 7: " + (await note(page)));
@@ -99,7 +99,7 @@ async function makePo(file, po, order, items) {
   await setLang(page, "nl"); await page.waitForTimeout(200);
 
   // ---- I. disconnecting the PO folder (on the statistics tab) brings the prompt back
-  await goTab(page, "settings"); await page.click("#poFolderClear"); await page.waitForTimeout(700); await goTab(page, "stats"); await page.click('#statSource [data-src="pos"]'); await page.waitForTimeout(300);
+  await goSet(page, "folders"); await page.click("#poFolderClear"); await page.waitForTimeout(700); await goTab(page, "stats"); await page.click('#statSource [data-src="pos"]'); await page.waitForTimeout(300);
   await goTab(page, "inv"); await page.waitForTimeout(200);
   ok((await note(page)).startsWith("Kies de map met de inkooporders van Piguillet") && (await rows(page)).length === 0, "PO folder disconnected: prompt is back");
 

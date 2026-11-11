@@ -1,5 +1,5 @@
 const { _electron: electron } = require("playwright"); const fs = require("fs");
-const { tmp, goTab, setLang, seedProfile } = require("./test_helpers");
+const { tmp, goTab, setLang, seedProfile, goSet } = require("./test_helpers");
 let fails = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c || extra === undefined ? "" : "  -> " + JSON.stringify(extra))); if (!c) fails++; };
 const eq = (a, b, m) => ok(JSON.stringify(a) === JSON.stringify(b), m, { got: a, want: b });
 const dataHome = tmp("el-appdata-th");
@@ -19,7 +19,7 @@ const choose = async (page, id) => { await page.click(`#themeGrid [data-theme-id
   ok(!(await page.isVisible("#themeBtn")) && (await page.$eval("#side", (h) => !h.querySelector("#themeBtn, #lang"))), "no theme button or language list in the sidebar");
   { const logo = async () => page.evaluate(() => { const l = getComputedStyle(document.querySelector("#side .side-logo")), s = getComputedStyle(document.querySelector("#side")); return { logo: l.backgroundColor, side: s.backgroundColor, ink: getComputedStyle(document.querySelector("#pageTitle")).color }; });
     for (const id of ["light", "dark"]) { await page.evaluate((id) => ValkTheme.apply({ id, custom: null }), id); await page.waitForTimeout(150); const c = await logo(); ok(c.logo !== c.side && c.logo === c.ink, `${id}: the logo is drawn in the text colour, visible on the sidebar`, c); }
-    await page.evaluate(() => ValkTheme.apply({ id: "auto", custom: null })); await page.waitForTimeout(150); } await goTab(page, "settings"); ok(await page.isVisible("#themeBtn") && await page.isVisible("#lang"), "theme button and language list are in Settings"); eq(await page.textContent("#themeBtn"), "Thema", "button label");
+    await page.evaluate(() => ValkTheme.apply({ id: "auto", custom: null })); await page.waitForTimeout(150); } await goSet(page, "look"); ok(await page.isVisible("#themeBtn") && await page.isVisible("#lang"), "theme button and language list are in Settings"); eq(await page.textContent("#themeBtn"), "Thema", "button label");
   await page.click("#themeBtn"); ok(await page.$eval("#themeDlg", (d) => d.open), "dialog opens");
   eq(await page.$$eval("#themeGrid [data-theme-id]", (b) => b.map((x) => x.dataset.themeId)), ["auto", "light", "dark", "midnight", "paper", "forest", "contrast", "custom"], "eight themes");
   eq(await page.$$eval("#themeGrid .tname", (b) => b.map((x) => x.textContent)), ["Automatisch", "Licht", "Donker", "Middernacht", "Papier", "Bos", "Hoog contrast", "Eigen thema"], "Dutch names");
@@ -75,7 +75,7 @@ const choose = async (page, id) => { await page.click(`#themeGrid [data-theme-id
   eq([await v(page, "--bg"), await v(page, "--accent")], ["#EAF4F4", "#00A3A3"], "...and restored from the saved data when browser storage is empty");
 
   // ---- keyboard, languages, tab views
-  await goTab(page, "settings"); await page.click("#themeBtn"); await page.focus('#themeGrid [aria-checked="true"]'); await page.keyboard.press("ArrowLeft"); await page.waitForTimeout(150);
+  await goSet(page, "look"); await page.click("#themeBtn"); await page.focus('#themeGrid [aria-checked="true"]'); await page.keyboard.press("ArrowLeft"); await page.waitForTimeout(150);
   eq(await page.$eval('#themeGrid [aria-checked="true"]', (b) => b.dataset.themeId), "contrast", "arrow keys move through the themes"); await page.keyboard.press("ArrowRight"); await page.waitForTimeout(100);
   await setLang(page, "pl"); await page.waitForTimeout(200);
   eq([await page.textContent("#themeTitle"), (await page.$$eval("#themeGrid .tname", (b) => b.map((x) => x.textContent))).slice(0, 3)], ["Motyw", ["Automatyczny", "Jasny", "Ciemny"]], "Polish");

@@ -225,12 +225,12 @@ async function checkAccount(acc, pass, st, { have, skip = () => false, save, hol
 }
 
 // ------------------------------------------------------------------ the accounts, the timer, and what the page sees
-// mail.json = { accounts: [...], mode: "auto" | "ask", unseen: [names fetched that the page has not shown yet], pending: [{ key, acc, uid, uv, name, at }] (found, asked first),
+// mail.json = { accounts: [...], mode: "ask" (default) | "auto", unseen: [names fetched that the page has not shown yet], pending: [{ key, acc, uid, uv, name, at }] (found, asked first),
 //              skip: [PO numbers deleted through the app or ignored: never fetched again] }
 function create({ dataDir, poFolder, encrypt, decrypt, canRun = () => true, send = () => {}, plain = false }) {
   const file = path.join(dataDir, "mail.json");
   const arr = (x) => (Array.isArray(x) ? x : []);
-  const read = () => { let d = {}; try { d = JSON.parse(fs.readFileSync(file, "utf8")) || {}; } catch (e) {} return { ...d, accounts: arr(d.accounts), mode: d.mode === "ask" ? "ask" : "auto", unseen: arr(d.unseen), pending: arr(d.pending), skip: arr(d.skip) }; };
+  const read = () => { let d = {}; try { d = JSON.parse(fs.readFileSync(file, "utf8")) || {}; } catch (e) {} return { ...d, accounts: arr(d.accounts), mode: d.mode === "auto" ? "auto" : "ask", unseen: arr(d.unseen), pending: arr(d.pending), skip: arr(d.skip) }; };
   const write = (d) => { fs.mkdirSync(dataDir, { recursive: true }); const t = file + ".tmp"; fs.writeFileSync(t, JSON.stringify(d, null, 2)); fs.renameSync(t, file); };
   const change = (fn) => { const d = read(); const r = fn(d); write(d); return r; };
   const busy = new Set(); let timer = null, chain = Promise.resolve(), queued = 0;
@@ -328,7 +328,7 @@ function create({ dataDir, poFolder, encrypt, decrypt, canRun = () => true, send
   function forget(name) { const k = poNum(path.basename(String(name || ""))); if (k) change((d) => { if (!d.skip.includes(k)) d.skip = [...d.skip, k].slice(-2000); d.pending = d.pending.filter((p) => poNum(p.name) !== k); }); return true; }
   /** the page has shown the fetched POs */
   function seen() { const d = read(); if (d.unseen.length) { d.unseen = []; write(d); emit(); } return true; }
-  function setMode(m) { change((d) => { d.mode = m === "ask" ? "ask" : "auto"; }); emit(); return true; }
+  function setMode(m) { change((d) => { d.mode = m === "auto" ? "auto" : "ask"; }); emit(); return true; }
 
   /** add an account: the login is tried first, and it is only kept when that works. { ok, account } or { error } */
   async function add({ provider, user, pass, host }) {
