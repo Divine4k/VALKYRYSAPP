@@ -16,9 +16,9 @@ const until = async (fn, ms = 8000) => { const t = Date.now(); while (Date.now()
   await page.waitForSelector("#pick", { state: "attached" }); await page.waitForTimeout(1500);
   await goTab(page, "inv"); await page.waitForTimeout(300);
 
-  ok(await page.isVisible(".nextbox #newNoPo") && (await page.textContent("#newNoPo")).trim() === "Nieuw" && (await page.getAttribute("#newNoPo", "aria-label")) === "Factuur zonder inkooporder", "'+ Nieuw' in the right part of the 'Volgende factuur' box");
-  const geo = await page.evaluate(() => { const a = document.querySelector(".nextbox .nextmain").getBoundingClientRect(), b = document.querySelector("#newNoPo").getBoundingClientRect(); return { right: b.left >= a.right - 1, narrow: b.width < a.width / 2, same: Math.abs(a.top - b.top) < 2 }; });
-  ok(geo.right && geo.narrow && geo.same, "...beside the number, much narrower", geo);
+  ok(await page.isVisible(".nextbox #newNoPo") && (await page.textContent("#newNoPo")).trim() === "Nieuw" && (await page.getAttribute("#newNoPo", "aria-label")) === "Factuur zonder inkooporder", "'+ Nieuw' box beside the 'Volgende factuur' box");
+  const geo = await page.evaluate(() => { const a = document.querySelector(".nextbox .nextmain").getBoundingClientRect(), b = document.querySelector("#newNoPo").getBoundingClientRect(); return { left: b.right <= a.left + 1, narrow: b.width < a.width / 2, same: Math.abs(a.top - b.top) < 2 }; });
+  ok(geo.left && geo.narrow && geo.same, "...left of the number, much narrower", geo);
   ok(!(await page.$("#drop #newNoPo")), "no extra button in the drop zone");
   await page.evaluate(() => scrollTo(0, 0)); await page.screenshot({ path: "/tmp/nopo-top.png", clip: { x: 900, y: 80, width: 380, height: 200 } });
   await page.click("#newNoPo");
