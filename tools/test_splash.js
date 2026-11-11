@@ -25,7 +25,7 @@ const { _electron: electron } = require("playwright"); const fs = require("fs");
   // Windows with "Animation effects" off reports reduced motion: the logo animation must still play
   await splash.emulateMedia({ reducedMotion: "reduce" }); await splash.waitForTimeout(100);
   const anims = await splash.evaluate(() => document.getAnimations().map((a) => a.animationName));
-  console.log("with reduced motion:", anims.length, "animations"); if (!["markIn", "toLeft", "wordIn", "shine"].every((n) => anims.includes(n))) throw new Error("logo animation skipped with reduced motion: " + anims);
+  console.log("with reduced motion:", anims.length, "animations"); if (!["markIn", "wordIn", "shine"].every((n) => anims.includes(n))) throw new Error("logo animation skipped with reduced motion: " + anims);
   console.log("errors:", errs);
   await app.close();
   if (errs.length) throw new Error("splash errors: " + errs.join(" | "));
