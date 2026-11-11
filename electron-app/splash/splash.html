@@ -8,7 +8,7 @@
      Colours, font and card shape follow the app's dark theme and lock-screen card (tool/css/base.css, lockscreen.css). */
   @font-face { font-family: "Carlito"; src: url(../web/fonts/Carlito-Regular.ttf); font-weight: 400; }
   @font-face { font-family: "Carlito"; src: url(../web/fonts/Carlito-Bold.ttf); font-weight: 700; }
-  :root { --s: 0.32; --yellow: #FEBD17; --surface: #141517; --line: #2A2C30; --muted: #9A9DA4; --faint: #5E6168;
+  :root { --s: 0.32; --shift: calc((935px + 27px) * var(--s) / 2); --yellow: #FEBD17; --surface: #141517; --line: #2A2C30; --muted: #9A9DA4; --faint: #5E6168;
     --ease: cubic-bezier(.22,1,.36,1); --ease-io: cubic-bezier(.65,0,.35,1); }
   * { box-sizing: border-box; margin: 0; }
   html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; -webkit-user-select: none; user-select: none; cursor: default; }
@@ -33,17 +33,25 @@
   .shine { position: absolute; inset: 0; background: linear-gradient(100deg, rgba(254,189,23,0) 30%, var(--yellow) 50%, rgba(254,189,23,0) 70%);
     transform: translateX(-110%); will-change: transform; }
 
-  /* the whole logo fades in with a slight rise (the wordmark a beat after the V), then one gold shine sweeps across it; nothing slides sideways */
-  .markbox, .reveal { flex: none; }
-  .reveal { margin-left: calc(27px * var(--s)); }
-  .mark, .word { opacity: 0; transform: translateY(8px); will-change: opacity, transform; }
-  .go .mark { animation: markIn .9s .2s var(--ease) forwards; }
-  .go .word { animation: wordIn .9s .32s var(--ease) forwards; }
+  /* the V: starts centred (shifted right by half the wordmark), scales and fades in */
+  .markbox { position: relative; z-index: 2; flex: none; transform: translateX(var(--shift)); will-change: transform; }
+  .mark { opacity: 0; transform: translateY(10px) scale(.86); will-change: opacity, transform; }
+  .glow { position: absolute; inset: 0; filter: blur(12px); opacity: 0; transform: scale(.9); will-change: opacity, transform; }
+  .glow .masked { background: var(--yellow); }
+  .go .mark { animation: markIn 1s .15s var(--ease) forwards; }
+  .go .glow { animation: glow 1.4s .7s var(--ease) forwards; }
   @keyframes markIn { to { opacity: 1; transform: none; } }
-  @keyframes wordIn { to { opacity: 1; transform: none; } }
-  /* one sweep from the V's left edge to the wordmark's right edge (same speed in both parts) */
-  .go .mark .shine { animation: shine .45s 1.25s linear forwards; }
-  .go .word .shine { animation: shine .95s 1.6s linear forwards; }
+  @keyframes glow { 0% { opacity: 0; transform: scale(.9); } 30% { opacity: .9; transform: scale(1.04); } 100% { opacity: .3; transform: scale(1); } }
+  /* then the V slides left while the wordmark slides out from behind it; the logo ends up centred */
+  .go .markbox { animation: toLeft 1.1s 1.15s var(--ease-io) forwards; }
+  @keyframes toLeft { to { transform: translateX(0); } }
+  .reveal { flex: none; margin-left: calc(27px * var(--s)); overflow: hidden; transform: translateX(var(--shift)); will-change: transform; }
+  .word { transform: translateX(-100%); opacity: 0; will-change: opacity, transform; }
+  .go .word { animation: wordIn 1.1s 1.15s var(--ease-io) forwards; }
+  .go .reveal { animation: toLeft 1.1s 1.15s var(--ease-io) forwards; }
+  @keyframes wordIn { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 1; transform: translateX(0); } }
+  .go .mark .shine { animation: shine .9s 2.25s var(--ease-io) forwards; }
+  .go .word .shine { animation: shine 1s 2.4s var(--ease-io) forwards; }
   @keyframes shine { to { transform: translateX(110%); } }
 
   /* footer: what the app is doing right now, the version, and a thin progress line that follows the real start-up steps */
@@ -67,6 +75,7 @@
     <div class="stage">
       <div class="row">
         <div class="markbox">
+          <div class="glow"><div class="masked m"></div></div>
           <div class="mark"><div class="masked m"><div class="shine"></div></div></div>
         </div>
         <div class="reveal"><div class="word"><div class="masked w"><div class="shine"></div></div></div></div>
