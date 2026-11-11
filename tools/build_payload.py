@@ -10,17 +10,11 @@ keep = {"en-US.pak", "en-GB.pak", "nl.pak", "pl.pak"}
 for f in os.listdir(f"{STAGE}/locales"):
     if f not in keep: os.remove(f"{STAGE}/locales/{f}")
 os.remove(f"{STAGE}/resources/default_app.asar") if os.path.exists(f"{STAGE}/resources/default_app.asar") else None
-app = f"{STAGE}/resources/app"
-os.makedirs(f"{app}/build")
-for f in ["main.js", "server.js", "preload.js"]: shutil.copy(f"{SP}/electron-app/{f}", f"{app}/{f}")
-shutil.copytree(f"{SP}/app/web", f"{app}/web")
-shutil.copytree(f"{SP}/electron-app/splash", f"{app}/splash")
-shutil.copy(f"{SP}/electron-app/build/icon.png", f"{app}/build/icon.png")
-shutil.copy(f"{SP}/electron-app/build/icon.ico", f"{app}/build/icon.ico")
-open(f"{app}/package.json", "w").write('{ "name": "valkyrys-app", "productName": "Valkyrys app", "version": "1.0.0", "main": "main.js", "description": "Valkyrys app", "author": "Valkyrys" }\n')
-S = [("CompanyName", "Valkyrys"), ("FileDescription", "Valkyrys app"), ("FileVersion", "1.0.0"), ("InternalName", "Valkyrys app"),
-     ("LegalCopyright", "Valkyrys"), ("OriginalFilename", "Valkyrys app.exe"), ("ProductName", "Valkyrys app"), ("ProductVersion", "1.0.0")]
-patch_exe.patch(f"{STAGE}/electron.exe", f"{STAGE}/Valkyrys app.exe", f"{SP}/electron-app/build/icon.ico", S, (1, 0, 0, 0))
+import stage_app
+VER = stage_app.stage(f"{STAGE}/resources/app")   # loader as resources/app/main.js, the app (app-main.js ...) next to it
+S = [("CompanyName", "Valkyrys"), ("FileDescription", "Valkyrys app"), ("FileVersion", VER), ("InternalName", "Valkyrys app"),
+     ("LegalCopyright", "Valkyrys"), ("OriginalFilename", "Valkyrys app.exe"), ("ProductName", "Valkyrys app"), ("ProductVersion", VER)]
+patch_exe.patch(f"{STAGE}/electron.exe", f"{STAGE}/Valkyrys app.exe", f"{SP}/electron-app/build/icon.ico", S, tuple(map(int, VER.split("."))) + (0,))
 os.remove(f"{STAGE}/electron.exe")
 out = f"{SP}/installer/payload/app.zip"
 os.makedirs(os.path.dirname(out), exist_ok=True)

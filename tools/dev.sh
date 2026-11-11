@@ -5,6 +5,7 @@
 #   tools/dev.sh test NAME...       build, then run only those Electron tests, e.g.  tools/dev.sh test settings dups
 #   tools/dev.sh units              the quick tests of the reading/counting code (no window)
 #   tools/dev.sh all                build, then every test (about 10 minutes)
+#   tools/dev.sh update             in-app update only: out/update/latest.json + valkyrys-app-<version>.zip (publish: tools/publish_update.sh <version>)
 #   tools/dev.sh installer          Windows installer only, no tests:  out/Valkyrys-app-Setup.exe
 #   tools/dev.sh release            all tests, and only when everything passes the installer, then a check of what is inside it
 #
@@ -13,7 +14,7 @@ set -u
 SP=$(cd "$(dirname "$0")/.." && pwd); cd "$SP"
 EXE="$SP/el/linux/electron"
 LOGS="$SP/logs"; mkdir -p "$LOGS"
-ELECTRON_TESTS="newpo po stats import folder pin theme podetail realpo dups settings templates electron sequence splash saveas docs news delete clients"
+ELECTRON_TESTS="newpo po stats import folder pin theme podetail realpo dups settings templates electron sequence splash saveas docs news delete clients update_ui update"
 
 toolchain() { { [ -x "$EXE" ] && [ -f dl/win.zip ]; } || bash tools/get_toolchain.sh; }   # Electron zips come from the "toolchain" branch when missing
 build() { toolchain && python3 -I tools/build_app.py && bash tools/sync_linux.sh; }
@@ -68,7 +69,10 @@ z = zipfile.ZipFile(f"{sp}/installer/payload/app.zip"); names = z.namelist()
 page = z.read("resources/app/web/index.html").decode("utf8")
 assert "Valkyrys app.exe" in names, "program missing from the payload"
 assert "Valkyrys Facturen" not in page, "old name left in the page"
-for f in ("main.js", "preload.js", "server.js", "web/index.html"): assert f"resources/app/{f}" in names, f
+for f in ("main.js", "app-main.js", "updater.js", "preload.js", "server.js", "package.json", "web/index.html", "web/vendor/jszip.min.js", "splash/splash.html", "build/icon.png"): assert f"resources/app/{f}" in names, f
+assert b"global.valkyrysLoader" in z.read("resources/app/main.js"), "resources/app/main.js is not the loader"
+import json; pj = json.loads(z.read("resources/app/package.json")); ev = json.load(open(f"{sp}/electron-app/package.json"))["version"]
+assert pj["version"] == ev and pj["main"] == "main.js", pj
 print("payload ok:", len(names), "files")
 PY
   ls -la out/Valkyrys-app-Setup.exe
@@ -80,6 +84,7 @@ case $cmd in
   test)  [ $# -gt 0 ] || { echo "which tests? ($ELECTRON_TESTS)"; exit 2; }; build || exit 1; for t in "$@"; do run_one "$t"; done;;
   units) units;;
   all)   build || exit 1; units; for t in $ELECTRON_TESTS; do run_one "$t"; done;;
+  update) build && node tools/build_update.mjs || exit 1;;
   installer) installer;;
   release) build || exit 1; units; for t in $ELECTRON_TESTS; do run_one "$t"; done
            if [ -n "$FAILED" ]; then echo; echo "NOT RELEASED, failing:$FAILED"; exit 1; fi

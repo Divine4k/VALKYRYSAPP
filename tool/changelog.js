@@ -3,8 +3,16 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
-    version: "1.1.5", date: "2026-11-11",
+    version: "1.2.0", date: "2026-11-11",
     items: [
+      { type: "new",
+        nl: "Controleer op updates en installeer ze vanuit de app zelf, bij Instellingen › Updates. Na de installatie herstart je de app met één klik.",
+        en: "Check for updates and install them from inside the app, in Settings › Updates. After installing, restart the app with one click.",
+        pl: "Sprawdzaj i instaluj aktualizacje bezpośrednio w aplikacji, w Ustawienia › Aktualizacje. Po instalacji uruchom aplikację ponownie jednym kliknięciem." },
+      { type: "new",
+        nl: "Is er een nieuwe versie, dan meldt de app dat onderaan het scherm en krijgt Instellingen een stip. Sluit je de melding, dan zie je hem pas weer bij een nog nieuwere versie.",
+        en: "When a new version is out, the app says so at the bottom of the screen and Settings gets a dot. If you close the notice, it only comes back for an even newer version.",
+        pl: "Gdy pojawi się nowa wersja, aplikacja informuje o tym na dole ekranu, a przy Ustawieniach pojawia się kropka. Jeśli zamkniesz komunikat, wróci dopiero przy jeszcze nowszej wersji." },
       { type: "new",
         nl: "Klap de zijbalk in tot een smalle rij pictogrammen met de knop „Inklappen” onderaan (of Ctrl+B), en klap hem op dezelfde manier weer uit. De app onthoudt je keuze.",
         en: "Collapse the sidebar to a narrow row of icons with the “Collapse” button at the bottom (or Ctrl+B), and expand it again the same way. The app remembers your choice.",

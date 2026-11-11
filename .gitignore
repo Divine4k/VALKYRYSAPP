@@ -9,3 +9,4 @@ installer/payload/
 index.before-*.html
 *.exe
 __pycache__/
+keys/*.pem

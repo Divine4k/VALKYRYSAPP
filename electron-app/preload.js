@@ -38,3 +38,17 @@ contextBridge.exposeInMainWorld("valkyrysLock", {
   remove: (oldPin) => call("pin:remove", String(oldPin)),
   skip: () => call("pin:skip"),
 });
+
+// In-app updates (see updater.js). Undefined in a plain browser, so the Updates panel hides itself there.
+contextBridge.exposeInMainWorld("valkyrysUpdate", {
+  state: () => call("upd:state"),
+  check: () => call("upd:check"),
+  install: () => call("upd:install"),
+  restart: () => { call("upd:restart").catch(() => {}); },
+  onState: (cb) => {
+    if (typeof cb !== "function") return () => {};
+    const h = (e, st) => { try { cb(st); } catch (err) {} };
+    ipcRenderer.on("upd:changed", h);
+    return () => ipcRenderer.removeListener("upd:changed", h);
+  },
+});

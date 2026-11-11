@@ -336,6 +336,27 @@ html.rail .newsdot { position: absolute; top: 8px; right: 6px; margin: 0; }
 .ntag.improved { background: var(--warn-bg); color: var(--warn); }
 .ntag.fixed { background: var(--sunken); color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
 .nfoot { padding: 10px 18px 12px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 10px; }
+/* in-app updates: Settings panel and the bars at the bottom of the content */
+.updstatus { margin: 0; }
+.updstatus[data-status="error"] { color: var(--err); font-weight: 600; }
+.updstatus[data-status="available"], .updstatus[data-status="ready"] { color: var(--ink); font-weight: 600; }
+.updprog { height: 6px; margin: 10px 0 0; border-radius: 999px; background: var(--sunken); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; max-width: 420px; }
+.updprog > span { display: block; height: 100%; width: 0; background: var(--accent); border-radius: inherit; transition: width .25s ease; }
+.updnotes { margin: 14px 0 0; border-top: 1px solid var(--line); padding-top: 10px; }
+.updnotes summary { cursor: pointer; font-weight: 700; font-size: 14px; color: var(--ink); padding: 4px 0; }
+.updnotes .ngrp:first-child { margin-top: 10px; }
+#updBars { position: fixed; z-index: 15; left: calc(var(--side-w) + 16px); right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+.updbar { pointer-events: auto; width: min(640px, 100%); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 10px 10px 16px; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--r); box-shadow: 0 6px 24px rgba(0, 0, 0, .16); }
+.updbar.warn { background: var(--warn-bg); border-left-color: var(--warn); }
+.updbar .utext { flex: 1 1 220px; font-size: 14px; font-weight: 600; color: var(--ink); }
+.updbar.warn .utext { color: var(--warn); }
+.updbar button { min-height: 34px; padding: 6px 12px; font-size: 13px; }
+.updbar button.xbtn { margin: 0; width: 34px; padding: 0; }
+.updbar .updprog { flex: 1 0 100%; margin: 0 0 2px; max-width: none; }
+body.upd-on #toast { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+html.side-anim #updBars { transition: left .18s ease; }
+@media (max-width: 559px) { #updBars { left: 8px; right: 8px; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); } body.upd-on #toast { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); } }
+@media (prefers-reduced-motion: reduce) { .updprog > span, html.side-anim #updBars { transition: none; } }
 .pagehead-in { max-width: 1140px; margin: 0 auto; padding-top: 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 .pagehead h1 { font-size: 26px; font-weight: 900; line-height: 1.2; color: var(--ink); letter-spacing: -.01em; }
 .pagehead p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
@@ -823,7 +844,7 @@ window.ValkTheme = (function () {
   <div class="side-foot">
     <button type="button" class="sidetog" id="sideToggle" aria-controls="side" aria-expanded="true" data-i18n-aria="sideCollapse" aria-label="Zijbalk inklappen"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/><path class="chev" d="M16.5 9.5 14 12l2.5 2.5"/></svg><span class="lbl" id="sideToggleLbl" data-i18n="sideCollapseShort">Inklappen</span></button>
     <button type="button" class="navi newsbtn" id="newsBtn" aria-haspopup="dialog" aria-controls="newsDlg" data-i18n-aria="newsBtnAria" aria-label="Nieuw in deze versie"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/><path d="M5 2.5l.6 1.4L7 4.5l-1.4.6L5 6.5l-.6-1.4L3 4.5l1.4-.6z"/></svg><span class="lbl nlabel" data-i18n="newsBtn">Nieuw</span><span class="newsdot" id="newsDot" hidden></span></button>
-    <button type="button" class="navi setbtn" id="tabSettings" data-tab="settings" aria-pressed="false" aria-controls="settingsView" data-i18n-aria="tabSettings" aria-label="Instellingen"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="lbl" data-i18n="tabSettings">Instellingen</span></button>
+    <button type="button" class="navi setbtn" id="tabSettings" data-tab="settings" aria-pressed="false" aria-controls="settingsView" data-i18n-aria="tabSettings" aria-label="Instellingen"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="lbl" data-i18n="tabSettings">Instellingen</span><span class="newsdot" id="updDot" hidden></span></button>
   </div>
 </aside>
 <div class="pagehead"><div class="pagehead-in"><h1 id="pageTitle">Statistieken</h1><p id="tagline" data-i18n="statsTagline">Je omzet en facturen in cijfers.</p></div></div>
@@ -903,6 +924,18 @@ window.ValkTheme = (function () {
         <button type="button" id="themeBtn" class="langsel themebtn" aria-haspopup="dialog" aria-controls="themeDlg"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.8-.8 1.8-1.7 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7.2" r="1"/><circle cx="15" cy="7.5" r="1"/></svg><span data-i18n="themeBtn">Thema</span></button>
         <select id="lang" class="langsel" aria-label="Taal / Language / Język"></select>
       </div>
+    </div>
+    <div class="panel" id="updPanel" hidden>
+      <p class="eyebrow" data-i18n="updTitle">Updates</p>
+      <p class="fsub" id="updVer"></p>
+      <p class="small updstatus" id="updStatus" role="status" aria-live="polite"></p>
+      <div class="updprog" id="updProg" hidden><span id="updProgBar"></span></div>
+      <div class="frow">
+        <button type="button" id="updCheck" data-i18n="updCheck">Controleren op updates</button>
+        <button type="button" class="primary" id="updInstall" hidden></button>
+        <button type="button" class="primary" id="updRestart" data-i18n="updRestart" hidden>Nu herstarten</button>
+      </div>
+      <details class="updnotes" id="updNotes" hidden><summary id="updNotesSum"></summary><div id="updNotesList"></div></details>
     </div>
     <div class="panel" id="setFolders" hidden>
       <p class="eyebrow" data-i18n="foldersTitle">Mappen</p>
@@ -1076,6 +1109,7 @@ window.ValkTheme = (function () {
     </div>
   </div>
 </dialog>
+<div id="updBars" hidden></div>
 <dialog id="newsDlg" aria-labelledby="newsTitle">
   <div class="dlg-head"><strong id="newsTitle" data-i18n="newsTitle">Nieuw in Valkyrys app</strong><button type="button" id="newsClose" data-i18n="close">Sluiten</button></div>
   <div class="dlg-body" id="newsList"></div>
@@ -1293,6 +1327,7 @@ window.ValkTheme = (function () {
       npSkipped: "{0} overgeslagen.", npMore: "Toon alle {0}", npLess: "Toon minder", npOrdered: "besteld {0}", npAdded: "{0} toegevoegd aan de lijst hieronder.", npFail: "Deze inkooporder kon niet worden geladen.",
       npUnread: "{0} PDF’s in de map zijn niet als inkooporder gelezen: {1}", npOpen: "Open map",
       sideCollapse: "Zijbalk inklappen", sideExpand: "Zijbalk uitklappen", sideCollapseShort: "Inklappen", newsBtn: "Nieuw", newsBtnAria: "Wat is er nieuw", newsUnseen: "Wat is er nieuw (nieuwe wijzigingen)", newsTitle: "Wat is er nieuw", newsNew: "Nieuw", newsImproved: "Verbeterd", newsFixed: "Opgelost", newsVersion: "Versie {0}", newsLatest: "Deze versie", newsFoot: "Na elke update zie je hier wat er veranderd is.",
+      updTitle: "Updates", updCheck: "Controleren op updates", updInstall: "Installeren", updRestart: "Nu herstarten", updLater: "Later", updView: "Bekijken", updUpToDate: "Je hebt de nieuwste versie", updLastCheck: "laatst gecontroleerd {0}", updLastCheckCap: "Laatst gecontroleerd {0}", updNever: "Nog niet gecontroleerd op updates.", updJustNow: "zojuist", updChecking: "Controleren…", updAvailable: "Versie {0} is beschikbaar.", updDownloading: "Downloaden… {0}%", updReady: "Versie {0} is klaar. Herstart om te voltooien.", updError: "Bijwerken is niet gelukt: {0}", updNotesSum: "Wat is er nieuw in versie {0}", updDlBar: "Versie {0} wordt gedownload… {1}%", updReadyBar: "De update is klaar. Herstart om te voltooien.", updRolledBack: "Update {0} kon niet starten; de vorige versie wordt gebruikt.", updDotAria: "Instellingen (update beschikbaar)",
       themeBtn: "Thema", themeTitle: "Thema", themeIntro: "Kies hoe de app eruitziet. Het Valkyrys-logo blijft altijd zoals het is.",
       tAuto: "Automatisch", tLight: "Licht", tDark: "Donker", tMidnight: "Middernacht", tPaper: "Papier", tForest: "Bos", tContrast: "Hoog contrast", tCustom: "Eigen thema",
       tcTitle: "Eigen kleuren", tcBg: "Achtergrond", tcSurface: "Kaarten en vlakken", tcInk: "Tekst", tcAccent: "Accent (knoppen, grafiek)", tcHex: "{0}, kleurcode", tcBase: "Beginnen met de kleuren van", tcBasePh: "Kies een thema…",
@@ -1458,6 +1493,7 @@ window.ValkTheme = (function () {
       npSkipped: "{0} skipped.", npMore: "Show all {0}", npLess: "Show fewer", npOrdered: "ordered {0}", npAdded: "{0} added to the list below.", npFail: "This purchase order could not be loaded.",
       npUnread: "{0} PDFs in the folder were not read as purchase orders: {1}", npOpen: "Open folder",
       sideCollapse: "Collapse sidebar", sideExpand: "Expand sidebar", sideCollapseShort: "Collapse", newsBtn: "What's new", newsBtnAria: "What's new", newsUnseen: "What's new (new changes)", newsTitle: "What's new", newsNew: "New", newsImproved: "Improved", newsFixed: "Fixed", newsVersion: "Version {0}", newsLatest: "This version", newsFoot: "After every update you can see here what has changed.",
+      updTitle: "Updates", updCheck: "Check for updates", updInstall: "Install", updRestart: "Restart now", updLater: "Later", updView: "View", updUpToDate: "You have the latest version", updLastCheck: "last checked {0}", updLastCheckCap: "Last checked {0}", updNever: "Not checked for updates yet.", updJustNow: "just now", updChecking: "Checking…", updAvailable: "Version {0} is available.", updDownloading: "Downloading… {0}%", updReady: "Version {0} is ready. Restart to finish.", updError: "Updating did not work: {0}", updNotesSum: "What's new in version {0}", updDlBar: "Downloading version {0}… {1}%", updReadyBar: "The update is ready. Restart to finish.", updRolledBack: "Update {0} could not start; the previous version is being used.", updDotAria: "Settings (update available)",
       themeBtn: "Theme", themeTitle: "Theme", themeIntro: "Choose how the app looks. The Valkyrys logo always stays as it is.",
       tAuto: "Automatic", tLight: "Light", tDark: "Dark", tMidnight: "Midnight", tPaper: "Paper", tForest: "Forest", tContrast: "High contrast", tCustom: "Custom",
       tcTitle: "Your own colours", tcBg: "Background", tcSurface: "Cards and panels", tcInk: "Text", tcAccent: "Accent (buttons, chart)", tcHex: "{0}, colour code", tcBase: "Start from the colours of", tcBasePh: "Choose a theme…",
@@ -1623,6 +1659,7 @@ window.ValkTheme = (function () {
       npSkipped: "Pominięte: {0}.", npMore: "Pokaż wszystkie ({0})", npLess: "Pokaż mniej", npOrdered: "zamówiono {0}", npAdded: "Dodano do listy poniżej: {0}.", npFail: "Nie udało się wczytać tego zamówienia.",
       npUnread: "Pliki PDF w folderze nieodczytane jako zamówienia: {0}: {1}", npOpen: "Otwórz folder",
       sideCollapse: "Zwiń pasek boczny", sideExpand: "Rozwiń pasek boczny", sideCollapseShort: "Zwiń", newsBtn: "Co nowego", newsBtnAria: "Co nowego", newsUnseen: "Co nowego (nowe zmiany)", newsTitle: "Co nowego", newsNew: "Nowość", newsImproved: "Ulepszenie", newsFixed: "Poprawka", newsVersion: "Wersja {0}", newsLatest: "Ta wersja", newsFoot: "Po każdej aktualizacji zobaczysz tu, co się zmieniło.",
+      updTitle: "Aktualizacje", updCheck: "Sprawdź aktualizacje", updInstall: "Zainstaluj", updRestart: "Uruchom ponownie", updLater: "Później", updView: "Zobacz", updUpToDate: "Masz najnowszą wersję", updLastCheck: "ostatnio sprawdzono {0}", updLastCheckCap: "Ostatnio sprawdzono {0}", updNever: "Jeszcze nie sprawdzono aktualizacji.", updJustNow: "przed chwilą", updChecking: "Sprawdzanie…", updAvailable: "Dostępna jest wersja {0}.", updDownloading: "Pobieranie… {0}%", updReady: "Wersja {0} jest gotowa. Uruchom ponownie, aby zakończyć.", updError: "Aktualizacja nie powiodła się: {0}", updNotesSum: "Co nowego w wersji {0}", updDlBar: "Pobieranie wersji {0}… {1}%", updReadyBar: "Aktualizacja jest gotowa. Uruchom ponownie, aby zakończyć.", updRolledBack: "Aktualizacja {0} nie mogła się uruchomić; używana jest poprzednia wersja.", updDotAria: "Ustawienia (dostępna aktualizacja)",
       themeBtn: "Motyw", themeTitle: "Motyw", themeIntro: "Wybierz wygląd aplikacji. Logo Valkyrys zawsze pozostaje bez zmian.",
       tAuto: "Automatyczny", tLight: "Jasny", tDark: "Ciemny", tMidnight: "Północ", tPaper: "Papier", tForest: "Las", tContrast: "Wysoki kontrast", tCustom: "Własny",
       tcTitle: "Własne kolory", tcBg: "Tło", tcSurface: "Karty i panele", tcInk: "Tekst", tcAccent: "Akcent (przyciski, wykres)", tcHex: "{0}, kod koloru", tcBase: "Zacznij od kolorów motywu", tcBasePh: "Wybierz motyw…",
@@ -3449,7 +3486,7 @@ window.ValkTheme = (function () {
     $("#tabSettings").setAttribute("aria-pressed", String(state.tab === "settings"));
     $("#viewInv").hidden = state.tab !== "inv"; $("#statsView").hidden = state.tab !== "stats"; $("#settingsView").hidden = state.tab !== "settings"; $("#docsView").hidden = state.tab !== "docs";
     const tg = $("#tagline"); tg.dataset.i18n = TAGLINE[state.tab]; tg.textContent = tr(tg.dataset.i18n);
-    syncTabHead();
+    syncTabHead(); renderUpd();
     if (state.tab === "stats") { renderStats(); if (desk) refreshPoFolder(); }
     if (state.tab === "docs") { renderDocs(); if (desk) refreshPoFolder(); } // the purchase orders are read if that has not happened yet
     window.scrollTo(0, 0);
@@ -3563,15 +3600,102 @@ window.ValkTheme = (function () {
   }
   const NEWS_TYPES = [["new", "newsNew"], ["improved", "newsImproved"], ["fixed", "newsFixed"]];
   function newsDate(d) { try { return new Date(d + "T12:00:00").toLocaleDateString({ nl: "nl-NL", en: "en-GB", pl: "pl-PL" }[state.lang] || "nl-NL", { day: "numeric", month: "long", year: "numeric" }); } catch (e) { return d; } }
-  function renderNews() {
+  /** the items of one release grouped New / Improved / Fixed in the current language (also used for the notes of an available update) */
+  function newsGroupsHtml(items) {
     const L = state.lang;
+    return NEWS_TYPES.map(([type, key]) => { const its = (items || []).filter((it) => it.type === type); return its.length ? `<div class="ngrp" data-type="${type}"><span class="ntag ${type}">${esc(tr(key))}</span><ul>${its.map((it) => `<li>${esc(it[L] || it.nl || it.en || "")}</li>`).join("")}</ul></div>` : ""; }).join("");
+  }
+  function renderNews() {
     $("#newsList").innerHTML = NEWS.map((rel, i) => `<section class="nrel" data-version="${esc(rel.version)}"><h3>${esc(tr("newsVersion", rel.version))}<span class="ndate">${esc(newsDate(rel.date))}</span>${i === 0 ? `<span class="nlatest">${esc(tr("newsLatest"))}</span>` : ""}</h3>` +
-      NEWS_TYPES.map(([type, key]) => { const its = (rel.items || []).filter((it) => it.type === type); return its.length ? `<div class="ngrp" data-type="${type}"><span class="ntag ${type}">${esc(tr(key))}</span><ul>${its.map((it) => `<li>${esc(it[L] || it.nl || it.en || "")}</li>`).join("")}</ul></div>` : ""; }).join("") + `</section>`).join("");
+      newsGroupsHtml(rel.items) + `</section>`).join("");
     $("#newsVer").textContent = NEWS_LATEST ? tr("newsVersion", NEWS_LATEST) : "";
   }
   $("#newsBtn").addEventListener("click", () => { renderNews(); const d = $("#newsDlg"); if (!d.open) d.showModal(); $("#newsList").scrollTop = 0; markNewsSeen(); });
   $("#newsClose").addEventListener("click", () => $("#newsDlg").close());
   $("#newsDlg").addEventListener("click", (e) => { if (e.target === $("#newsDlg")) $("#newsDlg").close(); });
+
+  // ------------------------------------------------------------ in-app updates: window.valkyrysUpdate from the desktop app's preload (none in a plain browser = no update UI).
+  // The app checks by itself 15 s after start (at most every 6 h) and pushes every change through onState.
+  // window.__valkUpdateFake: the tests put a stand-in here (the preload's bridge cannot be replaced); null acts as a plain browser.
+  const UPD = ("__valkUpdateFake" in window ? window.__valkUpdateFake : window.valkyrysUpdate) || null;
+  const UPD_DISMISS = "valkyrys-upd-dismissed", UPD_RB = "valkyrys-upd-rolledback-seen"; // localStorage: the available version whose bar was closed; the rolled-back version already told about
+  const upd = { st: null, later: "", fromBar: false, sig: "" };
+  const lsGet = (k) => { try { return localStorage.getItem(k) || ""; } catch (e) { return ""; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  const updLoc = () => ({ nl: "nl-NL", en: "en-GB", pl: "pl-PL" })[state.lang] || "nl-NL";
+  function updAgo(iso) {
+    const t = Date.parse(iso || ""); if (!t) return "";
+    const s = Math.max(0, (Date.now() - t) / 1000); if (s < 60) return tr("updJustNow");
+    const [n, u] = s < 3600 ? [s / 60, "minute"] : s < 86400 ? [s / 3600, "hour"] : [s / 86400, "day"];
+    try { return new Intl.RelativeTimeFormat(updLoc(), { numeric: "auto" }).format(-Math.floor(n), u); } catch (e) { return ""; }
+  }
+  const updSize = (b) => (b > 0 ? (b / 1048576).toLocaleString(updLoc(), { maximumFractionDigits: 1 }) + " MB" : "");
+  const updPct = (st) => Math.round(Math.min(1, Math.max(0, +st.progress || 0)) * 100);
+  const X_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  function updBarsList(st) {
+    const s = st.status, lv = (st.latest && st.latest.version) || "", bars = [], onSet = state.tab === "settings";
+    if (st.rolledBack && lsGet(UPD_RB) !== st.rolledBack) bars.push({ k: "rb", warn: true, text: tr("updRolledBack", st.rolledBack), btns: [["x"]] });
+    if (s === "ready" && upd.later !== lv) bars.push({ k: "ready", text: tr("updReadyBar"), btns: [["restart", "primary", "updRestart"], ["later", "ghost", "updLater"]] });
+    else if (s === "downloading" && upd.fromBar && !onSet) bars.push({ k: "dl", text: tr("updDlBar", lv, updPct(st)), prog: updPct(st), btns: [["x"]] });
+    else if (s === "available" && lv && !onSet && lsGet(UPD_DISMISS) !== lv) bars.push({ k: "avail", text: tr("updAvailable", lv), btns: [["view", "", "updView"], ["install", "primary", "updInstall"], ["x"]] });
+    return bars;
+  }
+  function renderUpdBars(st) {
+    const bars = st ? updBarsList(st) : [], box = $("#updBars"), sig = bars.map((b) => b.k).join() + "|" + state.lang;
+    box.hidden = !bars.length; document.body.classList.toggle("upd-on", !!bars.length);
+    if (sig === upd.sig) { bars.forEach((b) => { const el = box.querySelector(`[data-upd="${b.k}"]`); if (!el) return; el.querySelector(".utext").textContent = b.text; const p = el.querySelector(".updprog > span"); if (p) p.style.width = b.prog + "%"; }); return; } // only text/progress changed: keep focus
+    upd.sig = sig;
+    box.innerHTML = bars.map((b) => `<div class="updbar${b.warn ? " warn" : ""}" role="${b.warn ? "alert" : "status"}" data-upd="${b.k}"><span class="utext">${esc(b.text)}</span>` +
+      b.btns.map(([a, cls, key]) => a === "x" ? `<button type="button" class="ghost xbtn" data-upd-act="x" aria-label="${esc(tr("close"))}" title="${esc(tr("close"))}">${X_SVG}</button>` : `<button type="button"${cls ? ` class="${cls}"` : ""} data-upd-act="${a}">${esc(tr(key))}</button>`).join("") +
+      (b.prog !== undefined ? `<div class="updprog"><span style="width:${b.prog}%"></span></div>` : "") + `</div>`).join("");
+  }
+  function renderUpd() {
+    if (!UPD) { $("#updPanel").hidden = true; $("#updBars").hidden = true; $("#updDot").hidden = true; return; }
+    const st = upd.st; $("#updPanel").hidden = !st; if (!st) return;
+    const s = st.status, lv = (st.latest && st.latest.version) || "", busy = s === "checking" || s === "downloading", ago = updAgo(st.lastCheck);
+    $("#updVer").textContent = tr("newsVersion", st.running || NEWS_LATEST);
+    const line = { checking: tr("updChecking"), available: tr("updAvailable", lv), downloading: tr("updDownloading", updPct(st)), ready: tr("updReady", lv), error: tr("updError", st.error || "?"),
+      uptodate: tr("updUpToDate") + (ago ? " · " + tr("updLastCheck", ago) : "") }[s] || (ago ? tr("updLastCheckCap", ago) : tr("updNever"));
+    const sl = $("#updStatus"); sl.textContent = line; sl.dataset.status = s || "idle";
+    $("#updProg").hidden = s !== "downloading"; $("#updProgBar").style.width = updPct(st) + "%";
+    $("#updCheck").hidden = s === "ready"; $("#updCheck").disabled = busy;
+    const size = updSize(st.latest && st.latest.size), ib = $("#updInstall");
+    ib.hidden = s !== "available"; ib.textContent = tr("updInstall") + (size ? ` (${size})` : "");
+    $("#updRestart").hidden = s !== "ready";
+    const notes = (st.latest && Array.isArray(st.latest.notes) && st.latest.notes) || [], showNotes = !!notes.length && ["available", "downloading", "ready"].includes(s);
+    $("#updNotes").hidden = !showNotes;
+    if (showNotes) { $("#updNotesSum").textContent = tr("updNotesSum", lv); $("#updNotesList").innerHTML = newsGroupsHtml(notes); }
+    const dot = ["available", "downloading", "ready"].includes(s); $("#updDot").hidden = !dot;
+    $("#tabSettings").setAttribute("aria-label", tr(dot ? "updDotAria" : "tabSettings"));
+    renderUpdBars(st);
+  }
+  function setUpd(st) { if (!st || typeof st !== "object") return; upd.st = st; renderUpd(); }
+  async function updCall(name, interim) {
+    if (!UPD) return;
+    if (interim && upd.st) setUpd(Object.assign({}, upd.st, interim));
+    try { setUpd(await UPD[name]()); } catch (e) { setUpd(Object.assign({}, upd.st, { status: "error", error: String((e && e.message) || e) })); }
+  }
+  const updInstall = () => updCall("install", { status: "downloading", progress: 0 });
+  $("#updCheck").addEventListener("click", () => updCall("check", { status: "checking" }));
+  $("#updInstall").addEventListener("click", updInstall);
+  $("#updRestart").addEventListener("click", () => UPD && UPD.restart());
+  $("#updBars").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-upd-act]"), bar = b && b.closest("[data-upd]"), st = upd.st; if (!b || !st) return;
+    const lv = (st.latest && st.latest.version) || "", k = bar.dataset.upd;
+    switch (b.dataset.updAct) {
+      case "x": if (k === "rb") lsSet(UPD_RB, st.rolledBack); else if (k === "avail") lsSet(UPD_DISMISS, lv); else if (k === "dl") upd.fromBar = false; break;
+      case "view": setTab("settings"); $("#updNotes").open = true; $("#updPanel").scrollIntoView({ block: "start" }); $("#updInstall").focus({ preventScroll: true }); break;
+      case "install": upd.fromBar = true; updInstall(); break;
+      case "restart": UPD.restart(); break;
+      case "later": upd.later = lv; break;
+    }
+    renderUpd();
+  });
+  if (UPD) {
+    try { if (typeof UPD.onState === "function") UPD.onState(setUpd); } catch (e) {}
+    Promise.resolve().then(() => UPD.state()).then(setUpd, () => {});
+    setInterval(() => { if (state.tab === "settings" && upd.st) renderUpd(); }, 30000); // "last checked … ago" stays current
+  }
   $("#themeGrid").addEventListener("click", (e) => {
     const b = e.target.closest("[data-theme-id]"); if (!b) return;
     const id = b.dataset.themeId;
@@ -3646,7 +3770,7 @@ window.ValkTheme = (function () {
     if (storeKey) $("#storeNote").textContent = tr(storeKey);
     updateFileHint();
     if ($("#dlg").open) $("#dlgTitle").textContent = tr("preview", $("#dlgTitle").dataset.nr || "");
-    renderThemeUi(); renderPin(); renderTplUi(); if ($("#tplDlg").open) renderTplDlg(); renderNewsDot(); if ($("#newsDlg").open) renderNews(); window.ValkLockLang = state.lang; if (desk && $("#welcomeDlg").open) renderWelcome();
+    renderThemeUi(); renderPin(); renderTplUi(); if ($("#tplDlg").open) renderTplDlg(); renderNewsDot(); if ($("#newsDlg").open) renderNews(); renderUpd(); window.ValkLockLang = state.lang; if (desk && $("#welcomeDlg").open) renderWelcome();
     render(); syncTabHead();
   }
   function saveLang() {

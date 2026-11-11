@@ -15,7 +15,10 @@ tools/dev.sh units              quick tests of the reading/counting code, no win
 tools/dev.sh all                everything, ~10 min
 tools/dev.sh installer          payload + Windows installer only (fetches the Electron zips first if missing)
 tools/dev.sh release            all tests; only if all pass: installer + a check of what is in it
+tools/dev.sh update             signed update package -> out/update/ (latest.json + valkyrys-app-<ver>.zip)
+tools/publish_update.sh <ver>   copy it into the clone of Divine4k/valkyrys-updates (/home/claude/valkyrys-updates), commit, push
 ```
+**Release = installer AND publish the update** (`dev.sh update` + `publish_update.sh`). Updates are plain files on `main` of the PUBLIC repo `Divine4k/valkyrys-updates` (`latest.json`, `packages/`), read via raw.githubusercontent.com (CDN cache ~5 min). Attach that repo with add_repo (push). The signing key is `keys/update-signing.pem` in THIS private repo — never copy it to the public repo. Only installs from the 1.2.0+ installer (loader v1) can update in-app.
 Logs: `logs/<test>.log`. Tests need xvfb (the script uses `xvfb-run -a`). Do not leave `GOOS=windows` exported when running `go test`.
 
 ## Where things are
@@ -28,7 +31,9 @@ Logs: `logs/<test>.log`. Tests need xvfb (the script uses `xvfb-run -a`). Do not
 | `tool/templates/extreme.docx` | Word file of the Extreme Building design with `[placeholders]`; filled in by `fillExtremeDocx` |
 | `app/shim.js` | Stand-in for the storage/downloads the page expects (database via the local server) |
 | `tools/build_app.py` | tool/ -> `app/web` (CDN libraries replaced by local copies, shim added) |
-| `electron-app/main.js` | Window, PIN lock, folders (config.json), show-in-folder, first-start flag |
+| `electron-app/main.js` | Small stable LOADER (loader v1, never needs updating): starts the newest good update in `%APPDATA%\Valkyrys app\versions\<ver>` (newer than bundled, `.ok`, not `.bad`, minLoader ok), else the bundled `app-main.js`; `.pending`/`.ok`/`.bad` markers give automatic rollback |
+| `electron-app/app-main.js` | The real app: window, PIN lock, folders (config.json), show-in-folder, first-start flag, update IPC |
+| `electron-app/updater.js` | In-app updates: `UPDATE_REPO`, Ed25519 public key, check/download/verify (signature + sha256 + size)/unpack/prune; auto-check 15 s after start, max every 6 h |
 | `electron-app/preload.js` | The `valkyrys` bridge: getFolder, pickFolder, clearFolder, openFolder, listFiles, readFile, openFile, revealFile, saveFile, getWelcomed, setWelcomed, pickAnyDir/saveToDir/saveAsZip/writePicked ("Save as…": main only writes into a folder/.zip the user picked in a native dialog this run); `valkyrysLock` |
 | `electron-app/server.js` | Local server on port 47831 (fixed, so the window remembers theme and language): serves the page, keeps data.json |
 | `installer/` | Setup program in plain Go (own Win32 window, nl/en/pl, `/S` silent). `logic.go` texts and file handling (testable anywhere), `win_ops.go`, `win_gui.go` |
