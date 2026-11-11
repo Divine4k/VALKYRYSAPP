@@ -3,6 +3,15 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
+    version: "1.3.5", date: "2026-11-11",
+    items: [
+      { type: "improved",
+        nl: "Stap voor stap: zo koppel je Gmail of WP Poczta, met knoppen naar de juiste pagina’s.",
+        en: "Step by step: how to connect Gmail or WP Poczta, with buttons to the right pages.",
+        pl: "Krok po kroku: jak połączyć Gmail lub WP Pocztę, z przyciskami do właściwych stron." },
+    ],
+  },
+  {
     version: "1.3.3", date: "2026-11-11",
     items: [
       { type: "improved",
