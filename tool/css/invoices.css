@@ -61,3 +61,13 @@ details[open] summary::after { content: "\2212"; }
 .banner { border-radius: var(--r); padding: 12px 14px; font-size: 14px; }
 .banner.err { background: var(--err-bg); color: var(--err); }
 .banner.warn { background: var(--warn-bg); color: var(--warn); }
+/* an invoice without a purchase order: client fields on the card, add/remove lines */
+.drop .nopobtn { display: inline-flex; align-items: center; gap: 6px; margin-top: 2px; }
+.po.nopo { border-left: 4px solid var(--accent); }
+.ownclient { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 12px; margin: 0 0 12px; padding: 12px; border: 1px dashed var(--line); border-radius: 8px; }
+.ownclient .frow { grid-column: 1 / -1; margin: 0; }
+.nopo .line { grid-template-columns: minmax(0, 2fr) minmax(70px, .8fr) minmax(90px, 1fr) minmax(100px, 1fr) 30px; }
+.nopo .line .ldel { width: 30px; min-height: 30px; padding: 0; display: grid; place-items: center; align-self: end; margin-bottom: 4px; }
+.nopo .line .ldel[hidden] { display: grid !important; visibility: hidden; }
+.nopo .addline { margin: 8px 0 0; }
+@media (max-width: 560px) { .nopo .line { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }

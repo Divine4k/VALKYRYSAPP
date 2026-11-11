@@ -63,6 +63,21 @@ async function addFiles(files) {
   render();
 }
 
+/** an invoice without a purchase order (another client): an empty card to fill in by hand; client: another one (own fields) unless a preset is picked */
+const blankClient = () => clientFields({ client: {}, betaaltermijn: state.settings.betaaltermijn, btw: state.settings.btw });
+const blankLine = () => ({ desc: "", aantal: 1, tarief: 0 });
+function addNoPo() {
+  const y = new Date().getFullYear();
+  const card = { id: "c" + (++state.seq), noPo: true, po: "", fileName: "", parsed: { items: [] }, dates: [], checks: [], lines: [blankLine()],
+    dateISO: isoToday(), jaar: y, btw: state.settings.btw, done: false, clientId: null, own: blankClient(), nummer: 0 };
+  state.cards.push(card);
+  renumber(); render();
+  const first = document.querySelector(`[data-id="${card.id}"] [data-ck="name"]`);
+  if (first) { first.scrollIntoView({ block: "center" }); first.focus({ preventScroll: true }); }
+}
+/** a hand-made card needs at least one line with a description, an amount and a rate */
+const noPoEmpty = (c) => !!c.noPo && !c.lines.some((l) => String(l.desc || "").trim() && +l.aantal && +l.tarief);
+
 // ------------------------------------------------------------ invoices
 function invoiceData(c) {
   const cc = cardClient(c);
@@ -177,6 +192,7 @@ $("#poDupDlg").addEventListener("close", () => poDupAnswer(null));
 /** fmt: "pdf", "docx" or "both" (the PDF and the Word file, logged once) */
 async function downloadCard(c, btn, fmt = "pdf") {
   if (!detailsOk()) return needDetails();
+  if (noPoEmpty(c)) return toast(tr("noPoEmpty"));
   if (!(await confirmPoDupes([c])).length) return;
   const data = invoiceData(c), fmts = fmt === "both" ? ["pdf", "docx"] : [fmt], done = [], names = [];
   busy(btn, true); c.saving = true;
@@ -198,6 +214,7 @@ async function downloadAll(btn) {
   let ready = state.cards.filter((c) => !c.error);
   if (!ready.length) return;
   if (!detailsOk()) return needDetails();
+  if (ready.some(noPoEmpty)) return toast(tr("noPoEmpty"));
   ready = await confirmPoDupes(ready); if (!ready.length) return;
   busy(btn, true);
   if (folderSet()) { // straight into the folder: one PDF and one Word file per invoice, no zip
@@ -343,7 +360,8 @@ function cardNotes(c) {
   if (dup) notes.push({ level: "warn", text: tr("numDup", nr(c), dup.po) });
   const cc = cardClient(c).client, k = cc.kvk;
   if (c.parsed && c.parsed.kvk && k && c.parsed.kvk !== k) notes.push({ level: "warn", text: tr("otherClient", c.parsed.kvk, k) });
-  if (!cc.name) notes.push({ level: "warn", text: tr("fillClient") });
+  if (!cc.name) notes.push({ level: "warn", text: tr(c.noPo ? "noPoClient" : "fillClient") });
+  if (noPoEmpty(c)) notes.push({ level: "warn", text: tr("noPoEmpty") });
   if (c.lines.length > core.MAX_LINES) notes.push({ level: "warn", text: tr("maxLines", core.MAX_LINES) });
   return notes;
 }
@@ -356,27 +374,42 @@ function cardHtml(c) {
         ${removeBtn(c.fileName)}</div>
         <ul class="checks"><li class="chip error">${esc(tr(c.error))}</li></ul></article>`;
   }
-  const t = core.totals(c.lines, c.btw);
-  const meta = [c.parsed.orderDate && tr("ordered", c.parsed.orderDate), c.parsed.orderedBy && tr("by", c.parsed.orderedBy), c.fileName].filter(Boolean).map(esc).join(" · ");
+  const t = core.totals(c.lines, c.btw), np = !!c.noPo;
+  const meta = np ? [tr("noPoMeta")].map(esc).join("") : [c.parsed.orderDate && tr("ordered", c.parsed.orderDate), c.parsed.orderedBy && tr("by", c.parsed.orderedBy), c.fileName].filter(Boolean).map(esc).join(" · ");
   const lines = c.lines.map((l, i) => `
       <div class="line">
         <label class="f" for="${c.id}-d${i}">${esc(tr("desc"))}<input id="${c.id}-d${i}" data-line="${i}" data-k="desc" value="${esc(l.desc)}"></label>
         <label class="f" for="${c.id}-a${i}">${esc(tr("qty"))}<input id="${c.id}-a${i}" data-line="${i}" data-k="aantal" inputmode="decimal" value="${esc(core.qty(l.aantal))}"></label>
         <label class="f" for="${c.id}-t${i}">${esc(tr("rate2"))}<input id="${c.id}-t${i}" data-line="${i}" data-k="tarief" inputmode="decimal" value="${esc(core.eur(l.tarief).replace("€ ", ""))}"></label>
         <span class="amt num" data-amt="${i}">${esc(core.eur(core.round2(l.tarief * l.aantal)))}</span>
+        ${np ? `<button type="button" class="ghost xbtn ldel" data-act="delline" data-line="${i}" aria-label="${esc(tr("noPoDelLine"))}" title="${esc(tr("noPoDelLine"))}"${c.lines.length < 2 ? " hidden" : ""}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>` : ""}
       </div>`).join("");
+  const own = np && !c.clientId ? c.own || (c.own = blankClient()) : null;
+  const ownHtml = own ? `<div class="ownclient">
+        <label class="f" for="${c.id}-cn">${esc(tr("cName"))}<input id="${c.id}-cn" data-ck="name" value="${esc(own.client.name)}" autocomplete="off"></label>
+        <label class="f" for="${c.id}-cs">${esc(tr("cStreet"))}<input id="${c.id}-cs" data-ck="street" value="${esc(own.client.street)}" autocomplete="off"></label>
+        <label class="f" for="${c.id}-cc">${esc(tr("cCity"))}<input id="${c.id}-cc" data-ck="city" value="${esc(own.client.city)}" autocomplete="off"></label>
+        <label class="f" for="${c.id}-ck">${esc(tr("cKvk"))}<input id="${c.id}-ck" data-ck="kvk" value="${esc(own.client.kvk)}" autocomplete="off"></label>
+        <label class="f" for="${c.id}-cb">${esc(tr("cBtw"))}<input id="${c.id}-cb" data-ck="btw" value="${esc(own.client.btw)}" autocomplete="off"></label>
+        <label class="f" for="${c.id}-ct">${esc(tr("sTerm"))}<input id="${c.id}-ct" data-ck="betaaltermijn" value="${esc(own.betaaltermijn)}" autocomplete="off"></label>
+        <div class="frow"><button type="button" data-act="saveclient">${esc(tr("noPoSaveClient"))}</button></div>
+      </div>` : "";
+  const clientSel = np ? `<label class="f" for="${c.id}-cl">${esc(tr("cardClient"))}<select id="${c.id}-cl" data-k="client">${CL.list.map((p) => `<option value="${esc(p.id)}"${p.id === c.clientId ? " selected" : ""}>${esc(p.name)}</option>`).join("")}<option value=""${c.clientId ? "" : " selected"}>${esc(tr("noPoOther"))}</option></select></label>`
+    : CL.list.length > 1 ? `<label class="f" for="${c.id}-cl">${esc(tr("cardClient"))}<select id="${c.id}-cl" data-k="client">${CL.list.map((p) => `<option value="${esc(p.id)}"${p.id === (clientById(c.clientId) ? c.clientId : CL.active) ? " selected" : ""}>${esc(p.name)}</option>`).join("")}</select></label>` : "";
   const notes = cardNotes(c).map((n) => `<li class="chip ${n.level}">${esc(n.text)}</li>`).join("");
-  return `<article class="panel po" data-id="${c.id}">
-      <div class="po-head"><div><h3>${esc(c.po || tr("unknownPo"))}</h3><p class="meta">${meta}</p></div>
-        ${removeBtn(c.po || c.fileName)}</div>
+  return `<article class="panel po${np ? " nopo" : ""}" data-id="${c.id}">
+      <div class="po-head"><div><h3>${esc(np ? tr("noPoTitle") : c.po || tr("unknownPo"))}</h3><p class="meta">${meta}</p></div>
+        ${removeBtn(np ? tr("noPoTitle") : c.po || c.fileName)}</div>
       ${c.dates.length ? `<p class="days">${daysText(c.dates)}</p>` : ""}
       <div class="fields">
         <label class="f" for="${c.id}-nr">${esc(tr("invNo"))}<input id="${c.id}-nr" data-k="nr" value="${esc(nr(c))}" inputmode="numeric" autocomplete="off"></label>
         <label class="f" for="${c.id}-date">${esc(tr("invDate"))}<input id="${c.id}-date" data-k="date" type="date" value="${esc(c.dateISO)}"></label>
         <label class="f" for="${c.id}-btw">${esc(tr("vat"))}<select id="${c.id}-btw" data-k="btw">${Object.entries(core.BTW).map(([v, b]) => `<option value="${v}"${v === c.btw ? " selected" : ""}>${esc(tr("btw." + v))}</option>`).join("")}</select></label>
-        ${CL.list.length > 1 ? `<label class="f" for="${c.id}-cl">${esc(tr("cardClient"))}<select id="${c.id}-cl" data-k="client">${CL.list.map((p) => `<option value="${esc(p.id)}"${p.id === (clientById(c.clientId) ? c.clientId : CL.active) ? " selected" : ""}>${esc(p.name)}</option>`).join("")}</select></label>` : ""}
+        ${clientSel}
       </div>
+      ${ownHtml}
       <div class="lines">${lines}</div>
+      ${np ? `<div class="frow addline"><button type="button" class="ghost" data-act="addline">${esc(tr("noPoAddLine"))}</button></div>` : ""}
       ${notes ? `<ul class="checks">${notes}</ul>` : ""}
       <div class="po-foot">
         <div class="total">${esc(tr("totalPay"))}<b class="num" data-total>${esc(core.eur(t.total))}</b>${c.done ? `<span class="done">${esc(tr(folderSet() ? "doneSaved" : "doneAs", nr(c)))}</span>` : ""}</div>

@@ -16,7 +16,10 @@ function putClientFields(f) {
   $("#sTerm").value = f.betaaltermijn; $("#sBtw").value = f.btw;
 }
 /** the client a card's invoice goes to: its own preset when it was made for another than the active one, else what settings/main says */
-function cardClient(c) { const p = c && c.clientId && c.clientId !== CL.active && clientById(c.clientId); return p ? clientFields(p.fields) : clientFields(state.settings); }
+function cardClient(c) {
+  if (c && c.noPo && !c.clientId) return clientFields(c.own); // an invoice without a PO, for a client typed on the card
+  const p = c && c.clientId && c.clientId !== CL.active && clientById(c.clientId); return p ? clientFields(p.fields) : clientFields(state.settings);
+}
 function renderClientMod() {
   const act = clientById(CL.active), mod = !!act && !sameFields(act.fields, formClientFields());
   $("#clMod").hidden = !mod; $("#clUpdate").disabled = !mod; $("#clDelete").disabled = !act;
