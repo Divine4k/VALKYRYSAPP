@@ -50,7 +50,6 @@
       <p data-i18n="dropText">Per PO wordt een factuur gemaakt: het ordernummer als omschrijving, de dagprijs als tarief en het aantal dagen als aantal.</p>
       <span class="pickwrap"><button class="primary" id="pick" type="button" tabindex="-1" data-i18n="pick">Kies PDF-bestanden</button>
       <input type="file" id="file" accept="application/pdf,.pdf" multiple data-i18n-aria="pick" aria-label="Kies PDF-bestanden"></span>
-      <button type="button" class="ghost nopobtn" id="newNoPo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="noPoNew">Factuur zonder inkooporder</span></button>
     </div>
     <div class="panel newpo" id="newPo" hidden>
       <div class="ehead"><p class="eyebrow" data-i18n="npTitle">Nieuwe inkooporders</p><button type="button" class="ghost refresh" data-refresh data-i18n-aria="refresh" aria-label="Vernieuwen" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg></button></div>
@@ -78,10 +77,13 @@
   </section>
 
   <aside class="col" aria-label="Nummering en instellingen">
-    <div class="panel">
-      <p class="eyebrow" data-i18n="next">Volgende factuur</p>
-      <div class="next"><b id="nextNr" class="num">…</b><span class="small" id="nextNote"></span></div>
-      <p class="small" id="storeNote"></p>
+    <div class="panel nextbox">
+      <div class="nextmain">
+        <p class="eyebrow" data-i18n="next">Volgende factuur</p>
+        <div class="next"><b id="nextNr" class="num">…</b><span class="small" id="nextNote"></span></div>
+        <p class="small" id="storeNote"></p>
+      </div>
+      <button type="button" class="nextadd" id="newNoPo" data-i18n-aria="noPoNew" aria-label="Factuur zonder inkooporder" title="Factuur zonder inkooporder"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="noPoPlus">Nieuw</span></button>
     </div>
     <details class="panel" id="settingsBox">
       <summary class="eyebrow" data-i18n="setInvoices">Facturen en klant</summary>

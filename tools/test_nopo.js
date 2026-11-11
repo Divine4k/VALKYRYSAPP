@@ -16,12 +16,19 @@ const until = async (fn, ms = 8000) => { const t = Date.now(); while (Date.now()
   await page.waitForSelector("#pick", { state: "attached" }); await page.waitForTimeout(1500);
   await goTab(page, "inv"); await page.waitForTimeout(300);
 
-  ok(await page.isVisible("#newNoPo") && (await page.textContent("#newNoPo")).trim() === "Factuur zonder inkooporder", "button 'Factuur zonder inkooporder' on the Invoices tab");
+  ok(await page.isVisible(".nextbox #newNoPo") && (await page.textContent("#newNoPo")).trim() === "Nieuw" && (await page.getAttribute("#newNoPo", "aria-label")) === "Factuur zonder inkooporder", "'+ Nieuw' in the right part of the 'Volgende factuur' box");
+  const geo = await page.evaluate(() => { const a = document.querySelector(".nextbox .nextmain").getBoundingClientRect(), b = document.querySelector("#newNoPo").getBoundingClientRect(); return { right: b.left >= a.right - 1, narrow: b.width < a.width / 2, same: Math.abs(a.top - b.top) < 2 }; });
+  ok(geo.right && geo.narrow && geo.same, "...beside the number, much narrower", geo);
+  ok(!(await page.$("#drop #newNoPo")), "no extra button in the drop zone");
+  await page.evaluate(() => scrollTo(0, 0)); await page.screenshot({ path: "/tmp/nopo-top.png", clip: { x: 900, y: 80, width: 380, height: 200 } });
   await page.click("#newNoPo");
   const card = ".po.nopo";
   ok(await until(() => page.isVisible(card)), "an empty card is added");
   ok(/Factuur zonder inkooporder/.test(await page.textContent(`${card} h3`)), "...titled 'Factuur zonder inkooporder'");
-  ok(await page.evaluate(() => document.activeElement && document.activeElement.dataset.ck === "name"), "...the client name has focus");
+  ok(!(await page.isVisible(`${card} .ownclient`)) && /Klantgegevens · nog niet ingevuld/.test(await page.textContent(`${card} [data-act=owntoggle]`)), "client box folded: 'Klantgegevens · nog niet ingevuld'");
+  await page.screenshot({ path: "/tmp/nopo-new.png" });
+  await page.click(`${card} [data-act=owntoggle]`);
+  ok(await page.isVisible(`${card} .ownclient`) && await page.evaluate(() => document.activeElement && document.activeElement.dataset.ck === "name"), "opened: the client fields, name has focus");
   ok(/Andere klant/.test(await page.$eval(`${card} select[data-k=client]`, (s) => s.options[s.selectedIndex].textContent)), "client: 'Andere klant' by default");
   const notes = await page.textContent(`${card} .checks`);
   ok(/naam van de klant/.test(notes) && /minstens één regel/.test(notes), "notes ask for the client and a line", notes);
@@ -42,6 +49,9 @@ const until = async (fn, ms = 8000) => { const t = Date.now(); while (Date.now()
   await page.click(`${card} [data-act=addline]`); await page.click(`${card} [data-act=delline][data-line="2"]`);
   ok((await page.$$(`${card} .line`)).length === 2, "a line can be removed again");
 
+  await page.click(`${card} [data-act=owntoggle]`);
+  ok(!(await page.isVisible(`${card} .ownclient`)) && /Bakkerij De Vries, 1234 AB Delft/.test(await page.textContent(`${card} [data-act=owntoggle]`)), "folded again: the name shows on the button, the typed details are kept");
+  await page.click(`${card} [data-act=owntoggle]`);
   await page.click(`${card} [data-act=saveclient]`);
   ok(await until(async () => /Bakkerij De Vries/.test(await page.textContent("#toast"))), "Bewaren als klant: toast");
   ok(await until(() => { const c = db()["settings/clients"]; return c && c.list.some((p) => p.name === "Bakkerij De Vries" && p.fields.client.city === "1234 AB Delft"); }), "...stored as a client preset", db()["settings/clients"]);

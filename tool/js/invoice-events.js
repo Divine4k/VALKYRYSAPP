@@ -40,6 +40,7 @@ $("#cards").addEventListener("click", (e) => {
   if (b.dataset.act === "addline") { c.lines.push(blankLine()); c.done = false; render(); const d = document.getElementById(`${c.id}-d${c.lines.length - 1}`); if (d) d.focus(); }
   if (b.dataset.act === "delline" && c.lines.length > 1) { c.lines.splice(+b.dataset.line, 1); c.done = false; render(); }
   if (b.dataset.act === "saveclient") saveCardClient(c);
+  if (b.dataset.act === "owntoggle") { c.ownOpen = !c.ownOpen; render(); if (c.ownOpen) { const n = document.getElementById(`${c.id}-cn`); if (n) n.focus(); } }
 });
 $("#zipAll").addEventListener("click", (e) => downloadAll(e.currentTarget));
 $("#newNoPo").addEventListener("click", addNoPo);

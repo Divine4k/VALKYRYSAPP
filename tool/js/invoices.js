@@ -72,7 +72,7 @@ function addNoPo() {
     dateISO: isoToday(), jaar: y, btw: state.settings.btw, done: false, clientId: null, own: blankClient(), nummer: 0 };
   state.cards.push(card);
   renumber(); render();
-  const first = document.querySelector(`[data-id="${card.id}"] [data-ck="name"]`);
+  const first = document.querySelector(`[data-id="${card.id}"] [data-act="owntoggle"]`);
   if (first) { first.scrollIntoView({ block: "center" }); first.focus({ preventScroll: true }); }
 }
 /** a hand-made card needs at least one line with a description, an amount and a rate */
@@ -385,7 +385,9 @@ function cardHtml(c) {
         ${np ? `<button type="button" class="ghost xbtn ldel" data-act="delline" data-line="${i}" aria-label="${esc(tr("noPoDelLine"))}" title="${esc(tr("noPoDelLine"))}"${c.lines.length < 2 ? " hidden" : ""}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>` : ""}
       </div>`).join("");
   const own = np && !c.clientId ? c.own || (c.own = blankClient()) : null;
-  const ownHtml = own ? `<div class="ownclient">
+  const ownSum = own ? (own.client.name ? [own.client.name, own.client.city].filter(Boolean).join(", ") : tr("noPoClientEmpty")) : "";
+  const ownHtml = own ? `<button type="button" class="ghost owntog" data-act="owntoggle" aria-expanded="${c.ownOpen ? "true" : "false"}" aria-controls="${c.id}-own"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>${esc(tr("noPoClientBox"))} <span class="ownsum">· ${esc(ownSum)}</span></button>
+      <div class="ownclient" id="${c.id}-own"${c.ownOpen ? "" : " hidden"}>
         <label class="f" for="${c.id}-cn">${esc(tr("cName"))}<input id="${c.id}-cn" data-ck="name" value="${esc(own.client.name)}" autocomplete="off"></label>
         <label class="f" for="${c.id}-cs">${esc(tr("cStreet"))}<input id="${c.id}-cs" data-ck="street" value="${esc(own.client.street)}" autocomplete="off"></label>
         <label class="f" for="${c.id}-cc">${esc(tr("cCity"))}<input id="${c.id}-cc" data-ck="city" value="${esc(own.client.city)}" autocomplete="off"></label>
@@ -432,6 +434,7 @@ function render() {
   $("#batchText").textContent = tr("batchText", ok.length, ok.map(nr).join(", "));
   const year = new Date().getFullYear();
   $("#nextNr").textContent = `${nextNumber(year)}-${year}`;
+  $("#newNoPo").title = tr("noPoNew");
   $("#nextNote").textContent = state.cards.some((c) => !c.error && !c.done) ? tr("nextNote") : "";
   const za = $("#zipAll"), zk = folderSet() ? "saveAll" : "zipAll";
   if (za.dataset.i18n !== zk) za.dataset.i18n = zk;
