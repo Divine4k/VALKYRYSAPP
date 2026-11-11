@@ -177,4 +177,5 @@ VALK_I18N.en = {
     dropHint: "Drop purchase order PDFs anywhere on this page, or", dropRelease: "Release to add the purchase orders",
     tDim: "Dim",
     langTitle: "Language", langIntro: "The language of the app. Your invoices stay in Dutch.",
+    rfMail: "Checking email…", rfFolders: "Reading folders…", rfDone: "Up to date", rfDoneMail: "Up to date, nothing new in your email", rfGot1: "1 new purchase order from your email", rfGotN: "{0} new purchase orders from your email", rfFound1: "1 new purchase order in your email", rfFoundN: "{0} new purchase orders in your email", rfMailErr: "Could not check your email",
 };

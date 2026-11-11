@@ -286,13 +286,26 @@ async function deleteSet(nr, btn) {
 
 // ---- refresh: the small circular-arrow buttons, and coming back to the app (focus / visible again, debounced) re-read both folders
 document.querySelectorAll("button[data-refresh]").forEach((b) => { b.hidden = !desk; });
+// next to the button a short status says what is going on (checking the mail can take a few seconds), then what came of it
+const rstat = (b) => { let el = b.previousElementSibling; if (!el || !el.classList.contains("rstat")) { el = document.createElement("span"); el.className = "rstat"; el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite"); b.before(el); } return el; };
 document.addEventListener("click", async (e) => {
   const b = e.target.closest("button[data-refresh]"); if (!b || !desk || b.classList.contains("spin")) return;
+  const st = rstat(b), say = (k, ...a) => { clearTimeout(st._t); st.textContent = tr(k, ...a); st.hidden = false; st.classList.toggle("bad", k === "rfMailErr"); };
   b.classList.add("spin"); b.setAttribute("aria-busy", "true");
-  // also look in the connected mailboxes, like "Nu controleren" in Settings › Verbindingen (js/mail.js), then read the folders again
-  const mail = typeof mailCheckAll === "function" ? mailCheckAll() : Promise.resolve();
-  try { await Promise.all([mail.then(() => refreshAll()), new Promise((r) => setTimeout(r, 450))]); } catch (err) {}
+  const withMail = typeof mailCheckAll === "function" && mailHasAccounts();
+  let res = null;
+  try {
+    if (withMail) { say("rfMail"); res = await mailCheckAll(); } // like "Nu controleren" in Settings › Verbindingen (js/mail.js)
+    say("rfFolders");
+    await Promise.all([refreshAll(), new Promise((r) => setTimeout(r, 450))]);
+  } catch (err) {}
   b.classList.remove("spin"); b.removeAttribute("aria-busy");
+  const saved = (res && res.saved) || [], found = (res && res.found) || [];
+  if (res && res.error) say("rfMailErr");
+  else if (saved.length) say(saved.length === 1 ? "rfGot1" : "rfGotN", saved.length);
+  else if (found.length) say(found.length === 1 ? "rfFound1" : "rfFoundN", found.length);
+  else say(withMail ? "rfDoneMail" : "rfDone");
+  st._t = setTimeout(() => { st.hidden = true; }, 5000);
 });
 if (desk) {
   let backT = 0;

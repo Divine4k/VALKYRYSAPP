@@ -79,11 +79,14 @@ function mailSet(st) {
   }
   if (st.found && st.found.length && away) MAIL.notify(tr("mailNotifTitle"), mailFoundText(st.found)).catch(() => {});
 }
-/** check every switched-on mailbox now (the refresh buttons); resolves when done, never fails */
-function mailCheckAll() {
-  const list = (mailUi.st && mailUi.st.accounts) || [];
-  if (!(MAIL && desk) || !list.some((a) => a.enabled)) return Promise.resolve();
-  return MAIL.check().catch(() => {});
+const mailHasAccounts = () => !!(MAIL && desk && ((mailUi.st && mailUi.st.accounts) || []).some((a) => a.enabled));
+/** check every switched-on mailbox now (the refresh buttons). Resolves with { saved, found, error } (error: a mailbox could not be checked); never fails */
+async function mailCheckAll() {
+  if (!mailHasAccounts()) return null;
+  let r; try { r = await MAIL.check(); } catch (e) { return { saved: [], found: [], error: "other" }; }
+  let st = null; try { st = await MAIL.state(); } catch (e) {}
+  const bad = st && st.accounts.find((a) => a.enabled && a.error);
+  return { saved: (r && r.saved) || [], found: (r && r.found) || [], error: (r && r.error) || (bad ? bad.error : "") };
 }
 async function mailDownload(keys) {
   let r; try { r = await MAIL.download(keys || null); } catch (e) { r = { error: "other" }; }

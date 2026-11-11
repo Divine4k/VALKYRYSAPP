@@ -177,4 +177,5 @@ VALK_I18N.nl = {
     dropHint: "Sleep PDF’s van inkooporders ergens op deze pagina, of", dropRelease: "Laat los om de inkooporders toe te voegen",
     tDim: "Gedimd",
     langTitle: "Taal", langIntro: "De taal van de app. Je facturen blijven in het Nederlands.",
+    rfMail: "E-mail controleren…", rfFolders: "Mappen lezen…", rfDone: "Bijgewerkt", rfDoneMail: "Bijgewerkt, niets nieuws in je e-mail", rfGot1: "1 nieuwe inkooporder uit je e-mail", rfGotN: "{0} nieuwe inkooporders uit je e-mail", rfFound1: "1 nieuwe inkooporder in je e-mail", rfFoundN: "{0} nieuwe inkooporders in je e-mail", rfMailErr: "E-mail controleren lukte niet",
 };

@@ -119,7 +119,12 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   // the refresh button at "Nieuwe inkooporders" also checks the mail
   fs.unlinkSync(path.join(POF, "PO-008148.pdf")); srv.log.length = 0;
   await goTab(page, "inv"); await page.click("#newPo [data-refresh]");
+  ok(await until(async () => /E-mail controleren…|Mappen lezen…/.test(await page.textContent("#newPo .rstat")), 3000), "beside the button: 'E-mail controleren…'");
   ok(await saved(path.join(POF, "PO-008148.pdf"), 10000) && srv.log.some((l) => / EXAMINE /.test(l)), "refresh at Nieuwe inkooporders: the mail is checked too");
+  ok(await until(async () => /1 nieuwe inkooporder uit je e-mail/.test(await page.textContent("#newPo .rstat"))), "...then what came of it", await page.textContent("#newPo .rstat"));
+  await page.screenshot({ path: "/tmp/refresh-status.png", clip: { x: 200, y: 0, width: 720, height: 420 } });
+  await page.waitForTimeout(600); await page.click("#newPo [data-refresh]");
+  ok(await until(async () => /Bijgewerkt, niets nieuws/.test(await page.textContent("#newPo .rstat"))), "nothing new: 'Bijgewerkt, niets nieuws in je e-mail'");
   await goSet(page, "mail"); await page.waitForTimeout(200);
 
   // switched off, then disconnect (asks once)
