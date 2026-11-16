@@ -13,6 +13,9 @@ const items = (page) => page.$$eval("#newsList .nrel:first-child li", (l) => l.m
 (async () => {
   const CL = (() => { const w = {}; new Function("window", fs.readFileSync(path.join(__dirname, "../tool/changelog.js"), "utf8"))(w); return w.VALK_CHANGELOG; })();
   const latest = CL[0].version;
+  const [cy, cm, cd] = CL[0].date.split("-").map(Number); // heading dates follow the top entry, not a fixed day
+  const nlDate = `${cd} ${["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"][cm - 1]} ${cy}`;
+  const enDate = `${cd} ${["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][cm - 1]} ${cy}`;
   eq(latest, require("../electron-app/package.json").version, "changelog top entry = app version");
   ok(CL.every((r) => r.items.every((it) => it.nl && it.en && it.pl && ["new", "improved", "fixed"].includes(it.type))), "every item has nl/en/pl and a known type");
 
@@ -50,7 +53,7 @@ const items = (page) => page.$$eval("#newsList .nrel:first-child li", (l) => l.m
   eq(await page.$$eval("#newsList .nrel:first-child .ntag", (g) => g.map((x) => x.textContent)), TYPES.map((t) => ({ new: "Nieuw", improved: "Verbeterd", fixed: "Opgelost" })[t]), "Dutch tags");
   const order = ["new", "improved", "fixed"].flatMap((t) => CL[0].items.filter((i) => i.type === t));
   eq(await items(page), order.map((i) => i.nl), "newest items in Dutch");
-  ok((await page.textContent("#newsList .nrel:first-child h3")).includes("Versie " + latest) && (await page.textContent("#newsList .nrel:first-child h3")).includes("11 november 2026"), "version + Dutch date heading");
+  ok((await page.textContent("#newsList .nrel:first-child h3")).includes("Versie " + latest) && (await page.textContent("#newsList .nrel:first-child h3")).includes(nlDate), "version + Dutch date heading");
   eq(await page.textContent("#newsVer"), "Versie " + latest, "version in the footer");
   ok(!(await page.isVisible("#newsDot")), "dot gone after opening");
   if (shots) { await page.screenshot({ path: "/tmp/news_light.png" }); await page.emulateMedia({ colorScheme: "dark" }); await page.waitForTimeout(200); await page.screenshot({ path: "/tmp/news_dark.png" }); await page.emulateMedia({ colorScheme: "light" }); }
@@ -62,7 +65,7 @@ const items = (page) => page.$$eval("#newsList .nrel:first-child li", (l) => l.m
   eq(await page.textContent("#newsBtn .nlabel"), "Co nowego", "Polish label");
   await setLang(page, "en"); await page.waitForTimeout(200);
   eq([await page.textContent("#newsTitle"), (await items(page)).slice(-1)[0], await page.textContent("#newsVer")], ["What's new", order.slice(-1)[0].en, "Version " + latest], "English");
-  ok((await page.textContent("#newsList .nrel:first-child h3")).includes("11 November 2026"), "English date");
+  ok((await page.textContent("#newsList .nrel:first-child h3")).includes(enDate), "English date");
   await setLang(page, "nl"); await page.waitForTimeout(150);
 
   // ---- close: button and Esc
