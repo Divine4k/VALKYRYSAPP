@@ -229,7 +229,7 @@
         if (!m) continue;
         const rate = parseMoney(m[2]), q = parseFloat(m[3].replace(",", ".")), amt = parseMoney(m[4]);
         if (Math.abs(rate * q - amt) > 0.02) continue;
-        days += lineDays(rate, q, m[1]); if (isHourLine(rate, m[1])) hourLines++; found = true; if (!r.po && m[1] && /\bPO\b|\d{4,}/i.test(m[1])) r.po = m[1].trim();
+        days += lineDays(rate, q, m[1]); if (isHourLine(rate, m[1])) hourLines++; found = true; if (!r.po && m[1] && /\bPO\b|\d{4,}/i.test(m[1])) r.po = m[1].trim().replace(/\bPO\s*[-–]\s*(\d)/gi, "PO-$1");
         i += w - 1; break;
       }
     }

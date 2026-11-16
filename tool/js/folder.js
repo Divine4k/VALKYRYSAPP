@@ -28,7 +28,7 @@ function rebuildFileNums() {
 }
 
 // ---- reading the finished invoices in the folder (for the statistics)
-const PARSER_VERSION = 4; // 2: PO lines keep their work dates and unit; 3: invoice days count hours as 1/8 day; 4: hand-made Word invoices (.doc, "Total", "1 725,00")
+const PARSER_VERSION = 5; // 2: PO lines keep their work dates and unit; 3: invoice days count hours as 1/8 day; 4: hand-made Word invoices (.doc, "Total", "1 725,00"); 5: "PO - 008245" read as PO-008245
 const isInvoiceRec = (r) => !!(r && r.total != null && !isNaN(r.total));
 const unxml = (t) => t.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
 const docxLines = (xml) => xml.split(/<\/w:p>/).map((p) => [...p.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g)].map((m) => unxml(m[1])).join("")).filter(Boolean);

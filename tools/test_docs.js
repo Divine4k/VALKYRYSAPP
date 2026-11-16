@@ -60,6 +60,8 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
   ok(await page.isVisible("#docsView") && !(await page.isVisible("#statsView")) && !(await page.isVisible("#viewInv")), "Documents tab opens");
   eq([await page.textContent("#pageTitle"), await page.textContent("#tagline")], ["Documenten", "Al je facturen met hun PDF, Word-bestand en inkooporder bij elkaar."], "page title and tagline");
   ok(await readyAll(page), "the folder and the purchase orders are read: 5 rows, 4 with a PO");
+  eq(await page.evaluate(() => [poMentioned("PO - 008245", "PO-008245"), poMentioned("PO 008245 week 45", "PO-008245"), poMentioned("PO-0082451", "PO-008245"), poMentioned("XPO-008245", "PO-008245")]),
+    [true, true, false, false], "an invoice naming its PO as 'PO - 008245' (Word PDF) is matched to PO-008245; other numbers are not");
   ok(!(await page.isVisible("#docsNoFolder")) && !(await page.isVisible("#docsEmpty")), "no empty-state cards when there is something to show");
 
   // ---- the sets

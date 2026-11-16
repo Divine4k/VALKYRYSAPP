@@ -27,4 +27,7 @@ got = core.parseInvoiceText(pdfLines, T.owners(null)); ok(same(got), "PDF from W
 const m = (s) => core.parseInvoiceText(["Factuur 5-2026", "Datum 01-02-2026", s], T.owners(null)).total;
 ok(m("Totaal € 1 725,00") === 1725 && m("Totaal € 1.725,00") === 1725 && m("TOTAAL INCL. BTW € 12 345,67") === 12345.67, "totals with a space, a dot, or none between thousands");
 ok(m("Totaal € 46,00 37") === 46, "a space does not join an amount with the number after it");
+// an invoice line whose PO number a Word PDF split up: "PO - 008245" is read as PO-008245
+got = core.parseInvoiceText(["Factuur nr: 88-2026", "Datum: 09/11/2026", "PO - 008245 week 45 € 500,00 1 € 500,00", "Totaal € 500,00"], T.owners(null));
+ok(/^PO-008245\b/.test(got.po || "") && got.total === 500, "PO - 008245 on an invoice line is read as PO-008245", got);
 console.log(bad ? `${bad} FAILED` : "ALL PASS"); process.exit(bad ? 1 : 0);

@@ -97,7 +97,13 @@ function openDup() {
 }
 
 // ---- new purchase orders: the ones in the Piguillet folder that have no invoice yet (shown on the Facturen tab)
-const poMentioned = (text, po) => { if (!text || !po) return false; const e = String(po).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); return new RegExp("(?<![A-Za-z0-9])" + e + "(?![A-Za-z0-9])", "i").test(text); };
+/** does a text name this PO? "PO-008245" is also found as "PO - 008245" or "PO 008245" (a PDF made by Word splits it up) */
+const poMentioned = (text, po) => {
+  if (!text || !po) return false;
+  const m = /^([A-Za-z]+)\s*[-–_]?\s*(\d+)$/.exec(String(po).trim());
+  const e = m ? m[1] + "\\s*[-–_]?\\s*" + m[2].split("").join("\\s?") : String(po).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp("(?<![A-Za-z0-9])" + e + "(?![A-Za-z0-9])", "i").test(text);
+};
 /** a PO counts as invoiced when an invoice names it: one made in the app, one read from the invoice folder, or an invoice file with the PO number in its name */
 const poInvoiced = (po) => {
   for (const i of state.invoices.values()) if (poMentioned(i.po, po)) return true;
