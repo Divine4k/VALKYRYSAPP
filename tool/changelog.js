@@ -3,6 +3,27 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
+    version: "1.4.0", date: "2026-11-16",
+    items: [
+      { type: "new",
+        nl: "Korte, snelle animaties in de hele app; uit te zetten bij Instellingen › Weergave.",
+        en: "Short, quick animations throughout the app; turn them off in Settings › Appearance.",
+        pl: "Krótkie, szybkie animacje w całej aplikacji; można je wyłączyć w Ustawieniach › Wygląd." },
+      { type: "new",
+        nl: "{jaar} in de bestandsnaam van facturen zet er het jaar van de factuur in.",
+        en: "{jaar} in the invoice file name adds the invoice's year.",
+        pl: "{jaar} w nazwie pliku faktury wstawia rok faktury." },
+      { type: "improved",
+        nl: "Nieuw opstartscherm dat laat zien wat de app aan het doen is.",
+        en: "New start-up screen that shows what the app is doing.",
+        pl: "Nowy ekran startowy, który pokazuje, co robi aplikacja." },
+      { type: "improved",
+        nl: "Updates zijn meteen te zien, niet pas na een paar minuten.",
+        en: "Updates show up right away, not after a few minutes.",
+        pl: "Aktualizacje są widoczne od razu, a nie dopiero po kilku minutach." },
+    ],
+  },
+  {
     version: "1.3.11", date: "2026-11-11",
     items: [
       { type: "improved",

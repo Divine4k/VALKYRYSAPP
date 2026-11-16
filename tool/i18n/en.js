@@ -25,7 +25,7 @@ VALK_I18N.en = {
     saveAsFail: "Saving failed. Does the folder still exist and may you write to it?", saveAsNothing: "There was nothing to save.",
     noCards: "No purchase orders added yet. You can drop several at once; they get consecutive invoice numbers.",
     next: "Next invoice", nextNote: "after the invoices shown", settings: "Settings",
-    sStart: "Start at invoice number (this year)", sFile: "Invoice file name", sFileHint: "Use {nummer} (number), {po}, {datum} (date) and {klant} (client). Example: {0}", sTerm: "Payment term", sBtw: "Default VAT",
+    sStart: "Start at invoice number (this year)", sFile: "Invoice file name", sFileHint: "Use {nummer} (number), {po}, {datum} (date), {jaar} (year) and {klant} (client). Example: {0}", sTerm: "Payment term", sBtw: "Default VAT",
     "btw.verlegd": "VAT reverse-charged", "btw.21": "VAT 21%", "btw.9": "VAT 9%",
     clPick: "Saved client", clNew: "New client…", clMod: "changed", clSaveNew: "Save as client", clUpdate: "Update", clDelete: "Delete", clNewName: "Name of this client", clNameOk: "Save client", clCancel: "Cancel",
     clSaved: "Client “{0}” saved", clUpdated: "Client “{0}” updated", clDeleted: "Client “{0}” deleted", clDelAsk: "Delete client “{0}”? Invoices already made stay as they are.", clNeedName: "Give the client a name", clActive: "Invoices now go to {0}", cardClient: "Client",

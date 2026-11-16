@@ -25,7 +25,7 @@ VALK_I18N.nl = {
     saveAsFail: "Opslaan lukte niet. Bestaat de map nog en heb je er schrijfrechten?", saveAsNothing: "Er was niets om op te slaan.",
     noCards: "Nog geen inkooporders toegevoegd. Je kunt er meerdere tegelijk in slepen; ze krijgen opeenvolgende factuurnummers.",
     next: "Volgende factuur", nextNote: "na de facturen hiernaast", settings: "Instellingen",
-    sStart: "Begin bij factuurnummer (dit jaar)", sFile: "Bestandsnaam van facturen", sFileHint: "Gebruik {nummer}, {po}, {datum} en {klant}. Voorbeeld: {0}", sTerm: "Betaaltermijn", sBtw: "Standaard BTW",
+    sStart: "Begin bij factuurnummer (dit jaar)", sFile: "Bestandsnaam van facturen", sFileHint: "Gebruik {nummer}, {po}, {datum}, {jaar} en {klant}. Voorbeeld: {0}", sTerm: "Betaaltermijn", sBtw: "Standaard BTW",
     "btw.verlegd": "BTW verlegd", "btw.21": "BTW 21%", "btw.9": "BTW 9%",
     clPick: "Opgeslagen klant", clNew: "Nieuwe klant…", clMod: "gewijzigd", clSaveNew: "Opslaan als klant", clUpdate: "Bijwerken", clDelete: "Verwijderen", clNewName: "Naam van deze klant", clNameOk: "Klant opslaan", clCancel: "Annuleren",
     clSaved: "Klant „{0}” opgeslagen", clUpdated: "Klant „{0}” bijgewerkt", clDeleted: "Klant „{0}” verwijderd", clDelAsk: "Klant „{0}” verwijderen? Facturen die al gemaakt zijn blijven zoals ze zijn.", clNeedName: "Geef de klant een naam", clActive: "Facturen gaan nu naar {0}", cardClient: "Klant",

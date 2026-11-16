@@ -25,7 +25,7 @@ VALK_I18N.pl = {
     saveAsFail: "Zapis nie powiódł się. Czy folder nadal istnieje i masz do niego prawa zapisu?", saveAsNothing: "Nie było nic do zapisania.",
     noCards: "Nie dodano jeszcze zamówień. Możesz przeciągnąć kilka naraz; dostaną kolejne numery faktur.",
     next: "Następna faktura", nextNote: "po pokazanych fakturach", settings: "Ustawienia",
-    sStart: "Zacznij od numeru faktury (w tym roku)", sFile: "Nazwa pliku faktury", sFileHint: "Użyj {nummer} (numer), {po}, {datum} (data) i {klant} (klient). Przykład: {0}", sTerm: "Termin płatności", sBtw: "Domyślny VAT",
+    sStart: "Zacznij od numeru faktury (w tym roku)", sFile: "Nazwa pliku faktury", sFileHint: "Użyj {nummer} (numer), {po}, {datum} (data), {jaar} (rok) i {klant} (klient). Przykład: {0}", sTerm: "Termin płatności", sBtw: "Domyślny VAT",
     "btw.verlegd": "VAT – odwrotne obciążenie", "btw.21": "VAT 21%", "btw.9": "VAT 9%",
     clPick: "Zapisany klient", clNew: "Nowy klient…", clMod: "zmieniony", clSaveNew: "Zapisz jako klienta", clUpdate: "Aktualizuj", clDelete: "Usuń", clNewName: "Nazwa tego klienta", clNameOk: "Zapisz klienta", clCancel: "Anuluj",
     clSaved: "Klient „{0}” zapisany", clUpdated: "Klient „{0}” zaktualizowany", clDeleted: "Klient „{0}” usunięty", clDelAsk: "Usunąć klienta „{0}”? Wystawione już faktury pozostaną bez zmian.", clNeedName: "Podaj nazwę klienta", clActive: "Faktury idą teraz do {0}", cardClient: "Klient",

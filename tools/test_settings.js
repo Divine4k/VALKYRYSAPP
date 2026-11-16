@@ -93,6 +93,8 @@ const open = (page) => page.$eval("#welcomeDlg", (d) => d.open);
   // ================= the tabs and the Settings tab (a profile that is set up)
   seed(HOME, { "pin.json": SKIP, "config.json": { folder: INV, poFolder: PO, welcomed: true } });
   ({ app, page, errs, pick } = await launch(HOME));
+  eq(await page.evaluate(() => { const k = state.settings.fileTemplate; state.settings.fileTemplate = "Factuur {nummer} {jaar} {datum}"; const r = [fileName({ factuurnr: "90-2026", datum: "16/11/2026" }, "PO-1"), fileName({ factuurnr: "3-2027" }, "", "docx")]; state.settings.fileTemplate = k; return r; }),
+    ["Factuur 90-2026 2026 16-11-2026.pdf", "Factuur 3-2027 2027.docx"], "file name: {jaar} is the invoice's year (from its date, else its number)");
   eq(await page.title(), "Valkyrys app", "window title"); eq(await page.textContent("#side .side-app"), "App", "sidebar: Valkyrys logo + App");
   ok(await page.evaluate(() => !document.querySelector("#appbar, .appbar, .seg-ind")), "no black bar on top any more, no sliding pill");
   ok(await page.$eval("#side .side-logo", (l) => getComputedStyle(l).maskImage.includes("logo-white.png") && l.getAttribute("aria-label") === "Valkyrys"), "sidebar: logo drawn from the logo file (mask), named for screen readers");

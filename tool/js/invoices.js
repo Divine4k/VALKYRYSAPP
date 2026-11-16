@@ -97,7 +97,9 @@ const MIME = { pdf: "application/pdf", docx: "application/vnd.openxmlformats-off
 const build = (fmt, data) => (fmt === "docx" ? buildWord(data) : buildPdf(data));
 const fileName = (data, po, fmt = "pdf") => {
   const tpl = (state.settings.fileTemplate || "").trim() || DEFAULTS.fileTemplate;
-  const vals = { nummer: data.factuurnr, po: po || "", datum: String(data.datum || "").replace(/\//g, "-"), klant: (data.client && data.client.name) || "" };
+  // {jaar}: the invoice's year (its date, else the number "90-2026", else this year)
+  const jaar = String(data.jaar || (String(data.datum || "").match(/(\d{4})\s*$/) || [])[1] || (String(data.factuurnr || "").match(/(\d{4})$/) || [])[1] || new Date().getFullYear());
+  const vals = { nummer: data.factuurnr, po: po || "", datum: String(data.datum || "").replace(/\//g, "-"), jaar, klant: (data.client && data.client.name) || "" };
   let base = tpl.replace(/\{(\w+)\}/gi, (m, k) => (vals[k.toLowerCase()] ?? m)).replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").replace(/\s+/g, " ").trim().replace(/[. ]+$/, "");
   if (!base) base = "Factuur " + data.factuurnr;
   return `${base}.${fmt}`;
