@@ -12,8 +12,8 @@ async function previewDoc({ title, load, open, addPo, nopreview, word }) {
   if (nopreview) { err.className = "chip warn"; err.textContent = tr(nopreview); err.hidden = false; return; }
   try {
     const raw = await load(); if (!raw) throw new Error("unreadable");
-    if (word) { // a Word file: drawn as a simple page; if that fails, the old "open it in Word" message
-      try { const el = await docxPage(new Uint8Array(raw)); if (id === poPrevSeq) pages.appendChild(el); }
+    if (word) { // a Word file: drawn as a simple page (an old .doc: its text and tables); if that fails, the old "open it in Word" message
+      try { const u8 = new Uint8Array(raw), el = u8[0] === 0xD0 && u8[1] === 0xCF ? docPage(u8) : await docxPage(u8); if (id === poPrevSeq) pages.appendChild(el); }
       catch (e) { if (id === poPrevSeq) { err.className = "chip warn"; err.textContent = tr("noPrevWord"); err.hidden = false; } }
       return;
     }
@@ -39,6 +39,20 @@ function previewInvoice(x) {
 }
 
 // ---- a Word file (.docx) drawn as a simple white page: paragraphs, bold/italic/underline, sizes and colours, tables, line breaks, pictures, header and footer
+/** a table read from an Excel sheet (rows of [column, text]): amounts and numbers to the right */
+const gridHtml = (grid) => {
+  const c0 = Math.min(...grid.map((r) => r[0][0])), c1 = Math.max(...grid.map((r) => r[r.length - 1][0]));
+  return `<table class="bd wgrid"><tbody>${grid.map((r) => { const m = new Map(r); let h = ""; for (let c = c0; c <= c1; c++) { const t = m.get(c) || ""; h += `<td${/^(?:€|-?\d)/.test(t) ? ' class="r"' : ""}>${esc(t)}</td>`; } return `<tr>${h}</tr>`; }).join("")}</tbody></table>`;
+};
+/** an old Word file (.doc) as a simple page: the header, the text with its Excel tables where they stand, the footer (js/docread.js) */
+function docPage(bytes) {
+  const P = WordDoc.docPreview(bytes); if (!P || !(P.body.length || P.header.length)) throw new Error("empty");
+  const ps = (l) => l.map((t) => `<div class="wp">${esc(t)}</div>`).join("");
+  const page = document.createElement("div"); page.className = "wpage wdoc"; page.setAttribute("role", "document");
+  page.innerHTML = (P.header.length ? `<div class="whf h">${ps(P.header)}</div>` : "") + P.body.map((x) => (typeof x === "string" ? `<div class="wp">${esc(x)}</div>` : gridHtml(x.grid))).join("")
+    + (P.footer.length ? `<div class="whf f">${ps(P.footer)}</div>` : "");
+  return page;
+}
 async function docxPage(bytes) {
   const zip = await JSZip.loadAsync(bytes);
   const xml = async (p) => { const f = zip.file(p); if (!f) return null; const d = new DOMParser().parseFromString(await f.async("string"), "application/xml"); return d.getElementsByTagName("parsererror").length ? null : d; };
@@ -110,6 +124,14 @@ async function docxPage(bytes) {
     const pc = (v) => (v / G.w * 100).toFixed(3) + "cqw";
     bgs.push(`<img class="wbgi" src="${src}" alt="" style="left:${pc(x)};top:${pc(y)};width:${pc(w)};height:${pc(h)}">`);
   }
+  async function objectTable(el, rels) {
+    try {
+      const ole = [...el.getElementsByTagName("*")].find((x) => x.localName === "OLEObject"), target = ole && rels.get(ole.getAttribute("r:id"));
+      const f = target && zip.file("word/" + target.replace(/^\//, "")); if (!f) return "";
+      const grid = await WordDoc.gridOf(JSZip, await f.async("uint8array"));
+      return grid.length ? gridHtml(grid) : "";
+    } catch (e) { return ""; }
+  }
   async function runKids(list, o, rels) {
     let h = "";
     for (const c of list) {
@@ -118,7 +140,8 @@ async function docxPage(bytes) {
       else if (n === "tab" || n === "ptab") h += '<span class="wtab"></span>';
       else if (n === "br" || n === "cr") h += "<br>";
       else if (n === "noBreakHyphen") h += "‑";
-      else if (n === "drawing" || n === "pict" || n === "object") h += await drawing(c, rels);
+      else if (n === "object") h += (await objectTable(c, rels)) || (await drawing(c, rels)); // an embedded Excel sheet: its table
+      else if (n === "drawing" || n === "pict") h += await drawing(c, rels);
       else if (n === "AlternateContent") h += await runKids(kids(child(c, "Choice") || child(c, "Fallback")), o, rels);
     }
     return h;

@@ -156,7 +156,9 @@
   /** An invoice line is "quantity x rate". A day rate counts as many days as its quantity. A rate under 100 is an hour rate (day rates are 380 and up): 8 hours are 1 day.
       Costs (kilometres, travel, ...) are no work time at all. Used by the statistics, for invoices made here and for invoices read from the folder. */
   const HOURLY_BELOW = 100;
-  const NOT_WORK = /\b(?:reis|reiskosten|km|kilometers?|kilometer\w*|kosten|onkosten|vergoeding|parkeer\w*|travel|expenses?|mileage)\b/i;
+  // lines that are not time worked: travel (also travel hours, "Reisuren"), kilometres, fuel, costs, and rows named after a day allowance
+  // (Delegatie, Vetkanaal, Onshore/Offshore: only at the start of the description, so "Dagprijs offshore" stays work)
+  const NOT_WORK = /\b(?:reis\w*|km|kilometer\w*|kosten|onkosten|vergoeding|toelage|parkeer\w*|travel|expenses?|mileage|diesel|brandstof)\b|^\s*(?:delegatie|vetkanaal|onshore|offshore)\b/i;
   const isHourLine = (rate, desc) => rate > 0 && rate < HOURLY_BELOW && !NOT_WORK.test(String(desc || ""));
   const lineDays = (rate, quantity, desc) => {
     const q = +quantity || 0; if (!(q > 0) || NOT_WORK.test(String(desc || ""))) return 0;

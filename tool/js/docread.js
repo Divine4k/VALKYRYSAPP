@@ -59,8 +59,8 @@ const WordDoc = (function () {
     return streams;
   }
 
-  /** the whole text of a .doc (main text, then headers/footers etc.), or null */
-  function docText(bytes) {
+  /** a .doc: its whole text (main text, then footnotes, headers and footers) and where those parts end; null when it is not one */
+  function docRaw(bytes) {
     const st = cfbStreams(bytes); if (!st || !st.WordDocument) return null;
     const wd = st.WordDocument(), dv = new DataView(wd.buffer, wd.byteOffset, wd.byteLength);
     if (wd.length < 0x1AA || dv.getUint16(0, true) !== 0xA5EC) return null;
@@ -84,12 +84,25 @@ const WordDoc = (function () {
       if (fc & 0x40000000) { const s = (fc & 0x3FFFFFFF) / 2; text += ansi.decode(wd.subarray(s, s + len)); }
       else text += utf16.decode(wd.subarray(fc, fc + len * 2));
     }
-    return text;
+    // the header document: stories 0-5 are footnote separators, then per section: even header, odd header, even footer, odd footer, first header, first footer
+    const fcHdd = dv.getUint32(0xF2, true), lcbHdd = dv.getUint32(0xF6, true), hdd = [];
+    if (lcbHdd >= 8 && fcHdd + lcbHdd <= tbl.length) for (let i = 0; i + 4 <= lcbHdd; i += 4) hdd.push(tdv.getUint32(fcHdd + i, true));
+    return { text, ccpText: dv.getInt32(0x4C, true), ccpFtn: dv.getInt32(0x50, true), ccpHdd: dv.getInt32(0x54, true), hdd, st };
   }
+  /** the whole text of a .doc, or null */
+  const docText = (bytes) => { const r = docRaw(bytes); return r ? r.text : null; };
 
   // ---- an Excel sheet embedded in the Word file (Workbook stream, BIFF8): its first sheet as text rows, amounts as "€ 1.725,00"
   const CURRENCY_BUILTIN = new Set([5, 6, 7, 8, 42, 44]);
-  function sheetRows(wb) {
+  const moneyFmt = (id, fmts) => id != null && (CURRENCY_BUILTIN.has(+id) || /€|\[\$€|EUR/.test(fmts[id] || ""));
+  const nlNum = (v, d) => { const neg = v < 0, x = Math.abs(v).toFixed(d), [i, f] = x.split("."); return (neg ? "-" : "") + i.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + (f ? "," + f : ""); };
+  const cellNum = (v, money) => (money ? "€ " + nlNum(v, 2) : Number.isInteger(v) ? String(v) : nlNum(Math.round(v * 100) / 100, 2).replace(/0$/, ""));
+  const gridOfCells = (cells) => [...cells.keys()].sort((a, b) => a - b).map((r) => [...cells.get(r).entries()].sort((a, b) => a[0] - b[0]).map((x) => [x[0], x[1].replace(/\s+/g, " ").trim()]).filter((x) => x[1])).filter((r) => r.length);
+  /** rows of a grid as text lines */
+  const gridRows = (g) => g.map((r) => r.map((x) => x[1]).join(" "));
+  const sheetRows = (wb) => gridRows(sheetGrid(wb));
+  /** the first sheet of a BIFF8 workbook as a grid: rows of [column, text] */
+  function sheetGrid(wb) {
     const dv = new DataView(wb.buffer, wb.byteOffset, wb.byteLength);
     const recs = []; for (let o = 0; o + 4 <= wb.length;) { const t = dv.getUint16(o, true), n = dv.getUint16(o + 2, true); recs.push({ t, o: o + 4, n }); o += 4 + n; }
     const fmts = {}, xfs = [], sst = []; let sheet = -1;
@@ -121,9 +134,7 @@ const WordDoc = (function () {
       }
     }
     if (sheet < 0) return [];
-    const isMoney = (xf) => { const f = xfs[xf]; return f != null && (CURRENCY_BUILTIN.has(f) || /€|\[\$€|EUR/.test(fmts[f] || "")); };
-    const nl = (v, d) => { const neg = v < 0, x = Math.abs(v).toFixed(d), [i, f] = x.split("."); return (neg ? "-" : "") + i.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + (f ? "," + f : ""); };
-    const num = (v, xf) => (isMoney(xf) ? "€ " + nl(v, 2) : Number.isInteger(v) ? String(v) : nl(v, 2).replace(/0$/, ""));
+    const num = (v, xf) => cellNum(v, moneyFmt(xfs[xf], fmts));
     const rk = (x) => { let v; if (x & 2) v = x >> 2; else { const b = new DataView(new ArrayBuffer(8)); b.setUint32(4, x & 0xFFFFFFFC, true); v = b.getFloat64(0, true); } return x & 1 ? v / 100 : v; };
     const cells = new Map(); const put = (row, col, text) => { if (text === "" || text == null) return; if (!cells.has(row)) cells.set(row, new Map()); cells.get(row).set(col, String(text)); };
     let pendingStr = null;
@@ -140,31 +151,91 @@ const WordDoc = (function () {
         else put(row, col, num(dv.getFloat64(o + 6, true), xf));
       } else if (t === 0x0207 && pendingStr) { put(pendingStr[0], pendingStr[1], ustr(o)); pendingStr = null; }
     }
-    return [...cells.keys()].sort((a, b) => a - b).map((r) => [...cells.get(r).entries()].sort((a, b) => a[0] - b[0]).map((x) => x[1].replace(/\s+/g, " ").trim()).filter(Boolean).join(" ")).filter(Boolean);
+    return gridOfCells(cells);
+  }
+  /** the first sheet of an .xlsx workbook (a zip) as the same kind of grid */
+  async function xlsxGrid(JSZip, bytes) {
+    const zip = await JSZip.loadAsync(bytes), txt = async (n) => { const f = zip.file(n); return f ? f.async("string") : ""; };
+    const unx = (t) => t.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#x([0-9a-f]+);/gi, (m, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (m, d) => String.fromCodePoint(+d)).replace(/&amp;/g, "&");
+    const tOf = (x) => [...x.matchAll(/<t(?:\s[^>]*)?>([^<]*)<\/t>/g)].map((m) => unx(m[1])).join("");
+    const sst = [...(await txt("xl/sharedStrings.xml")).matchAll(/<si>([\s\S]*?)<\/si>/g)].map((m) => tOf(m[1]));
+    const styles = await txt("xl/styles.xml"), fmts = {};
+    for (const m of styles.matchAll(/<numFmt\b[^>]*>/g)) { const id = /numFmtId="(\d+)"/.exec(m[0]), code = /formatCode="([^"]*)"/.exec(m[0]); if (id && code) fmts[id[1]] = unx(code[1]); }
+    const xfs = [...((/<cellXfs[^>]*>([\s\S]*?)<\/cellXfs>/.exec(styles) || [])[1] || "").matchAll(/<xf\b[^>]*>/g)].map((m) => +((/numFmtId="(\d+)"/.exec(m[0]) || [])[1] || 0));
+    const name = Object.keys(zip.files).filter((n) => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort((a, b) => parseInt(a.replace(/\D+/g, ""), 10) - parseInt(b.replace(/\D+/g, ""), 10))[0];
+    const sheet = name ? await txt(name) : "", cells = new Map();
+    const put = (row, col, text) => { if (text === "" || text == null) return; if (!cells.has(row)) cells.set(row, new Map()); cells.get(row).set(col, String(text)); };
+    for (const c of sheet.matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
+      const ref = /\br="([A-Z]+)(\d+)"/.exec(c[1]); if (!ref || c[2] == null) continue;
+      const col = [...ref[1]].reduce((a, ch) => a * 26 + ch.charCodeAt(0) - 64, 0) - 1, row = +ref[2] - 1, t = (/\bt="([^"]+)"/.exec(c[1]) || [])[1] || "n", xf = +((/\bs="(\d+)"/.exec(c[1]) || [])[1] || 0);
+      const v = (/<v>([^<]*)<\/v>/.exec(c[2]) || [])[1];
+      if (t === "inlineStr") put(row, col, tOf(c[2])); else if (v == null) continue;
+      else if (t === "s") put(row, col, sst[+v]); else if (t === "str" || t === "e") put(row, col, t === "e" ? "" : unx(v)); else if (t === "b") put(row, col, v === "1" ? "TRUE" : "FALSE");
+      else if (isFinite(+v)) put(row, col, cellNum(+v, moneyFmt(xfs[xf], fmts)));
+    }
+    return gridOfCells(cells);
+  }
+  /** the grid of an embedded workbook, whatever it is packed in: an .xlsx, an .xls, or an OLE object holding either */
+  async function gridOf(JSZip, bytes) {
+    if (bytes[0] === 0x50 && bytes[1] === 0x4B) return JSZip ? xlsxGrid(JSZip, bytes) : [];
+    const st = cfbStreams(bytes); if (!st) return [];
+    const wb = st._all.find((x) => x.name === "Workbook" || x.name === "Book"); if (wb) return sheetGrid(wb.get());
+    const pk = st._all.find((x) => x.name === "Package" || x.name === "CONTENTS"); if (pk && JSZip) { const b = pk.get(); if (b[0] === 0x50 && b[1] === 0x4B) return xlsxGrid(JSZip, b); }
+    return [];
+  }
+  /** the tables of the workbooks embedded in a .docx (zip already opened), in file order: [{ name, grid }] */
+  async function docxGrids(JSZip, zip) {
+    const out = [];
+    for (const name of Object.keys(zip.files).filter((n) => /^word\/embeddings\/[^/]+$/.test(n) && !zip.files[n].dir).sort()) {
+      try { const grid = await gridOf(JSZip, await zip.file(name).async("uint8array")); if (grid.length) out.push({ name, grid }); } catch (e) {}
+    }
+    return out;
   }
 
   /** the text as lines: paragraphs and table cells each on their own, field codes left out (their result kept), then the rows of embedded Excel tables */
   function docLines(bytes) {
     const lines = textLines(bytes); if (lines == null) return null;
-    const st = cfbStreams(bytes);
-    for (const x of st._all) if (x.name === "Workbook" || x.name === "Book") { try { lines.push(...sheetRows(x.get())); } catch (e) {} }
+    for (const g of docGrids(bytes)) lines.push(...gridRows(g));
     return lines;
   }
-  function textLines(bytes) {
-    const t = docText(bytes); if (t == null) return null;
-    let out = "", depth = 0, inCode = [];
+  /** the grids of the workbooks embedded in a .doc */
+  function docGrids(bytes) {
+    const st = cfbStreams(bytes), out = []; if (!st) return out;
+    for (const x of st._all) if (x.name === "Workbook" || x.name === "Book") { try { const g = sheetGrid(x.get()); if (g.length) out.push(g); } catch (e) {} }
+    return out;
+  }
+  const OBJ = "\u0001"; // stands on a line of its own where an embedded object (the Excel table) is
+  const toLines = (t, mark) => cleanText(t, mark).split("\n").map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
+  function textLines(bytes) { const t = docText(bytes); return t == null ? null : toLines(t, false); }
+  /** what a preview needs: { header: [lines], body: [line | { grid }], footer: [lines] } (the tables where their objects stand), or null */
+  function docPreview(bytes) {
+    const raw = docRaw(bytes); if (!raw) return null;
+    const grids = docGrids(bytes), ok = raw.ccpText > 0 && raw.ccpText <= raw.text.length;
+    const body = []; let gi = 0;
+    for (const l of toLines(ok ? raw.text.slice(0, raw.ccpText) : raw.text, true)) { if (l === OBJ) { if (gi < grids.length) body.push({ grid: grids[gi++] }); } else body.push(l); }
+    while (gi < grids.length) body.push({ grid: grids[gi++] });
+    const header = [], footer = [], add = (list, t) => { for (const l of toLines(t, false)) if (!list.includes(l)) list.push(l); };
+    if (ok && raw.ccpHdd > 0) {
+      const base = raw.ccpText + raw.ccpFtn, story = (i) => (i + 1 < raw.hdd.length ? raw.text.slice(base + raw.hdd[i], base + raw.hdd[i + 1]) : "");
+      for (let i = 6; i + 1 < raw.hdd.length; i++) add([0, 1, 4].includes((i - 6) % 6) ? header : footer, story(i));
+    }
+    return { header, body, footer };
+  }
+  function cleanText(t, mark) {
+    let out = "", depth = 0, inCode = [], code = [];
     for (const ch of t) {
       const c = ch.charCodeAt(0);
-      if (c === 0x13) { depth++; inCode.push(true); continue; } // field begin: the code follows
-      if (c === 0x14) { if (depth) inCode[depth - 1] = false; continue; } // separator: the result follows
-      if (c === 0x15) { if (depth) { depth--; inCode.pop(); } continue; } // field end
+      if (c === 0x13) { depth++; inCode.push(true); code.push(""); continue; } // field begin: the code follows
+      if (c === 0x14) { if (depth) { inCode[depth - 1] = false; if (mark && /^\s*EMBED\b/i.test(code[depth - 1])) { out += "\n" + OBJ + "\n"; code[depth - 1] = ""; } } continue; } // separator: the result follows
+      if (c === 0x15) { if (depth) { if (mark && /^\s*EMBED\b/i.test(code[depth - 1])) out += "\n" + OBJ + "\n"; depth--; inCode.pop(); code.pop(); } continue; } // field end
+      if (depth && inCode[depth - 1]) { code[depth - 1] += ch; continue; }
       if (inCode.some(Boolean)) continue;
       if (c === 0x0D || c === 0x07 || c === 0x0B || c === 0x0C) { out += "\n"; continue; } // paragraph, cell, line break, page break
       if (c < 0x20 && c !== 0x09) continue; // pictures, footnote marks and other special characters
-      out += c === 0x09 ? " " : ch === " " ? " " : ch;
+      out += c === 0x09 ? " " : ch === "\u00A0" ? " " : ch;
     }
-    return out.split("\n").map((l) => l.replace(/\s+/g, " ").trim()).filter(Boolean);
+    return out;
   }
-  return { cfbStreams, docText, docLines, sheetRows };
+  return { cfbStreams, docText, docLines, docPreview, sheetRows, sheetGrid, xlsxGrid, gridOf, gridRows, docxGrids };
 })();
 if (typeof module !== "undefined" && module.exports) module.exports = WordDoc;

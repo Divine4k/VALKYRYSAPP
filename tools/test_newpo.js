@@ -35,10 +35,11 @@ async function makePo(file, po, order, items) {
 
   // ---- B. connect both folders
   await pick(app, INV); await goSet(page, "folders"); await page.click("#folderPick"); await page.waitForTimeout(800); await goTab(page, "inv");
+  fs.writeFileSync(path.join(PO, "PO-100099.pdf"), "no pdf"); // looks like a purchase order, cannot be read
   await pick(app, PO); await page.click("#npPick"); await waitRows(page, 6);
   eq(await pos(page), ["PO-100009", "PO-100008", "PO-100002", "PO-100004", "PO-100007", "PO-100005"], "6 of the 7 new POs shown, oldest order first (100001 and 100003 have invoices; copy of 100002 counts once)");
   ok((await note(page)).startsWith("7 inkooporders in je map hebben nog geen factuur."), "note counts 7: " + (await note(page)));
-  ok((await note(page)).includes("2 PDF’s in de map zijn niet als inkooporder gelezen"), "unreadable PDFs are mentioned");
+  ok((await note(page)).includes("1 PDF’s in de map zijn niet als inkooporder gelezen: PO-100099.pdf") && !/kapot|factuur 62/.test(await note(page)), "a file that looks like a PO but cannot be read is mentioned; other PDFs in the folder (an invoice, a broken file) are not: " + (await note(page)));
   const r2 = (await rows(page)).find((r) => r.po === "PO-100002");
   ok(r2 && r2.meta.includes("besteld 05-01-2026") && r2.meta.includes("5 werkdagen") && r2.meta.includes("€ 2.250,00"), "row shows order date, days and value: " + (r2 && r2.meta));
   ok(await page.isVisible("#npAll") && (await page.textContent("#npAll")) === "Alles toevoegen (7)", "add-all button counts all 7");

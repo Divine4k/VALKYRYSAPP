@@ -6,7 +6,8 @@ const require = createRequire(import.meta.url);
 const toolDir = process.argv[2] || new URL("../tool", import.meta.url).pathname;
 const core = require(`${toolDir}/invoice-core.js`), T = require(`${toolDir}/invoice-templates.js`), W = require(`${toolDir}/js/docread.js`);
 let bad = 0; const ok = (c, m, extra) => { console.log((c ? "PASS " : "FAIL ") + m + (c ? "" : "  -> " + JSON.stringify(extra))); if (!c) bad++; };
-const want = { nr: "1-2026", datum: "21/01/2026", client: "Piguillet BV", kvk: "52742938", po: null, sub: 2484, vat: 0, total: 2484, btw: "verlegd", days: 6.0625 };
+// days: the 37,5 hours of work at the hour rate (8 hours = 1 day); the 11 travel hours ("Reisuren") are not time worked
+const want = { nr: "1-2026", datum: "21/01/2026", client: "Piguillet BV", kvk: "52742938", po: null, sub: 2484, vat: 0, total: 2484, btw: "verlegd", days: 4.6875, hourLines: 1 };
 const same = (got) => Object.entries(want).every(([k, v]) => got[k] === v);
 
 // the .doc
@@ -22,6 +23,33 @@ const pdfLines = ["Extreme Building .", "Voorbeeldweg 12a 1234 AB Teststad-Zuid.
   "week: 3 € 46,00 37,50 € 1 725,00", "Reisuren € 46,00 11,0 € 506,00", "Toeslag 200% € 92,00", "Delegatie € 30,00", "Diesel € 0,23 1100km € 253,00", "€ 2 484,00",
   "Total € 2 484,00", "Total inc, btw € 2 484,00", "Btw Verlegd.", "Gelieve te betalen binnen 7 tot 14 dagen.", "ING-nr: NL00TEST0123456789.", "BTW nr: NL 000000000B01 KVK: 12345678."];
 got = core.parseInvoiceText(pdfLines, T.owners(null)); ok(same(got), "PDF from Word: read as invoice 1-2026", { got, want });
+
+// the same layout saved as .docx: the price table is an embedded workbook there too (here an .xlsx inside the zip)
+{
+  const JSZip = require("/opt/npm-tools/node_modules/jszip");
+  const zip = await JSZip.loadAsync(fs.readFileSync(new URL("./fixtures/handmade-3-2026.docx", import.meta.url)));
+  const unxml = (t) => t.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
+  const dl = (xml) => xml.split(/<\/w:p>/).map((p) => [...p.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g)].map((m) => unxml(m[1])).join("")).filter(Boolean); // as the app's docxLines
+  const text = dl(await zip.file("word/document.xml").async("string")), grids = await W.docxGrids(JSZip, zip);
+  ok(grids.length === 1 && W.gridRows(grids[0].grid).includes("week: 3 € 46,00 37,5 € 1.725,00"), ".docx: the embedded workbook is read (amounts as € 1.725,00)", grids.map((g) => [g.name, W.gridRows(g.grid)]));
+  ok(core.parseInvoiceText(text, T.owners(null)).total == null, ".docx: without that table the total is not found (so the table is what makes it an invoice)");
+  const g3 = core.parseInvoiceText([...text, ...grids.flatMap((g) => W.gridRows(g.grid))], T.owners(null));
+  ok(g3.nr === "3-2026" && g3.datum === "04/02/2026" && g3.client === "Piguillet BV" && g3.total === 2484 && g3.btw === "verlegd" && g3.days === 4.6875, ".docx: read as invoice 3-2026", g3);
+}
+
+// what a preview of the .doc needs: the header, the text with the table where its object stands, the footer
+{
+  const P = W.docPreview(new Uint8Array(fs.readFileSync(new URL("./fixtures/handmade-1-2026.doc", import.meta.url)))), at = P.body.findIndex((x) => typeof x !== "string");
+  ok(P.header[0] === "Extreme Building ." && P.footer.some((l) => l.startsWith("ING-nr")) && !P.body.includes("Extreme Building ."), ".doc preview: header and footer apart from the text", [P.header, P.footer]);
+  ok(at > 0 && P.body[at - 1] === "Factuur nr: 1-2026." && P.body[at + 1] === "Hoogchtend." && P.body[at].grid.some((r) => r.map((c) => c[1]).join("|") === "week: 3|€ 46,00|37,5|€ 1.725,00"), ".doc preview: the table stands between 'Factuur nr' and the closing, its cells apart", P.body.map((x) => (typeof x === "string" ? x : "[table]")));
+}
+
+// what counts as time worked on such an invoice: hours at the hour rate and overtime rows; not travel hours, day allowances, fuel
+{
+  const days = (line) => core.parseInvoiceText(["Factuur nr: 9-2026", "Datum: 01/02/2026", line, "Total € 100,00"], T.owners(null)).days;
+  const got = ["week: 5 € 46,00 40 € 1 840,00", "Toeslag 150% € 69,00 8 € 552,00", "Reisuren € 46,00 11,0 € 506,00", "Delegatie € 30,00 5 € 150,00", "Vetkanaal € 40,00 2 € 80,00", "Onshore binnen europa € 55,00 5 € 275,00", "Dagprijs offshore € 450,00 2 € 900,00"].map(days);
+  ok(JSON.stringify(got) === JSON.stringify([5, 1, 0, 0, 0, 0, 2]), "days worked: work hours and overtime count; travel hours and day allowances do not; 'Dagprijs offshore' is work", got);
+}
 
 // amounts: a space only joins groups of three
 const m = (s) => core.parseInvoiceText(["Factuur 5-2026", "Datum 01-02-2026", s], T.owners(null)).total;

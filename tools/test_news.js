@@ -16,7 +16,9 @@ const items = (page) => page.$$eval("#newsList .nrel:first-child li", (l) => l.m
   const [cy, cm, cd] = CL[0].date.split("-").map(Number); // heading dates follow the top entry, not a fixed day
   const nlDate = `${cd} ${["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"][cm - 1]} ${cy}`;
   const enDate = `${cd} ${["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][cm - 1]} ${cy}`;
-  eq(latest, require("../electron-app/package.json").version, "changelog top entry = app version");
+  { // a release (1.5.0) has an entry; quiet updates after it (1.5.1, 1.5.2: "iterate") have none, so the top entry is the release this version belongs to
+    const v = require("../electron-app/package.json").version.split(".").map(Number), l = latest.split(".").map(Number);
+    ok(l[0] === v[0] && l[1] === v[1] && l[2] <= v[2], "changelog top entry = the release this app version belongs to", { top: latest, app: v.join(".") }); }
   ok(CL.every((r) => r.items.every((it) => it.nl && it.en && it.pl && ["new", "improved", "fixed"].includes(it.type))), "every item has nl/en/pl and a known type");
 
   fs.rmSync(dataHome, { recursive: true, force: true }); const dir = seedProfile(dataHome);

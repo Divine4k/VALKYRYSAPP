@@ -133,3 +133,11 @@ button.mkinv { min-height: 30px; padding: 4px 12px; font-size: 12.5px; white-spa
 /* a file in the invoice folder without an invoice number: a quiet grey badge, its name where the client stands */
 .drow.loose .c-nr .chip.noinv { background: var(--sunken); color: var(--muted); border: 1px solid var(--line); }
 .drow.loose .c-cl { color: var(--ink); }
+
+/* a table read from an Excel sheet inside a Word file, and an old .doc drawn as a simple page */
+.wpage table.wgrid { table-layout: auto; font-size: 10pt; }
+.wpage table.wgrid td.r { text-align: right; white-space: nowrap; }
+.wpage.wdoc { font-size: 11pt; line-height: 1.35; }
+.wpage.wdoc .whf.h { text-align: center; }
+.wpage.wdoc .whf.h .wp:first-child { font-size: 15pt; font-weight: 700; color: #111; }
+.wpage.wdoc .whf.f { text-align: center; }

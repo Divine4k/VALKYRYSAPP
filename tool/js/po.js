@@ -17,6 +17,8 @@ async function refreshPoFolder() {
   renderNewPos();
   ensurePoScan();
 }
+/** does this file name look like a purchase order? ("PO-008148.pdf", "Inkooporder 8148.pdf") */
+const poLike = (rel) => /(?:^|[^a-z])PO[-_\s]?\d{3,}|inkooporder|purchase[\s_-]?order|bestelling|zam[oó]wieni/i.test(String(rel).split("/").pop());
 const ensurePoScan = () => { if (state.poFolder && state.poFolder.exists && state.poScanSig !== state.poSig && !state.poScan) scanPos(); };
 let poScanSeq = 0;
 async function scanPos() {
@@ -143,7 +145,8 @@ function renderNewPos() {
   if (show.length) parts.push(tr(show.length === 1 ? "npOne" : "npMany", show.length));
   else if (!skipped) parts.push(state.poRecs.length ? tr("npNone", state.poRecs.length) : tr("npEmpty"));
   if (skipped) parts.push(tr("npSkipped", skipped));
-  if (state.poUnread.length) parts.push(tr("npUnread", state.poUnread.length, state.poUnread.slice(0, 3).join(", ") + (state.poUnread.length > 3 ? "…" : "")));
+  const unread = state.poUnread.filter(poLike); // other PDFs in the folder (accounts, letters) are simply no purchase orders: not mentioned here
+  if (unread.length) parts.push(tr("npUnread", unread.length, unread.slice(0, 3).join(", ") + (unread.length > 3 ? "…" : "")));
   note.textContent = parts.join(" ");
   const dis = state.npBusy ? " disabled" : "";
   list.innerHTML = shown.map(({ r }) => {

@@ -26,11 +26,13 @@ function docParts() {
   for (const fi of files.length ? state.folderInvoices : []) get(fi.factuurnr).fi = fi;
   for (const i of state.invoices.values()) if (/^\d+-\d{4}$/.test(i.factuurnr || "")) get(i.factuurnr).inv = i;
   const out = [...sets.values()].map((s) => {
-    const i = s.inv, fi = s.fi, poText = (i && i.po) || (fi && fi.po) || "", names = [s.pdf, s.docx].filter(Boolean).map((f) => f.name).join(" ");
+    // a file that was read only in part (no total found, so it is not counted as an invoice): what was read still shows (date, client, PO)
+    const part = !s.inv && !s.fi ? [s.pdf, s.docx].filter(Boolean).map((f) => { const e = state.parseCache.get(f.rel); return e && e.mt === f.mtime && e.sz === f.size ? e.r : null; }).find(Boolean) || null : null;
+    const i = s.inv, fi = s.fi, poText = (i && i.po) || (fi && fi.po) || (part && part.po) || "", names = [s.pdf, s.docx].filter(Boolean).map((f) => f.name).join(" ");
     const poRec = (desk && (state.poRecs.find((x) => poMentioned(poText, x.r.po)) || (names && state.poRecs.find((x) => poMentioned(names, x.r.po))))) || null;
     let total = null;
     if (i && i.lines && i.lines.length) total = core.totals(i.lines, i.btw || "verlegd").total; else if (i && +i.totaal) total = +i.totaal; else if (fi && fi.amounts && isFinite(fi.amounts.total)) total = fi.amounts.total;
-    const datum = (i && i.datum) || (fi && fi.datum) || "", client = ((i && i.client && i.client.name) || (fi && fi.client && fi.client.name) || "").trim();
+    const datum = (i && i.datum) || (fi && fi.datum) || (part && part.datum) || "", client = ((i && i.client && i.client.name) || (fi && fi.client && fi.client.name) || (part && part.client) || "").trim();
     const ment = [i && i.po, fi && fi.po, names].filter(Boolean).join(" "); // everything that can name a purchase order (for two invoices on one PO)
     return { ...s, po: poRec ? poRec.r.po : poText, poRec, total, datum, dkey: nlDateKey(datum), client, sent: state.sent.has(s.nr), gen: !s.pdf && !!(i && i.lines && i.lines.length), ment };
   });
