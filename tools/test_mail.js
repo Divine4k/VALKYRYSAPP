@@ -138,6 +138,26 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   ok(await until(async () => !(await page.isVisible("#newPo .rstat")) && !(await page.$eval("#newPo [data-refresh]", (b) => b.classList.contains("spin")))), "when done, the status is gone");
   await goSet(page, "mail"); await page.waitForTimeout(200);
 
+  // an invoice names a PO that is not in the PO folder (here PO-008151, ignored before, so the checks leave it): Documents says so and gets it from the mail
+  {
+    const INVF = tmp("mail-inv"); fs.rmSync(INVF, { recursive: true, force: true }); fs.mkdirSync(INVF, { recursive: true });
+    const PL = require("/home/claude/.npm-global/lib/node_modules/pdf-lib"), doc = await PL.PDFDocument.create(), pg = doc.addPage([595, 842]), font = await doc.embedFont(PL.StandardFonts.Helvetica);
+    ["Factuur nr: 9-2026", "Datum: 10-11-2026", "Factuur aan:", "Piguillet BV", "PO-008151 werkzaamheden € 500,00 1 € 500,00", "Totaal € 500,00", "BTW verlegd"].forEach((t, i) => pg.drawText(t, { x: 50, y: 780 - i * 24, size: 11, font }));
+    fs.writeFileSync(path.join(INVF, "Factuur 9-2026.pdf"), await doc.save());
+    const cfgF = path.join(HOME, APP_DIR, "config.json"); fs.writeFileSync(cfgF, JSON.stringify({ ...JSON.parse(fs.readFileSync(cfgF, "utf8")), folder: INVF }));
+    ok(JSON.parse(fs.readFileSync(path.join(HOME, APP_DIR, "mail.json"), "utf8")).skip.includes("8151") && !fs.existsSync(path.join(POF, "PO-008151.pdf")), "PO-008151 was ignored: skipped by the checks, not in the folder");
+    await page.evaluate(() => refreshAll()); await goTab(page, "docs");
+    ok(await until(async () => /PO-008151 \(factuur 9-2026\) staat niet in de map met inkooporders/.test(await page.textContent("#docsWarn"))), "Documents: the invoice's PO is not in the PO folder", await page.textContent("#docsWarn"));
+    ok(await page.isVisible('#docsWarn [data-dw="pofetch"]') && /Uit e-mail halen/.test(await page.textContent('#docsWarn [data-dw="pofetch"]')), "...with 'Uit e-mail halen' (a mailbox is connected)");
+    await page.screenshot({ path: "/tmp/mail-nopo.png", clip: { x: 180, y: 0, width: 1100, height: 360 } });
+    await page.click('#docsWarn [data-dw="pofetch"]');
+    ok(await saved(path.join(POF, "PO-008151.pdf"), 10000), "...clicked: fetched from the mail although it was ignored before");
+    ok(await until(async () => /Gedownload: PO-008151/.test(await page.textContent("#toast"))), "...toast: downloaded (every mail here carries the same sample PO PDF, so the notice itself stays in this test)");
+    ok(!JSON.parse(fs.readFileSync(path.join(HOME, APP_DIR, "mail.json"), "utf8")).skip.includes("8151"), "...no longer skipped by the checks");
+    const cfg = JSON.parse(fs.readFileSync(cfgF, "utf8")); delete cfg.folder; fs.writeFileSync(cfgF, JSON.stringify(cfg)); await page.evaluate(() => refreshAll());
+    await goSet(page, "mail"); await page.waitForTimeout(300);
+  }
+
   // switched off, then disconnect (asks once)
   await page.click("#mailList [data-mtog]");
   ok(await until(async () => /Uitgezet/.test(await page.textContent("#mailList .mstat")) && (await page.isDisabled("#mailList [data-mcheck]"))), "switched off");

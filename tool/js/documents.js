@@ -50,7 +50,7 @@ function poOnlySets(invSets) {
 const DOC_LABEL = { pdf: "PDF", docx: "Word" };
 const byNrKey = (a, b) => { const [x, y] = [a, b].map((v) => v.split("-").map(Number)); return x[1] - y[1] || x[0] - y[0]; };
 function docWarns(sets) {
-  const W = { ready: false, missAll: new Map(), miss: new Map(), dups: [], dupOf: new Map() };
+  const W = { ready: false, missAll: new Map(), miss: new Map(), dups: [], dupOf: new Map(), noPo: [] };
   if (!desk || !state.folder || !state.folder.exists || !state.folderScanned || state.scan || !state.invoicesLoaded) return W;
   W.ready = true;
   const keptM = state.keptMissing || new Set(), keptD = state.keptDupInv || new Set();
@@ -76,6 +76,15 @@ function docWarns(sets) {
     for (const n of nrs) { const l = W.dupOf.get(n) || []; l.push({ po, others: nrs.filter((m) => m !== n) }); W.dupOf.set(n, l); }
   }
   W.dups.sort((a, b) => byNrKey(a.nrs[0], b.nrs[0]));
+  // invoices that name a PO whose file is not in the purchase-order folder (once that folder is fully read); ignored ones: settings/keptnopo
+  if (state.poFolder && state.poFolder.exists && state.poChecked && !state.poScan && state.poScanSig === state.poSig) {
+    const keptP = state.keptNoPo || new Set(), seen = new Set();
+    for (const s of invs) {
+      if (s.poRec) continue; const m = /\bPO[-\s]?(\d{3,})\b/i.exec(s.po || ""); if (!m) continue;
+      const po = "PO-" + m[1]; if (keptP.has(po) || seen.has(po)) continue; seen.add(po); W.noPo.push({ po, nr: s.nr });
+    }
+    W.noPo.sort((a, b) => byNrKey(a.nr, b.nr));
+  }
   return W;
 }
 const andList = (l) => (l.length > 1 ? l.slice(0, -1).join(", ") + tr("and") + l[l.length - 1] : l[0] || "");
@@ -87,6 +96,11 @@ function renderDocWarns() {
     items.push({ text: W.miss.size === 1 ? tr("missOne", l[0]) : tr("missMany", W.miss.size, l.join(", ")), btns: [["miss", "", "warnView", false]] });
   }
   for (const d of W.dups) items.push({ text: tr("dupInv", d.po, d.nrs.length, andList(d.nrs)), btns: [["dup", d.po, "warnView", false], ["dupignore", d.key, "docsIgnore", true]] });
+  if (W.noPo.length) { // a PO an invoice names is not in the PO folder: get it from the mail (when a mailbox is connected), or leave it
+    const pos = W.noPo.map((x) => x.po), shown = W.noPo.slice(0, 8).map((x) => `${x.po} (${x.nr})`).join(", ") + (W.noPo.length > 8 ? ", …" : "");
+    items.push({ text: W.noPo.length === 1 ? tr("noPoOne", W.noPo[0].po, W.noPo[0].nr) : tr("noPoMany", W.noPo.length, shown),
+      btns: [...(typeof mailHasAccounts === "function" && mailHasAccounts() ? [["pofetch", pos.join(","), "noPoFetch", false]] : []), ["pokeep", pos.join(","), "docsIgnore", true]] });
+  }
   const btns = (b) => b.map(([k, v, key, ghost]) => `<button type="button"${ghost ? ' class="ghost"' : ""} data-dw="${k}" data-v="${esc(v)}">${esc(tr(key))}</button>`).join("");
   const d = $("#docsWarn"), n = $("#npWarn");
   d.innerHTML = items.map((x) => `<div class="panel dupbar" role="status" data-w="${x.btns[0][0]}"><span class="dtext">${esc(x.text)}</span>${btns(x.btns)}</div>`).join(""); d.hidden = !items.length;
@@ -97,9 +111,21 @@ document.addEventListener("click", (e) => {
   const b = e.target.closest("button[data-dw]"); if (!b) return;
   const k = b.dataset.dw, v = b.dataset.v || "";
   if (k === "dupignore") { state.keptDupInv = new Set([...(state.keptDupInv || []), v]); saveKept("keptdupinv", state.keptDupInv); render(); return; }
+  if (k === "pokeep") { state.keptNoPo = new Set([...(state.keptNoPo || []), ...v.split(",").filter(Boolean)]); saveKept("keptnopo", state.keptNoPo); render(); return; }
+  if (k === "pofetch") { fetchMissingPos(v.split(",").filter(Boolean), b); return; }
   state.docs.filter = k === "miss" ? "miss" : "all"; state.docs.q = k === "dup" ? v : ""; saveDocsPrefs();
   setTab("docs"); renderDocs(); window.scrollTo({ top: 0 });
 });
+/** gets POs that invoices name but that are not in the PO folder from the connected mailboxes (also ones skipped before); the toast for what came
+ *  is the mail's own ("downloaded"), here only what was not found */
+async function fetchMissingPos(pos, btn) {
+  if (!pos.length || !MAIL || btn.disabled) return;
+  busy(btn, true); let r;
+  try { r = await MAIL.fetchPos(pos); } catch (e) { r = { error: "other", missing: pos }; }
+  busy(btn, false);
+  if (r && r.missing && r.missing.length) toast(r.error && !(r.saved && r.saved.length) ? mailErr(r.error) : tr("noPoNotFound", r.missing.map((n) => "PO-" + String(n).padStart(6, "0")).join(", ")));
+  await refreshPoFolder(); render();
+}
 /** makes the missing PDF and/or Word file of an invoice made in the app again, into the invoice folder, from what was saved */
 async function remakeMissing(nr, btn) {
   const all = docSets(), rec = state.invoices.get(nr), miss = docWarns(all).missAll.get(nr) || [];

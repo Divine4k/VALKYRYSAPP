@@ -72,7 +72,7 @@ function renderMailNotes() {
 }
 function mailSet(st) {
   if (!st || !Array.isArray(st.accounts)) return;
-  mailUi.st = st; renderMail(); if (typeof renderAuto === "function") renderAuto();
+  mailUi.st = st; renderMail(); if (typeof renderAuto === "function") renderAuto(); if (typeof renderDocWarns === "function") renderDocWarns(); // the "get it from the mail" button needs a mailbox
   const away = !document.hasFocus();
   if (st.saved && st.saved.length) {
     refreshPoFolder();

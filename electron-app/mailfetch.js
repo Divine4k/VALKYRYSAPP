@@ -10,6 +10,7 @@
 const fs = require("fs"), path = require("path"), net = require("net"), tls = require("tls"), crypto = require("crypto");
 
 const PROVIDERS = { gmail: { host: "imap.gmail.com", port: 993 }, wp: { host: "imap.wp.pl", port: 993 }, onet: { host: "imap.poczta.onet.pl", port: 993 } }; // Onet: also op.pl, vp.pl, onet.eu
+const FETCH_BACK_DAYS = 365; // fetchPos: POs an invoice needs are looked for in the mail of the last year
 const LOOKBACK_DAYS = 30, EVERY_MS = 5 * 60 * 1000, FIRST_AFTER_MS = 0, MAX_PER_RUN = 300, SCAN_MAX = 1500, TIMEOUT_MS = 45000; // SCAN_MAX: mails whose subject is read when the server cannot search it
 const SUBJECT_RE = /inkooporder\b[^\n]*?\bPO[-\s]?(\d{3,})/i;
 const PO_FILE_RE = /\bPO[-_\s]?(\d{3,})\b/i;
@@ -190,12 +191,12 @@ const subjectNum = (s) => poNum(s, SUBJECT_RE);
 /** log in and compare the PO mails of the last LOOKBACK_DAYS days with the folder. PDFs of POs that are not there (have(number) false) and not
  *  skipped are saved (save), or with `hold` only noted (asked first: hold(name, uid, uidValidity)). Only their headers are read first; whole mails
  *  only for the missing ones. st = { box } of this account (kept). Returns { saved: [names], held: [names], inMail: number of POs in the mail } */
-async function checkAccount(acc, pass, st, { have, skip = () => false, save, hold, plain, now = new Date() }) {
+async function checkAccount(acc, pass, st, { have, skip = () => false, save, hold, plain, now = new Date(), only = null, days = LOOKBACK_DAYS }) { // only: just these PO numbers (Set)
   const c = await login(acc, pass, plain);
   try {
     const box = st.box || (st.box = await pickBox(c, acc));
     const { uv } = await examine(c, box);
-    const since = new Date(now.getTime() - LOOKBACK_DAYS * 86400000);
+    const since = new Date(now.getTime() - days * 86400000);
     const search = async (q) => {
       const sr = await c.ok("UID SEARCH " + q); let uids = [];
       for (const u of sr.untagged) { const m = /^\* SEARCH\b(.*)$/i.exec(u.text); if (m) uids.push(...m[1].trim().split(/\s+/).filter(Boolean).map(Number)); }
@@ -219,6 +220,7 @@ async function checkAccount(acc, pass, st, { have, skip = () => false, save, hol
     // some servers (Onet) do not decode an encoded subject (=?utf-8?B?...?=) when they search, so their search finds nothing:
     // then the subjects of all mails of those days are read here and decoded by the app itself (remembered for this account)
     if (!byNum.size) { byNum = await subjects((await search("SINCE " + day)).slice(0, SCAN_MAX)); if (byNum.size && !st.scanAll) st.scanAll = true; }
+    if (only) byNum = new Map([...byNum].filter(([n]) => only.has(n)));
     const saved = [], held = [];
     for (const [n, uid] of [...byNum].sort((a, b) => Number(a[0]) - Number(b[0]))) { // oldest PO first
       if (have(n) || skip(n)) continue;
@@ -416,6 +418,31 @@ function create({ dataDir, poFolder, encrypt, decrypt, canRun = () => true, send
     emit(saved.length ? { saved, downloaded: true } : null);
     return { saved, error };
   });
+  /** fetch these POs (numbers or names like "PO-008245") from the mail now: an invoice names them and their file is not in the PO folder.
+   *  Also ones skipped before (deleted through the app or ignored): asking for them by name undoes that. Looks back FETCH_BACK_DAYS.
+   *  -> { saved: [names], missing: [numbers not found in any mailbox], error } */
+  const fetchPos = (list) => serial(async () => {
+    const want = new Set((Array.isArray(list) ? list : []).map((x) => poNum(x) || (/^\d{3,}$/.test(String(x)) ? String(Number(x)) : "")).filter(Boolean));
+    if (!want.size) return { saved: [], missing: [], error: "" };
+    const folder = folderOk(); if (!folder) return { saved: [], missing: [...want], error: "nofolder" };
+    const data = read(), accounts = data.accounts.filter((a) => a.enabled !== false);
+    if (!accounts.length) return { saved: [], missing: [...want], error: "noaccount" };
+    const have = names(folder), save = saver(folder, have), saved = []; let error = "";
+    for (const acc of accounts) {
+      const left = new Set([...want].filter((n) => !have.hasNum(n))); if (!left.size) break;
+      busy.add(acc.id); emit();
+      try {
+        const r = await checkAccount(acc, decrypt(acc.pass), acc.state || (acc.state = {}), { plain, only: left, days: FETCH_BACK_DAYS, have: (k) => have.hasNum(k), save });
+        saved.push(...r.saved); acc.error = "";
+      } catch (e) { error = e.kind || errCode(e); acc.error = error; }
+      finally { busy.delete(acc.id); }
+      change((d) => keepAcc(d, acc));
+    }
+    const got = new Set(saved.map((n) => poNum(n)).filter(Boolean));
+    change((d) => { d.skip = d.skip.filter((k) => !got.has(String(k))); d.pending = d.pending.filter((p) => !got.has(poNum(p.name))); });
+    emit(saved.length ? { saved, downloaded: true } : null);
+    return { saved, missing: [...want].filter((n) => !have.hasNum(n)), error };
+  });
   /** found POs not wanted: forgotten (they are not offered again) */
   function ignore(keys) { change((d) => { const out = d.pending.filter((p) => !keys || keys.includes(p.key)); d.skip = [...new Set([...d.skip, ...out.map((p) => poNum(p.name)).filter(Boolean)])].slice(-2000); d.pending = d.pending.filter((p) => !out.includes(p)); }); emit(); return true; }
   /** a PO file deleted through the app: its PO is never fetched again */
@@ -468,7 +495,7 @@ function create({ dataDir, poFolder, encrypt, decrypt, canRun = () => true, send
     return new Promise((res) => { setTimeout(() => { check().catch(() => {}).then(res, res); }, firstMs).unref?.(); });
   }
   function stop() { if (timer) clearInterval(timer); timer = null; }
-  return { state, add, remove, setEnabled, setMode, check, download, ignore, forget, seen, auto, stop, send: sendMail };
+  return { state, add, remove, setEnabled, setMode, check, download, fetchPos, ignore, forget, seen, auto, stop, send: sendMail };
 }
 
 module.exports = { create, poNum, buildMail, smtpOf, Smtp, parseMail, poFiles, checkAccount, PROVIDERS, Imap, imapDate, errCode, params, words };

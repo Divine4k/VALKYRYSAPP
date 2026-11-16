@@ -30,7 +30,7 @@ setTab("stats"); // the statistics are what opens first
   if (db) { try { const c = await db.doc("settings/poskip").get(); if (c.exists && Array.isArray(c.data().list)) state.poSkip = new Set(c.data().list); } catch (e) {} }
   if (db) { try { const c = await db.doc("settings/sent").get(); if (c.exists && Array.isArray(c.data().list)) state.sent = new Set(c.data().list.map(String)); } catch (e) {} }
   if (db) { try { const c = await db.doc("settings/keptstale").get(); if (c.exists && Array.isArray(c.data().list)) state.keptStale = new Set(c.data().list.map(String)); } catch (e) {} }
-  if (db) for (const [doc, k] of [["keptmissing", "keptMissing"], ["keptdupinv", "keptDupInv"]]) { try { const c = await db.doc("settings/" + doc).get(); if (c.exists && Array.isArray(c.data().list)) state[k] = new Set(c.data().list.map(String)); } catch (e) {} }
+  if (db) for (const [doc, k] of [["keptmissing", "keptMissing"], ["keptdupinv", "keptDupInv"], ["keptnopo", "keptNoPo"]]) { try { const c = await db.doc("settings/" + doc).get(); if (c.exists && Array.isArray(c.data().list)) state[k] = new Set(c.data().list.map(String)); } catch (e) {} }
   if (db) { try { const c = await db.doc("settings/docsprefs").get(); if (c.exists) applyDocsPrefs(c.data()); } catch (e) {} renderDocs(); }
   if (db) { try { const c = await db.doc("settings/news").get(); const s = c.exists && c.data().seen; // seen in either place counts
     if (s && newsSeen !== NEWS_LATEST) { newsSeen = s; try { localStorage.setItem("valkyrys-news-seen", s); } catch (e) {} }
