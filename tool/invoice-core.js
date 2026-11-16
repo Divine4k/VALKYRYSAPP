@@ -394,7 +394,7 @@
     const color = (h) => { const n = parseInt(h, 16); return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255); };
     const doc = await PDFDocument.create();
     doc.setTitle(`Factuur ${data.factuurnr}`);
-    doc.setAuthor("Valkyrys");
+    doc.setAuthor((data.sender && data.sender.name) || "Valkyrys");
     doc.setSubject(data.lines.map((l) => l.desc).join(", "));
     doc.setCreator("Valkyrys facturen");
     doc.setLanguage("nl-NL");
@@ -429,27 +429,53 @@
     // --- sidebar
     const side = await doc.embedPng(assets.images.sidebar);
     page.drawImage(side, { x: 0, y: 0, width: SIDE_W, height: PAGE_H });
-    const logo = await doc.embedPng(assets.images.logo);
-    const lw = 112.5, lh = lw * logo.height / logo.width;
-    page.drawImage(logo, { x: 21.1, y: PAGE_H - 44.9 - lh, width: lw, height: lh });
+    if (assets.images.logo) {
+      const logo = await doc.embedPng(assets.images.logo);
+      const lw = 112.5, lh = lw * logo.height / logo.width;
+      page.drawImage(logo, { x: 21.1, y: PAGE_H - 44.9 - lh, width: lw, height: lh });
+    } else { // a design without a logo: the business name stands there, on up to three lines (smaller when one word is too wide)
+      const maxW = SIDE_W - 21.1 - 14, words = safe(String((data.sender && data.sender.name) || "")).split(/\s+/).filter(Boolean);
+      let size = 15; while (size > 8 && words.some((w) => width(w, B, size) > maxW)) size -= 0.5;
+      const rows = []; let cur = "";
+      for (const w of words) { const t = cur ? cur + " " + w : w; if (cur && width(t, B, size) > maxW) { rows.push(cur); cur = w; } else cur = t; }
+      if (cur) rows.push(cur);
+      rows.slice(0, 3).forEach((r, i) => text(r, 21.1, 58 + i * (size + 3), size, B, C.WHITE));
+    }
     const SY = 134; // the sidebar text block sits lower on the page
     const S = data.sender;
     const LH = 12.65;
-    // VAN (company, street, city) and CONTACT (phone, e-mail); the blocks below keep their place
-    label("Van", 21.1, SY + 387.24, C.YELLOW);
-    text(S.name, 21.1, SY + 404.64, 10, B, C.WHITE);
-    [S.address[0], S.address[1]].forEach((l, i) => text(l, 21.1, SY + 419.14 + i * LH, 9, R, C.SOFT));
-    label("Contact", 21.1, SY + 458.04, C.YELLOW);
-    [S.address[2], S.email].filter(Boolean).forEach((l, i) => text(l, 21.1, SY + 475.04 + i * LH, 9, R, C.SOFT));
-    label("Betaalgegevens", 21.1, SY + 513.94, C.YELLOW);
-    text(S.iban, 21.1, SY + 531.34, 10, B, C.WHITE);
-    text("t.n.v. " + S.name, 21.1, SY + 545.84, 9, R, C.SOFT);
-    label("BTW nr", 21.1, SY + 572.09, C.YELLOW);
-    text(S.btw, 21.1, SY + 589.0, 9.5, B, C.WHITE);
-    label("KVK", 21.1, SY + 615.39, C.YELLOW);
-    text(S.kvk, 21.1, SY + 632.3, 9.5, B, C.WHITE);
-    text("Vermeld bij betaling het", 21.1, SY + 661.14, 8, I, C.SOFT);
-    text("factuurnummer.", 21.1, SY + 672.34, 8, I, C.SOFT);
+    // VAN (company, street, city), CONTACT (phone, e-mail), bank, VAT and chamber of commerce numbers. Every line has its fixed place;
+    // a line too long for the sidebar (a long business name, e-mail address) goes on over the next line and moves what is below it down,
+    // and when that would run off the page the whole block starts higher
+    const SMAX = SIDE_W - 21.1 - 10;
+    const wrapSide = (s, font, size) => {
+      const rows = []; let cur = "";
+      for (let w of safe(String(s || "")).split(/\s+/).filter(Boolean)) {
+        while (width(w, font, size) > SMAX) { // one word wider than the sidebar: cut where it still fits
+          if (cur) { rows.push(cur); cur = ""; }
+          let n = w.length - 1; while (n > 1 && width(w.slice(0, n), font, size) > SMAX) n--;
+          rows.push(w.slice(0, n)); w = w.slice(n);
+        }
+        const t = cur ? cur + " " + w : w;
+        if (cur && width(t, font, size) > SMAX) { rows.push(cur); cur = w; } else cur = t;
+      }
+      if (cur) rows.push(cur);
+      return rows.length ? rows : [""];
+    };
+    const sideItems = [ // [text, baseline, size, font, colour] or a label [text, baseline]
+      ["Van", 387.24], [S.name, 404.64, 10, B, C.WHITE], [S.address[0], 419.14, 9, R, C.SOFT], [S.address[1], 419.14 + LH, 9, R, C.SOFT],
+      ["Contact", 458.04], ...[S.address[2], S.email].filter(Boolean).map((l, i) => [l, 475.04 + i * LH, 9, R, C.SOFT]),
+      ["Betaalgegevens", 513.94], [S.iban, 531.34, 10, B, C.WHITE], ["t.n.v. " + S.name, 545.84, 9, R, C.SOFT],
+      ["BTW nr", 572.09], [S.btw, 589.0, 9.5, B, C.WHITE], ["KVK", 615.39], [S.kvk, 632.3, 9.5, B, C.WHITE],
+      ["Vermeld bij betaling het", 661.14, 8, I, C.SOFT], ["factuurnummer.", 672.34, 8, I, C.SOFT]];
+    const sideRows = sideItems.map((it) => (it.length === 2 ? null : wrapSide(it[0], it[3], it[2])));
+    const extra = sideRows.reduce((a, r) => a + (r ? r.length - 1 : 0), 0);
+    let sdy = -Math.max(0, extra * LH - 22); // room at the bottom of the page for two more lines; beyond that the block moves up
+    sideItems.forEach((it, i) => {
+      if (!sideRows[i]) { label(it[0], 21.1, SY + it[1] + sdy, C.YELLOW); return; }
+      sideRows[i].forEach((r, k) => text(r, 21.1, SY + it[1] + sdy + k * LH, it[2], it[3], it[4]));
+      sdy += (sideRows[i].length - 1) * LH;
+    });
 
     // --- heading and meta row
     rect(MX, 44.9, 22.5, 3.0, C.YELLOW);

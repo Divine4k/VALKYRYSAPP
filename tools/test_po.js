@@ -67,7 +67,12 @@ const hiLabel = (page) => page.$$eval("#chart .bv", (v) => v.map((x) => x.textCo
   eq(rows.map((r) => +r[0].match(/^Week (\d+)/)[1]), [...wk.keys()].sort((a, c) => a - c), "table lists the weeks that have work, in order");
   eq(rows.map((r) => r[3]), [...wk.keys()].sort((a, c) => a - c).map((w) => eur2(sum(wk.get(w)))), "value per week");
   ok(rows.some((r) => r[0].startsWith("Week 46 · 9–15 Nov") && r[2] === "2"), "current week present with its 2 days: " + rows.map((r) => r[0]).join(" | "));
-  ok(await page.$$eval("#stTable tbody tr.now td:first-child", (e) => e.length === 1 && e[0].textContent.startsWith("Week 46")), "current week row highlighted");
+  { const d = new Date(), t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7)); // ISO week of today
+    const wk = Math.ceil(((t - Date.UTC(t.getUTCFullYear(), 0, 1)) / 86400000 + 1) / 7);
+    const now = await page.$$eval("#stTable tbody tr.now td:first-child", (e) => e.map((x) => x.textContent));
+    const has = (await page.$$eval("#stTable tbody tr td:first-child", (e) => e.map((x) => x.textContent))).some((x) => x.startsWith("Week " + wk + " ") || x === "Week " + wk);
+    // the table lists the weeks that have work in them: this week's row is the highlighted one when it is there, and no other row ever is
+    ok(has ? now.length === 1 && now[0].startsWith("Week " + wk) : now.length === 0, "only the current week's row is highlighted (week " + wk + (has ? "" : ", not in the table now") + ")", now); }
   // the week that straddles New Year: 29-31 Dec 2025 sit in week 1, they show in the 2025 view (and not in 2026)
   await page.selectOption("#statYear", "2025"); await page.waitForTimeout(300);
   const r25 = await page.$$eval("#stTable tbody tr", (r) => r.map((x) => [...x.children].map((c) => c.textContent)));

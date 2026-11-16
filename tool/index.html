@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="css/documents.css">
 <link rel="stylesheet" href="css/motion.css">
 <link rel="stylesheet" href="css/utilities.css">
+<script src="js/boot-prefs.js"></script>
 <script src="js/boot-side.js"></script>
 <script src="js/boot-motion.js"></script>
 <script src="js/boot-theme.js"></script>
@@ -398,6 +399,7 @@
     </div>
     <ol class="mguide" id="mailGuide"></ol>
     <label class="f" for="mailUser"><span data-i18n="mailUser">E-mailadres</span><input id="mailUser" type="email" autocomplete="off" spellcheck="false"></label>
+    <p class="small mhint" id="mailHint" hidden role="status"></p>
     <label class="f" for="mailPass"><span id="mailPassLbl"></span><input id="mailPass" type="password" autocomplete="new-password" spellcheck="false"></label>
     <label class="f" for="mailHost" id="mailHostWrap" hidden><span data-i18n="mailHost">IMAP-server</span><input id="mailHost" placeholder="imap.example.com" spellcheck="false"></label>
     <p class="chip error" id="mailErr" hidden role="alert"></p>

@@ -62,6 +62,8 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
   ok(await readyAll(page), "the folder and the purchase orders are read: 5 rows, 4 with a PO");
   eq(await page.evaluate(() => [poMentioned("PO - 008245", "PO-008245"), poMentioned("PO 008245 week 45", "PO-008245"), poMentioned("PO-0082451", "PO-008245"), poMentioned("XPO-008245", "PO-008245")]),
     [true, true, false, false], "an invoice naming its PO as 'PO - 008245' (Word PDF) is matched to PO-008245; other numbers are not");
+  eq(await page.evaluate(() => ["Extreme building 1- 2026", "VALKYRYS 5-2025 (kopie)", "Extreme Building 90-2026 16-11-2026", "Factuur 15-01-2026", "Factuur 15 - 01 - 2026", "Factuur 7 - 2026"].map((n) => { const m = NUM_IN_NAME.exec(n); return m ? `${+m[1]}-${m[2]}` : ""; })),
+    ["1-2026", "5-2025", "90-2026", "", "", "7-2026"], "invoice number in a file name: also with a space at the dash ('1- 2026'), never a date");
   ok(!(await page.isVisible("#docsNoFolder")) && !(await page.isVisible("#docsEmpty")), "no empty-state cards when there is something to show");
 
   // ---- the sets

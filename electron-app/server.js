@@ -7,9 +7,24 @@ const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; cha
 const DEFAULT_SETTINGS = { startNumber: 62, startYear: 2026, betaaltermijn: "14 dagen", btw: "verlegd", fileTemplate: "VALKYRYS {nummer}",
   client: { name: "Piguillet BV", street: "Edisonstraat 8", city: "2652 XS Berkel en Rodenrijs", kvk: "52742938", btw: "NL850577950B01" } };
 
+// What a new install starts with (DEFAULT_SETTINGS above are the first user's own, kept for data from before the designs existed): its own
+// numbering from 1 in this year, a neutral file name, and builtins: false = the two personal designs are not offered (the Standard one is).
+const freshSettings = () => ({ ...DEFAULT_SETTINGS, startNumber: 1, startYear: new Date().getFullYear(), fileTemplate: "Factuur {nummer}", builtins: false });
+const readDocs = (f) => { const d = JSON.parse(fs.readFileSync(f, "utf8")); if (!d || typeof d !== "object" || Array.isArray(d)) throw new Error("not a data file"); return d; };
+
 function createServer(webDir, dataFile, isUnlocked = () => true) {
   let docs = {}, existed = false;
-  try { docs = JSON.parse(fs.readFileSync(dataFile, "utf8")); existed = true; } catch (e) { docs = { "settings/main": { ...DEFAULT_SETTINGS, builtins: false } }; } // a fresh install: no built-in designs, the person adds their own
+  // data.json; when it is damaged (cut off by a crash, a full disk, a virus scanner) it is kept aside as data.json.damaged-<time> and the app
+  // goes on with data.json.bak, the copy from the save before it. Only when there is nothing readable does it start as a new install.
+  try { docs = readDocs(dataFile); existed = true; }
+  catch (e) {
+    const there = fs.existsSync(dataFile);
+    if (there) { try { fs.copyFileSync(dataFile, dataFile + ".damaged-" + Date.now()); } catch (x) {} }
+    try {
+      docs = readDocs(dataFile + ".bak"); existed = true;
+      fs.writeFileSync(dataFile + ".tmp", JSON.stringify(docs, null, 2)); fs.renameSync(dataFile + ".tmp", dataFile); // back in place, so the next save does not copy the damaged file over the good copy
+    } catch (x) { docs = { "settings/main": freshSettings() }; existed = false; }
+  }
 
   function save() {
     try {
@@ -32,6 +47,11 @@ function createServer(webDir, dataFile, isUnlocked = () => true) {
     if (url.pathname.startsWith("/api/")) {
       res.setHeader("Cache-Control", "no-store");
       if (url.pathname === "/api/ping") { res.writeHead(204); return res.end(); }
+      if (url.pathname === "/api/prefs") { // how the app looks and speaks: not secret, and wanted before the PIN is entered (js/boot-prefs.js)
+        const p = docs["settings/prefs"] || {}, th = docs["settings/theme"] || null;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ lang: p.lang || "", langChosen: !!p.langChosen, side: p.side || "", motion: p.motion || "", theme: th && th.id ? { id: th.id, custom: th.custom || null } : null }));
+      }
       if (!isUnlocked()) { res.writeHead(401); return res.end(); } // a PIN is set and has not been entered yet: no saved data
       if (url.pathname === "/api/db") { res.writeHead(200, { "Content-Type": "application/json" }); return res.end(JSON.stringify(docs)); }
       if (url.pathname === "/api/doc") {
@@ -59,4 +79,4 @@ function createServer(webDir, dataFile, isUnlocked = () => true) {
   });
   return server;
 }
-module.exports = { createServer, DEFAULT_SETTINGS };
+module.exports = { createServer, DEFAULT_SETTINGS, freshSettings };

@@ -32,7 +32,8 @@ if (desk) {
 // builtins === false: an install made since the designs are the person's own (written by server.js on a fresh install). The built-in designs are
 // not offered there and there is no design until one is imported; absent = an older install, which keeps the built-ins. Old invoices keep theirs (recordLook).
 const builtinsHidden = () => state.settings.builtins === false;
-const offered = () => TP.TEMPLATES.filter((t) => t.custom || !builtinsHidden());
+const offered = () => TP.TEMPLATES.filter((t) => t.custom || t.always || !builtinsHidden()); // the Standard design is for anyone, so always offered
+const tplName = (t) => (t.nameKey ? tr(t.nameKey) : t.name);
 const hasDesign = () => !builtinsHidden() || offered().some((t) => t.id === state.settings.template);
 const currentTemplate = () => (hasDesign() ? TP.get(state.settings.template).id : "");
 const currentSender = () => (hasDesign() ? TP.senderFor(currentTemplate(), state.settings.sender) : Object.fromEntries(TP.FIELDS.map((k) => [k, String((state.settings.sender || {})[k] || "").trim()])));
@@ -53,7 +54,7 @@ async function saveSettingsDoc(next) {
 function renderTplUi() {
   const has = hasDesign(), id = currentTemplate(), t = TP.get(id), miss = TP.missing(currentSender());
   const img = $("#tplCurImg"); img.hidden = !has; if (has && img.getAttribute("src") !== t.preview) img.src = t.preview;
-  $("#tplCurName").textContent = has ? t.name : tr("tplNone"); $("#tplCurDesc").textContent = has ? tplDesc(t) : tr("tplNoneDesc");
+  $("#tplCurName").textContent = has ? tplName(t) : tr("tplNone"); $("#tplCurDesc").textContent = has ? tplDesc(t) : tr("tplNoneDesc");
   $("#tplCurHint").textContent = tr(has ? "tplCurHint" : "tplEmptyHint"); $("#tplChange").textContent = tr(has ? "tplChange" : "tplAddBtn");
   $("#detWarn").hidden = !miss.length; $("#detWarn").textContent = miss.length ? tr("detMissing", missingLabels(miss)) : "";
   $("#detBar").hidden = has && !miss.length; $("#detBarText").textContent = !has ? tr("tplNoneBar") : miss.length ? tr("detBar", missingLabels(miss)) : "";
@@ -121,7 +122,7 @@ async function removeCustom(id) {
   const t = TP.get(id), list = (state.settings.customTemplates || []).filter((c) => c.id !== id), e = (state.settings.customTemplates || []).find((c) => c.id === id);
   if (!t.custom || !confirm(tr("tplRemoveAsk", t.name))) return;
   const next = { ...state.settings, customTemplates: list };
-  if (state.settings.template === id) { const rest = builtinsHidden() ? list[0] : { id: "valkyrys" }; if (rest) next.template = rest.id; else delete next.template; } // own designs only: the next one, or none
+  if (state.settings.template === id) { const rest = builtinsHidden() ? list[0] || { id: "standard" } : { id: "valkyrys" }; next.template = rest.id; } // own designs only: the next one, else the Standard design
   if (desk && desk.removeTemplate && e && e.file) desk.removeTemplate(e.file).catch(() => {});
   customLoads.delete(id); TP.setCustomList(list);
   await saveSettingsDoc(next);
@@ -133,7 +134,7 @@ const syncDesign = () => { syncCustoms(); if (!$("#detForm").contains(document.a
 let tplMode = "change", tplPick = "", wzShown = {};
 function renderTplDlg() {
   const list = offered(), own = builtinsHidden();
-  $("#tplGrid").innerHTML = (list.length ? "" : `<p class="tplempty" id="tplEmpty"><strong>${esc(tr("tplEmpty"))}</strong><span>${esc(tr("tplEmptyHint"))}</span></p>`) + list.map((t) => `<div class="tplitem"><button type="button" class="tplopt" role="radio" aria-checked="${t.id === tplPick}" data-tpl="${esc(t.id)}"><img src="${esc(t.preview)}" alt=""><span class="tname">${esc(t.name)}</span><span class="tdesc">${esc(tplDesc(t))}</span></button>`
+  $("#tplGrid").innerHTML = (list.length ? "" : `<p class="tplempty" id="tplEmpty"><strong>${esc(tr("tplEmpty"))}</strong><span>${esc(tr("tplEmptyHint"))}</span></p>`) + list.map((t) => `<div class="tplitem"><button type="button" class="tplopt" role="radio" aria-checked="${t.id === tplPick}" data-tpl="${esc(t.id)}"><img src="${esc(t.preview)}" alt=""><span class="tname">${esc(tplName(t))}</span><span class="tdesc">${esc(tplDesc(t))}</span></button>`
     + (t.custom ? `<button type="button" class="ghost tdel" data-tpl-del="${esc(t.id)}" title="${esc(tr("tplRemove"))}" aria-label="${esc(tr("tplRemove") + ": " + t.name)}">×</button>` : "") + `</div>`).join("")
     + `<div class="tplitem"><button type="button" class="tplopt tpladd" id="tplAdd"><span class="tplplus" aria-hidden="true">+</span><span class="tname">${esc(tr("tplAdd"))}</span><span class="tdesc">${esc(tr("tplAddHint"))}</span></button></div>`;
   $("#tplIntro").textContent = tr(tplMode === "first" ? (own ? "tplIntroOwn" : "tplIntroFirst") : "tplIntroChange");

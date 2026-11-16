@@ -32,8 +32,8 @@ if (!libsOk) {
 async function loadAssets() {
   if (state.assets) return state.assets;
   const get = async (p) => { const r = await fetch(p); if (!r.ok) throw new Error(p); return new Uint8Array(await r.arrayBuffer()); };
-  const images = { logo: await get("img/logo-white.png"), sidebar: await get("img/sidebar.png"), extremeLogo: await get("img/extreme-logo.png"), extremeEmblem: await get("img/extreme-emblem.png") };
-  state.docxAssets = { logo: images.logo, logoW: 1365, logoH: 318, accent: await get("img/accent.png"), background: await get("img/background.png") };
+  const images = { logo: await get("img/logo-white.png"), sidebar: await get("img/sidebar.png"), sidebarPlain: await get("img/sidebar-plain.png"), extremeLogo: await get("img/extreme-logo.png"), extremeEmblem: await get("img/extreme-emblem.png") };
+  state.docxAssets = { logo: images.logo, logoW: 1365, logoH: 318, accent: await get("img/accent.png"), background: await get("img/background.png"), backgroundPlain: await get("img/background-plain.png") };
   let fonts = null;
   try { fonts = { regular: await get("fonts/Carlito-Regular.ttf"), bold: await get("fonts/Carlito-Bold.ttf"), italic: await get("fonts/Carlito-Italic.ttf") }; } catch (e) { fonts = null; }
   let extremeDocx = null; try { extremeDocx = await get("templates/extreme.docx"); } catch (e) {}

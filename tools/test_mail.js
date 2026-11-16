@@ -25,7 +25,7 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
     { uid: 4, date: new Date(now - 2 * 86400000), subject: "Inkooporder PO-008148", raw: F.poMail({ po: "008148", pdf }) },
     { uid: 5, date: new Date(now - 86400000), subject: "Uitnodiging", raw: F.poMail({ po: "1", pdf, subject: "Uitnodiging" }) },
   ];
-  const srv = await F.start({ users: { "jan@wp.pl": PASS }, boxes: { INBOX: inbox } });
+  const srv = await F.start({ users: { "jan@firma.example": PASS }, boxes: { INBOX: inbox } });
   seedProfile(HOME, { poFolder: POF });
   fs.writeFileSync(path.join(HOME, APP_DIR, "mail.json"), JSON.stringify({ mode: "auto" })); // 'ask first' is the default; this part tests downloading by itself
   let { app, page, errs } = await launch();
@@ -46,6 +46,20 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   eq(await page.$$eval("#mailGuide [data-link]", (b) => b.map((x) => x.dataset.link)), ["onetMail", "onetAppPw"], "...with buttons to Onet Poczta and Onet's app-password help");
   await page.click('#mailGuide [data-link="onetMail"]'); await page.waitForTimeout(300);
   ok((await app.evaluate(() => globalThis.__links || [])).includes("https://poczta.onet.pl/"), "...the first opens Onet Poczta");
+  // the address tells the service: the right one is chosen while typing, known servers are filled in, Outlook is explained
+  const prov = () => page.$eval('#mailForm input[name="mailProv"]:checked', (r) => r.value);
+  await page.fill("#mailUser", "piet@gmail.com"); eq(await prov(), "gmail", "a gmail.com address: Gmail is chosen");
+  await page.fill("#mailUser", "jan@op.pl"); eq(await prov(), "onet", "an op.pl address: Onet");
+  await page.fill("#mailUser", "jan@interia.pl");
+  eq([await prov(), await page.inputValue("#mailHost"), await page.isVisible("#mailHint")], ["imap", "poczta.interia.pl", true], "an interia.pl address: Other, with Interia's server filled in and a line on what to switch on");
+  ok(/korzystam z programu pocztowego/.test(await page.textContent("#mailHint")), "...the line names Interia's setting");
+  await page.fill("#mailUser", "jan@tlen.pl"); eq(await page.inputValue("#mailHost"), "poczta.o2.pl", "a tlen.pl address: o2's server replaces the one filled in before");
+  await page.fill("#mailUser", "jan@hotmail.com"); await page.fill("#mailPass", "x");
+  ok(await page.isVisible("#mailHint") && /Microsoft/.test(await page.textContent("#mailHint")), "a hotmail.com address: says at once that Microsoft mailboxes cannot be connected");
+  srv.log.length = 0; await page.click("#mailSave");
+  ok(/Outlook-, Hotmail- en Live-adressen kunnen niet gekoppeld worden/.test(await page.textContent("#mailErr")) && !srv.log.length, "...and Koppelen explains it without trying to log in");
+  await page.fill("#mailUser", ""); await page.fill("#mailPass", "");
+  ok(!(await page.isVisible("#mailHint")) && (await page.inputValue("#mailHost")) === "", "address cleared: the hint and the filled-in server are gone");
   await page.click('.mprov label:has(input[value="imap"])');
   ok(await page.isVisible("#mailHostWrap"), "Other: a server field");
   await page.click('.mprov label:has(input[value="gmail"])'); await page.screenshot({ path: "/tmp/mail-dialog.png" }); await page.click('.mprov label:has(input[value="imap"])');
@@ -54,14 +68,14 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   await page.fill("#mailPass", "geheim"); await page.click("#mailForm .pweye");
   ok((await page.getAttribute("#mailPass", "type")) === "text" && (await page.getAttribute("#mailForm .pweye", "aria-pressed")) === "true", "the eye shows the password");
   await page.click("#mailForm .pweye"); ok((await page.getAttribute("#mailPass", "type")) === "password", "...and hides it again");
-  await page.fill("#mailUser", "jan@wp.pl"); await page.fill("#mailPass", "fout"); await page.fill("#mailHost", "127.0.0.1:" + srv.port);
+  await page.fill("#mailUser", "jan@firma.example"); await page.fill("#mailPass", "fout"); await page.fill("#mailHost", "127.0.0.1:" + srv.port);
   await page.click("#mailSave");
   ok(await until(() => page.isVisible("#mailErr")) && /Inloggen lukt niet/.test(await page.textContent("#mailErr")), "wrong password: 'Inloggen lukt niet'", await page.textContent("#mailErr"));
   ok(await page.isVisible("#mailDlg"), "...the dialog stays open");
   await page.fill("#mailPass", PASS); await page.click("#mailSave");
   ok(await until(async () => !(await page.isVisible("#mailDlg"))), "right password: dialog closes");
   ok(await until(() => page.isVisible("#mailList li")), "the account is listed");
-  ok(/jan@wp\.pl/.test(await page.textContent("#mailList")), "...with the address");
+  ok(/jan@firma\.example/.test(await page.textContent("#mailList")), "...with the address");
 
   // the first check runs by itself: the PO mail is fetched, the other one not
   const f1 = path.join(POF, "PO-008148.pdf");

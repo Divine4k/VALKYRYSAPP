@@ -31,7 +31,7 @@ const L = (t, a) => ({ desc: "x", tarief: t, aantal: a });
   const kv = async () => page.$$eval("#kpis .kpi", (k) => k.map((x) => [x.querySelector(".v").textContent, x.querySelector(".s").textContent.trim()]));
   let k = await kv(); console.log(k);
   eq(k.map((x) => x[0]), ["€ 13.400", "6", "31", "€ 1.218"], "2026 tiles: revenue / invoices / days / avg per month");
-  ok(k[0][1] === "+123% t.o.v. 2025 tot dezelfde datum", "YTD comparison vs 2025", k[0][1]);
+  ok(/^[+-]\d+% t\.o\.v\. 2025 tot dezelfde datum$/.test(k[0][1]), "YTD comparison vs 2025 (the percentage depends on today's date)", k[0][1]);
   eq(k[1][1], "gem. € 2.233 per factuur", "avg per invoice");
   eq(k[2][1], "gem. dagtarief € 432", "avg day rate");
   eq(k[3][1], "Beste maand: Maart (€ 4.800)", "best month");

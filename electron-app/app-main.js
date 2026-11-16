@@ -358,7 +358,10 @@ app.whenReady().then(() => {
     const origin = `http://127.0.0.1:${server.address().port}`;
     appOrigin = origin;
     session.defaultSession.setPermissionRequestHandler((wc, permission, cb) => cb(false));
-    win = new BrowserWindow({ width: 1280, height: 900, minWidth: 420, minHeight: 600, backgroundColor: "#0e0e0f", title: "Valkyrys app", show: false,
+    // 1280 x 900, or as much of it as fits this screen (a 1366 x 768 laptop, or Windows set to 125-150% text size, has less room)
+    let wa = { width: 1280, height: 900 }; try { wa = require("electron").screen.getPrimaryDisplay().workAreaSize; } catch (e) {}
+    const winW = Math.max(420, Math.min(1280, wa.width)), winH = Math.max(480, Math.min(900, wa.height));
+    win = new BrowserWindow({ width: winW, height: winH, minWidth: 420, minHeight: Math.min(600, winH), backgroundColor: "#0e0e0f", title: "Valkyrys app", show: false,
       icon: path.join(__dirname, "build", "icon.png"), autoHideMenuBar: true, webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true, preload: path.join(__dirname, "preload.js") } });
     win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
     win.webContents.on("will-navigate", (e, url) => { if (!url.startsWith(origin)) e.preventDefault(); }); // a PDF dropped beside the drop zone must not open

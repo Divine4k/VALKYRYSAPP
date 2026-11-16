@@ -1,7 +1,7 @@
 // The invoice folder (desktop app): listing it and reading the invoices in it for the statistics.
 "use strict";
 // ------------------------------------------------------------ invoice folder (desktop app only)
-const NUM_IN_NAME = /(?<![\d-])(\d{1,4})-(20\d{2})(?![\d-])/; // 62-2026, but not the 01-2026 inside 15-01-2026
+const NUM_IN_NAME = /(?<![\d-]|-\s{1,3})(\d{1,4})\s?-\s?(20\d{2})(?![\d-])/; // 62-2026, also typed as "1- 2026"; not the 01-2026 inside 15-01-2026 or 15 - 01 - 2026
 const fmtDate = (ms) => { const d = new Date(ms); return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`; };
 async function refreshFolder() {
   if (!desk) return;

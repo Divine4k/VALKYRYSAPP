@@ -63,6 +63,32 @@ for (const c of xcases) {
   check("word", core.parseInvoiceText(docxLines(await zip.file("word/document.xml").async("string")), T.owners(mine)));
 }
 
+// ---- the Standard design (for anyone: the sidebar layout with the person's own name instead of a logo): drawn and read back, also with a
+// business name too long for one line of the sidebar
+for (const name of ["Jan Kowalski Bouw", "Schildersbedrijf Internationaal Vastgoedonderhoud"]) {
+  const me = { ...mine, name }, sAssets = { ...xAssets, images: { ...xAssets.images, sidebarPlain: rd("img/sidebar-plain.png") }, docx: { ...xAssets.docx, backgroundPlain: rd("img/background-plain.png") } };
+  for (const c of xcases) {
+    const data = { template: "standard", factuurnr: c.nr, datum: c.datum, betaaltermijn: "14 dagen", client: c.client, lines: c.lines, btw: c.btw, sender: T.forRender(me) };
+    const t = core.totals(c.lines, c.btw), days = c.lines.reduce((a, l) => a + core.lineDays(l.tarief, l.aantal, l.desc), 0);
+    const want = { nr: c.nr, datum: c.datum, client: c.client.name, kvk: c.kvk === undefined ? c.client.kvk : c.kvk, sub: t.sub, vat: t.vat, total: t.total, btw: c.btw, days };
+    const check = (what, got) => { const okk = Object.entries(want).every(([k, v]) => got[k] === v); if (!okk) bad++; console.log(okk ? "PASS" : "FAIL", "standard", what, c.nr, name.length > 20 ? "(long name)" : "", okk ? "" : JSON.stringify({ got, want })); };
+    const bytes = await T.renderPdf(PDFLib, sAssets, data, core);
+    const pdf = await pdfjs.getDocument({ data: new Uint8Array(bytes), useSystemFonts: true }).promise;
+    let lines = []; for (let p = 1; p <= pdf.numPages; p++) lines = lines.concat(core.linesFromTextItems((await (await pdf.getPage(p)).getTextContent()).items));
+    check("pdf", core.parseInvoiceText(lines, T.owners(me)));
+    if (c === xcases[0]) { // every piece of sidebar text stays inside the sidebar (150 pt wide) and on the page
+      const items = (await (await pdf.getPage(1)).getTextContent()).items.filter((i) => i.str.trim() && i.transform[4] < 100);
+      const out = items.filter((i) => i.transform[4] + i.width > 150 || i.transform[5] < 8);
+      if (out.length) bad++; console.log(out.length ? "FAIL" : "PASS", "standard", "sidebar text stays inside the sidebar and on the page", name.length > 20 ? "(long name)" : "", out.length ? JSON.stringify(out.map((i) => [i.str, Math.round(i.transform[4] + i.width), Math.round(i.transform[5])])) : "");
+    }
+    const word = await T.buildWord({ docx, InvoiceDocx, JSZip }, sAssets, data, core);
+    const zip = await JSZip.loadAsync(word);
+    check("word", core.parseInvoiceText(docxLines(await zip.file("word/document.xml").async("string")), T.owners(me)));
+  }
+}
+{ const st = T.get("standard"); const okk = st.id === "standard" && st.always && !st.sender.name && st.settings.fileTemplate === "Factuur {nummer}" && st.settings.startNumber === 1;
+  if (!okk) bad++; console.log(okk ? "PASS" : "FAIL", "standard", "is always offered, has no details of its own, a neutral file name and numbering from 1"); }
+
 // ---- a design the person imported (a Word file in the Extreme style with their own details typed in): details read out, Word filled, PDF drawn
 {
   const { OWN, makeCustomDocx } = require("./make_custom_docx.js");
@@ -74,7 +100,7 @@ for (const c of xcases) {
   const blank = await T.inspectDocx(JSZip, xAssets.extremeDocx);
   res(JSON.stringify(blank.sender) === JSON.stringify({ name: "Extreme Building" }), "placeholders are not taken for details", blank.sender);
   T.setCustomList([{ id: "cTest", name: "Bouw", file: "cTest.docx" }]);
-  res(T.get("cTest").custom && T.TEMPLATES.length === 3, "listed as a design");
+  res(T.get("cTest").custom && T.TEMPLATES.length === 4, "listed as a design"); // Valkyrys, Extreme Building, Standard + this one
   await T.loadCustom(JSZip, "cTest", bytes);
   res(T.senderFor("cTest", {}).iban === OWN.iban && T.senderFor("cTest", { iban: "X" }).iban === "X", "its details are the defaults, typed ones win");
   const me = { ...OWN, person: "A. Ander", iban: "NL55 INGB 0000 1111 22", phone: "" };
@@ -92,7 +118,7 @@ for (const c of xcases) {
     const pl = core.linesFromTextItems((await (await pdf.getPage(1)).getTextContent()).items), gp = core.parseInvoiceText(pl, T.owners(me));
     res(Object.entries(want).every(([k, v]) => gp[k] === v) && pl.join(" ").includes("NL55 INGB"), "pdf (Valkyrys layout) read back " + c.nr, gp);
   }
-  T.setCustomList([]); res(T.TEMPLATES.length === 2 && T.get("cTest").id === "valkyrys", "a removed design is gone, its invoices fall back to the first design");
+  T.setCustomList([]); res(T.TEMPLATES.length === 3 && T.get("cTest").id === "valkyrys", "a removed design is gone, its invoices fall back to the first design");
 }
 
 // money formats

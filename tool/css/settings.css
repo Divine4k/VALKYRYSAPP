@@ -78,3 +78,7 @@
 .mguide li::marker { font-weight: 800; color: var(--ink); }
 .mguide li span { margin-right: 4px; }
 .mguide .mglink { display: inline-flex; min-height: 28px; padding: 3px 10px; font-size: 12.5px; margin-top: 4px; vertical-align: middle; }
+
+/* the line under the address in the connect dialog: what this mail service needs (warn: it cannot be connected) */
+.mhint { margin: -4px 0 0; }
+.mhint.warn { color: var(--err, #B3261E); font-weight: 700; }

@@ -20,7 +20,7 @@ set -u
 SP=$(cd "$(dirname "$0")/.." && pwd); cd "$SP"
 EXE="$SP/el/linux/electron"
 LOGS="$SP/logs"; mkdir -p "$LOGS"
-ELECTRON_TESTS="motion newpo po stats import folder pin theme podetail realpo dups settings templates electron sequence splash saveas docs news delete clients update_ui update mail nopo send auto usb"
+ELECTRON_TESTS="motion port newpo po stats import folder pin theme podetail realpo dups settings templates electron sequence splash saveas docs news delete clients update_ui update mail nopo send auto usb"
 
 toolchain() { { [ -x "$EXE" ] && [ -f dl/win.zip ]; } || bash tools/get_toolchain.sh; }   # Electron zips come from the "toolchain" branch when missing
 build() { toolchain && python3 -I tools/build_app.py && bash tools/sync_linux.sh; }
@@ -93,7 +93,7 @@ show_res() { local r="$RUN/res/$1"; [ -f "$r" ] || { echo "FAIL ${names[$1]}  (n
 
 units() {
   local f out rc; new_run
-  for f in test_workdates.mjs test_parse_generated.mjs test_handmade.mjs test_mailfetch.mjs test_drives.mjs; do
+  for f in test_workdates.mjs test_parse_generated.mjs test_handmade.mjs test_datafile.mjs test_mailfetch.mjs test_drives.mjs; do
     out=$(node "tools/$f" "$SP/tool" 2>&1); rc=$?; if [ $rc -ne 0 ] || echo "$out" | grep -q '^FAIL'; then echo "FAIL $f"; echo "$out" | grep -m5 '^FAIL' | cut -c1-200; FAILED="$FAILED $f"; else echo "ok   $f"; fi
   done
   node tools/test_core.mjs "$SP/po/PO-008148.pdf" "$SP/tool" "$RUN/core-out.pdf" >/dev/null 2>&1 && echo "ok   test_core.mjs" || { echo "FAIL test_core.mjs"; FAILED="$FAILED test_core.mjs"; }

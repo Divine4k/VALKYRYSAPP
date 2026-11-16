@@ -3,6 +3,31 @@
 // type: "new" | "improved" | "fixed"
 window.VALK_CHANGELOG = [
   {
+    version: "1.5.0", date: "2026-11-16",
+    items: [
+      { type: "new",
+        nl: "Standaard factuurontwerp voor iedereen: kies het, vul je gegevens in en je kunt meteen factureren (geen eigen Word-bestand nodig).",
+        en: "Standard invoice design for anyone: choose it, fill in your details and start invoicing right away (no Word file of your own needed).",
+        pl: "Standardowy wzór faktury dla każdego: wybierz go, wpisz swoje dane i od razu wystawiaj faktury (własny plik Word nie jest potrzebny)." },
+      { type: "new",
+        nl: "Facturen die je vroeger zelf in Word maakte (ook oude .doc-bestanden) worden nu gelezen en meegeteld.",
+        en: "Invoices you used to make by hand in Word (old .doc files too) are now read and counted.",
+        pl: "Faktury tworzone wcześniej ręcznie w Wordzie (także stare pliki .doc) są teraz odczytywane i liczone." },
+      { type: "new",
+        nl: "E-mail koppelen met Onet; de app herkent je e-maildienst aan je adres (ook Interia en o2).",
+        en: "Connect Onet email; the app recognises your mail service from your address (Interia and o2 too).",
+        pl: "Połączenie z pocztą Onet; aplikacja rozpoznaje usługę po adresie (także Interia i o2)." },
+      { type: "new",
+        nl: "Ontbreekt de inkooporder van een factuur? Documenten meldt het en haalt hem met één klik uit je e-mail.",
+        en: "Is an invoice's purchase order missing? Documents tells you and gets it from your email in one click.",
+        pl: "Brakuje zamówienia do faktury? Dokumenty to pokażą i jednym kliknięciem pobiorą je z poczty." },
+      { type: "improved",
+        nl: "Werkt beter op andere computers: kleine schermen, lange bedrijfsnamen op de factuur en een nieuwe installatie begint bij factuur 1.",
+        en: "Works better on other computers: small screens, long business names on the invoice, and a new install starts at invoice 1.",
+        pl: "Lepsze działanie na innych komputerach: małe ekrany, długie nazwy firm na fakturze, a nowa instalacja zaczyna od faktury 1." },
+    ],
+  },
+  {
     version: "1.4.0", date: "2026-11-16",
     items: [
       { type: "new",

@@ -32,15 +32,16 @@ const fillWz = async (page, p) => { for (const [k, v] of Object.entries(D1)) awa
   const year = new Date().getFullYear(), PO = process.argv[3];
   const file = (n, ext) => path.join(INV, `VALKYRYS ${n}-${year}.${ext}`);
   const isOpen = (page, sel) => page.evaluate((s) => document.querySelector(s).open, sel);
+  const fresh = (n, ext) => path.join(INV, `Factuur ${n}-${year}.${ext}`); // a new install: numbering from 1, a neutral file name
 
   // 1a. "add later": invoices wait until a design is added
   fs.rmSync(HOME, { recursive: true, force: true }); fs.rmSync(INV, { recursive: true, force: true }); fs.mkdirSync(INV, { recursive: true });
   seedProfile(HOME, { folder: INV }, { fresh: true });
   let { app, page, errs } = await launch();
   await page.waitForSelector("#tplDlg[open]");
-  eq(await page.$$eval("#tplGrid [data-tpl]", (b) => b.length), 0, "a new install offers no built-in designs");
-  const empty = await page.textContent("#tplEmpty").catch(() => "");
-  ok(empty.includes("Nog geen factuurontwerp. Voeg je eigen Word-ontwerp toe.") && empty.includes("[IBAN]"), "empty list: says so, with a hint about [fields]: " + empty);
+  eq(await page.$$eval("#tplGrid [data-tpl]", (b) => b.map((x) => x.dataset.tpl)), ["standard"], "a new install offers the Standard design (for anyone), not the two personal ones");
+  ok((await page.textContent("#tplIntro")).includes("Kies het standaardontwerp, of voeg je eigen ontwerp toe als Word-bestand") && !(await page.$("#tplEmpty")), "the dialog says: the standard design, or your own Word file: " + (await page.textContent("#tplIntro")));
+  eq(await page.$eval('#tplGrid [data-tpl="standard"]', (b) => [b.querySelector(".tname").textContent, b.querySelector("img").naturalWidth > 0]), ["Standaard", true], "...shown with its name and picture");
   ok(await page.isVisible("#tplAdd") && await page.isVisible("#tplSkip") && await page.isDisabled("#tplNext"), "the choices: add a design, or add it later");
   ok(await page.isHidden("#tplDlgClose"), "no close button at the first start");
   await page.keyboard.press("Escape"); await page.waitForTimeout(300); ok(await isOpen(page, "#tplDlg"), "Escape does not close it");
@@ -53,22 +54,22 @@ const fillWz = async (page, p) => { for (const [k, v] of Object.entries(D1)) awa
   ok(await page.isVisible("#detBar") && (await page.textContent("#detBarText")).includes("Voeg eerst een factuurontwerp toe"), "the invoices page says a design is needed: " + (await page.textContent("#detBarText")));
   await page.setInputFiles("#file", PO); await page.waitForSelector("article.po h3");
   await dl(page, false); await page.waitForTimeout(1500);
-  ok(!fs.existsSync(file(62, "pdf")), "no invoice is made without a design");
+  ok(!fs.existsSync(fresh(1, "pdf")), "no invoice is made without a design");
   ok((await page.textContent("#toast")).includes("Voeg eerst een factuurontwerp toe") && await page.isVisible("#settingsView"), "it says why and opens Settings");
   ok(errs.length === 0, "no page errors in part 1a: " + errs.join(" | ")); await app.close();
   ({ app, page, errs } = await launch()); await page.waitForTimeout(1500);
   ok(!(await isOpen(page, "#tplDlg")), "the next start does not ask again");
   await mockOpen(app);
   await goTab(page, "inv"); await page.waitForSelector("#detBar", { state: "visible" }); await page.click("#detBarGo");
-  await page.waitForSelector("#tplDlg[open]"); ok(await page.isVisible("#tplEmpty") && await page.isVisible("#tplDlgClose"), "the banner button opens the (empty) design list");
+  await page.waitForSelector("#tplDlg[open]"); ok(await page.isVisible("#tplDlgClose") && (await page.$$("#tplGrid [data-tpl]")).length === 1, "the banner button opens the design list");
   await page.click("#tplAdd"); await page.waitForSelector("#tplGrid [data-tpl^=c]");
-  eq(await page.$$eval("#tplGrid [data-tpl]", (b) => b.length), 1, "only the own design is listed"); ok(!(await page.$("#tplEmpty")), "the empty note is gone");
+  eq(await page.$$eval("#tplGrid [data-tpl]", (b) => b.length), 2, "the own design is listed beside the Standard one");
   await page.click("#tplNext"); await page.waitForFunction(() => !document.querySelector("#tplDlg").open);
   eq([await page.textContent("#tplCurName"), await page.inputValue("#sdiban")], ["Bouw ontwerp", OWN.iban], "Settings shows the own design and its details");
   await goTab(page, "inv"); ok(await page.isHidden("#detBar"), "the warning is gone");
   await page.setInputFiles("#file", PO); await page.waitForSelector("article.po h3");
-  await dl(page, true); ok(await wait(() => fs.existsSync(file(62, "pdf")) && fs.existsSync(file(62, "docx"))), "now an invoice is made");
-  ok(pdfText(file(62, "pdf")).includes(OWN.iban), "with the details of the own design");
+  await dl(page, true); ok(await wait(() => fs.existsSync(fresh(1, "pdf")) && fs.existsSync(fresh(1, "docx"))), "now an invoice is made (number 1, 'Factuur 1-" + year + "')");
+  ok(pdfText(fresh(1, "pdf")).includes(OWN.iban) && !/valkyrys/i.test(pdfText(fresh(1, "pdf"))), "with the details of the own design, and nothing of Valkyrys on it");
   ok(errs.length === 0, "no page errors in part 1a (2): " + errs.join(" | ")); await app.close();
 
   // 1b. adding the design in the first-start dialog: then the details, then the folders
@@ -85,6 +86,28 @@ const fillWz = async (page, p) => { for (const [k, v] of Object.entries(D1)) awa
   const s1 = data()["settings/main"];
   ok(/^c/.test(s1.template || "") && s1.builtins === false && s1.sender.iban === OWN.iban, "the own design and details are saved", s1.template);
   ok(errs.length === 0, "no page errors in part 1b: " + errs.join(" | ")); await app.close();
+
+  // 1c. a new user without a Word file of their own: the Standard design, their details, the first invoice
+  fs.rmSync(HOME, { recursive: true, force: true }); fs.rmSync(INV, { recursive: true, force: true }); fs.mkdirSync(INV, { recursive: true });
+  seedProfile(HOME, { folder: INV }, { fresh: true });
+  ({ app, page, errs } = await launch()); await page.waitForSelector("#tplDlg[open]");
+  await page.click('#tplGrid [data-tpl="standard"]'); ok(!(await page.isDisabled("#tplNext")), "the Standard design can be chosen");
+  await page.screenshot({ path: "/tmp/fr_design_standard.png" });
+  await page.click("#tplNext"); await page.waitForSelector("#tplStep2", { state: "visible" });
+  eq([await page.inputValue("#wzname"), await page.inputValue("#wziban"), await page.inputValue("#wzstart")], ["", "", "1"], "its details step is empty (nobody else's details) and numbering starts at 1");
+  const ME = { name: "Schildersbedrijf Internationaal Vastgoedonderhoud", ...D1 };
+  for (const [k, v] of Object.entries(ME)) await page.fill("#wz" + k, v);
+  await page.click("#tplDone"); await page.waitForFunction(() => !document.querySelector("#tplDlg").open);
+  const s2 = data()["settings/main"];
+  eq([s2.template, s2.fileTemplate, s2.startNumber, s2.sender.name, s2.builtins], ["standard", "Factuur {nummer}", 1, ME.name, false], "the Standard design, a neutral file name, numbering from 1 and the person's details are saved");
+  await goTab(page, "settings"); eq([await page.textContent("#tplCurName"), await page.inputValue("#sFile")], ["Standaard", "Factuur {nummer}"], "Settings shows the Standard design");
+  await goTab(page, "inv"); ok(await page.isHidden("#detBar"), "nothing is missing");
+  await page.setInputFiles("#file", PO); await page.waitForSelector("article.po h3");
+  await dl(page, true); ok(await wait(() => fs.existsSync(fresh(1, "pdf")) && fs.existsSync(fresh(1, "docx"))), "the first invoice is made: Factuur 1-" + year);
+  { const tp = pdfText(fresh(1, "pdf")), tw = docxXml(fresh(1, "docx"));
+    ok(tp.includes("Internationaal") && tp.includes(ME.iban) && tp.includes(`1-${year}`) && tp.includes("Piguillet BV") && !/valkyrys/i.test(tp), "the PDF has the person's own name and details, and nothing of Valkyrys");
+    ok(tw.includes(ME.iban) && tw.includes("Internationaal") && !/valkyrys/i.test(tw), "and so has the Word file"); }
+  ok(errs.length === 0, "no page errors in part 1c: " + errs.join(" | ")); await app.close();
 
   // ---------------------------------------------------------------- 2. an installation from before the designs: Valkyrys, nothing is asked
   fs.rmSync(HOME, { recursive: true, force: true }); fs.rmSync(INV, { recursive: true, force: true }); fs.mkdirSync(INV, { recursive: true });
@@ -107,7 +130,7 @@ const fillWz = async (page, p) => { for (const [k, v] of Object.entries(D1)) awa
   // change the design: the details of the other design are empty, so nothing can be made until they are filled in
   await page.click("button[data-act=remove]"); await goTab(page, "settings");
   await page.click("#tplChange"); await page.waitForSelector("#tplDlg[open]");
-  eq(await page.$$eval("#tplGrid [data-tpl]", (b) => b.map((x) => x.dataset.tpl)), ["valkyrys", "extreme"], "an older installation still has the built-in designs");
+  eq(await page.$$eval("#tplGrid [data-tpl]", (b) => b.map((x) => x.dataset.tpl)), ["valkyrys", "extreme", "standard"], "an older installation still has its built-in designs, and the Standard one beside them");
   ok(await page.isVisible("#tplDlgClose"), "changing the design can be cancelled");
   eq(await page.getAttribute("#tplGrid [data-tpl=valkyrys]", "aria-checked"), "true", "the current design is marked");
   await page.click("#tplGrid [data-tpl=extreme]"); await page.click("#tplNext");

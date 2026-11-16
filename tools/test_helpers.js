@@ -33,11 +33,11 @@ function seedProfile(home, config = {}, opts = {}) {
   fs.writeFileSync(path.join(dir, "pin.json"), '{"v":1,"skipped":true}');
   fs.writeFileSync(path.join(dir, "config.json"), JSON.stringify({ welcomed: true, ...config }));
   const data = path.join(dir, "data.json");
-  const { DEFAULT_SETTINGS } = require("../electron-app/server.js");
+  const { DEFAULT_SETTINGS, freshSettings } = require("../electron-app/server.js");
   if (opts.template !== null && !opts.fresh && !fs.existsSync(data)) {
     fs.writeFileSync(data, JSON.stringify({ "settings/main": { ...DEFAULT_SETTINGS, template: opts.template === undefined ? "valkyrys" : opts.template } }));
   } else if (!fs.existsSync(data)) { // what electron-app/server.js makes for a new install, with the language already chosen (no first-start language step)
-    fs.writeFileSync(data, JSON.stringify({ "settings/main": { ...DEFAULT_SETTINGS, builtins: false }, "settings/prefs": { lang: "nl", langChosen: true } }));
+    fs.writeFileSync(data, JSON.stringify({ "settings/main": freshSettings(), "settings/prefs": { lang: "nl", langChosen: true } }));
   }
   return dir;
 }

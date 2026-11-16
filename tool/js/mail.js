@@ -12,7 +12,7 @@ function mailWhen(ms) {
   const d = new Date(ms), now = new Date(), t = d.toLocaleTimeString(mailLocale(), { hour: "2-digit", minute: "2-digit" });
   return d.toDateString() === now.toDateString() ? t : d.toLocaleDateString(mailLocale(), { day: "numeric", month: "short" }) + " " + t;
 }
-const mailErr = (code, prov) => tr("mailE_" + (["auth", "apppass", "net", "tls", "missing", "host", "dup", "nofolder"].includes(code) ? code : "other")) + (code === "auth" && (prov === "gmail" || prov === "wp" || prov === "onet") ? " " + tr("mailEauth_" + prov) : "");
+const mailErr = (code, prov) => tr("mailE_" + (["auth", "apppass", "net", "tls", "missing", "host", "dup", "nofolder", "outlook"].includes(code) ? code : "other")) + (code === "auth" && (prov === "gmail" || prov === "wp" || prov === "onet" || prov === "imap") ? " " + tr("mailEauth_" + prov) : "");
 
 function mailStatus(a) {
   if (a.busy) return { cls: "", text: tr("mailBusy") };
@@ -96,6 +96,29 @@ async function mailDownload(keys) {
 }
 
 // ---- the add dialog
+// Addresses whose mail service is known: while the address is typed the right service is chosen, and for services without a button of their
+// own (o2/Tlen, Interia) the server is filled in, with what has to be switched on in that mailbox first.
+const MAIL_KNOWN = [
+  [/@(gmail\.com|googlemail\.com)$/i, { prov: "gmail" }],
+  [/@wp\.pl$/i, { prov: "wp" }],
+  [ONET_DOMAINS, { prov: "onet" }],
+  [/@(o2\.pl|tlen\.pl)$/i, { prov: "imap", host: "poczta.o2.pl", hint: "mailHint_o2" }],
+  [/@(interia\.pl|interia\.eu|interia\.com|poczta\.fm|interiowy\.pl|intmail\.pl|vip\.interia\.pl)$/i, { prov: "imap", host: "poczta.interia.pl", hint: "mailHint_interia" }],
+];
+// Microsoft's own mailboxes only let apps in through its sign-in window (no password login since September 2024): they cannot be connected
+const MAIL_MS = /@(outlook|hotmail|live|msn|windowslive)\.[a-z]{2,3}(\.[a-z]{2})?$/i;
+const mailKnown = (user) => { const k = MAIL_KNOWN.find(([re]) => re.test(user)); return k ? k[1] : null; };
+let mailAutoHost = ""; // the server this dialog filled in itself (replaced when the address changes, left alone once typed over)
+function mailFromAddress() {
+  const user = $("#mailUser").value.trim(), hint = $("#mailHint"), k = mailKnown(user);
+  if (MAIL_MS.test(user)) { hint.textContent = tr("mailE_outlook"); hint.classList.add("warn"); hint.hidden = false; return; }
+  hint.classList.remove("warn"); hint.hidden = true;
+  const host = $("#mailHost");
+  if (!k) { if (mailAutoHost && host.value === mailAutoHost) host.value = ""; mailAutoHost = ""; return; }
+  if (k.prov !== mailUi.prov) { mailUi.prov = k.prov; document.querySelectorAll('#mailForm input[name="mailProv"]').forEach((r) => { r.checked = r.value === k.prov; }); mailProvUi(); }
+  if (k.host && (!host.value.trim() || host.value === mailAutoHost)) { host.value = k.host; mailAutoHost = k.host; }
+  if (k.hint) { hint.textContent = tr(k.hint); hint.hidden = false; }
+}
 const MAIL_GUIDE = { gmail: [["mgG1", "gTwoSv"], ["mgG2", "gAppPw"], ["mgG3"]], wp: [["mgW1", "wpMail"], ["mgW2", "wpKonto"], ["mgW3"]], onet: [["mgO1", "onetMail"], ["mgO2", "onetAppPw"], ["mgO3"]], imap: [["mgI1"], ["mgI2"]] };
 function mailProvUi() {
   const p = mailUi.prov;
@@ -108,7 +131,7 @@ function mailProvUi() {
 function openMailDlg() {
   mailUi.prov = "gmail";
   document.querySelectorAll('#mailForm input[name="mailProv"]').forEach((r) => { r.checked = r.value === "gmail"; });
-  ["#mailUser", "#mailPass", "#mailHost"].forEach((i) => { $(i).value = ""; });
+  ["#mailUser", "#mailPass", "#mailHost"].forEach((i) => { $(i).value = ""; }); mailAutoHost = ""; $("#mailHint").hidden = true;
   $("#mailErr").hidden = true; $("#mailSave").disabled = false; $("#mailSave").textContent = tr("mailConnect");
   mailProvUi();
   const d = $("#mailDlg"); if (!d.open) d.showModal();
@@ -122,7 +145,7 @@ if (MAIL && desk) {
   $("#mailAdd").addEventListener("click", openMailDlg);
   $("#mailDlgClose").addEventListener("click", () => $("#mailDlg").close());
   $("#mailForm").addEventListener("change", (e) => { if (e.target.name === "mailProv") { mailUi.prov = e.target.value; $("#mailErr").hidden = true; mailProvUi(); } });
-  $("#mailForm").addEventListener("input", () => { $("#mailErr").hidden = true; });
+  $("#mailForm").addEventListener("input", (e) => { $("#mailErr").hidden = true; if (e.target.id === "mailUser") mailFromAddress(); });
   $("#mailGuide").addEventListener("click", (e) => { const b = e.target.closest("[data-link]"); if (b && desk && desk.openLink) desk.openLink(b.dataset.link).catch(() => {}); });
   $("#mailForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -133,6 +156,7 @@ if (MAIL && desk) {
     let pass = $("#mailPass").value; if (p === "gmail") pass = pass.replace(/\s+/g, ""); // Google shows app passwords in groups of four
     const err = (code) => { const el = $("#mailErr"); el.textContent = mailErr(code, p); el.hidden = false; };
     if (!user || !pass) return err("missing");
+    if (MAIL_MS.test(user)) return err("outlook");
     if (p === "imap" && !$("#mailHost").value.trim()) return err("host");
     btn.disabled = true; btn.textContent = tr("mailConnecting");
     let r; try { r = await MAIL.add({ provider: p, user, pass, host: $("#mailHost").value.trim() }); } catch (x) { r = { error: "other" }; }

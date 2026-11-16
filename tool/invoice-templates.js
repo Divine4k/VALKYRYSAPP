@@ -27,6 +27,12 @@
       sender: { ...BLANK, name: "Extreme Building" },
       settings: { fileTemplate: "EXTREME BUILDING {nummer}", startNumber: 1 },
     },
+    { // for anyone: the sidebar layout without a logo or watermark, with the person's own name and details. Always offered (also on a fresh
+      // install, where the two designs above are hidden); nameKey: its name follows the app's language
+      id: "standard", name: "Standaard", nameKey: "tplName_standard", preview: "img/tpl-standard.png", always: true,
+      sender: { ...BLANK },
+      settings: { fileTemplate: "Factuur {nummer}", startNumber: 1 },
+    },
   ];
 
   const get = (id) => TEMPLATES.find((t) => t.id === id) || TEMPLATES[0];
@@ -397,8 +403,6 @@
   // designs, with the details written in the file as their defaults. Word is filled from the file itself; the PDF cannot follow an unknown
   // layout, so it is drawn in the Valkyrys layout with the logo of the file (the first wide picture) and the details.
   const CUSTOM_PREVIEW = "img/tpl-custom.png";
-  const NO_LOGO = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg=="; // 1x1, transparent
-  const b64bytes = (s) => (typeof Buffer !== "undefined" ? new Uint8Array(Buffer.from(s, "base64")) : Uint8Array.from(atob(s), (c) => c.charCodeAt(0)));
   const custom = (id) => TEMPLATES.find((t) => t.custom && t.id === id) || null;
   /** the list from the settings: entries appear at once (so a chosen design is known before its file is read), gone ones are taken out */
   function setCustomList(list) {
@@ -423,8 +427,10 @@
   /** PDF of an invoice in the design named by data.template (the first design when it is missing) */
   function renderPdf(PDFLib, assets, data, core) {
     if (data.template === "extreme") return renderExtreme(PDFLib, assets, data, core);
+    const plain = assets.images.sidebarPlain || assets.images.sidebar; // the sidebar without the Valkyrys watermark
+    if (data.template === "standard") return core.renderInvoice(PDFLib, { ...assets, images: { ...assets.images, logo: null, sidebar: plain } }, data);
     const c = custom(data.template);
-    if (c) return core.renderInvoice(PDFLib, { ...assets, images: { ...assets.images, logo: c.logo || b64bytes(NO_LOGO) } }, data);
+    if (c) return core.renderInvoice(PDFLib, { ...assets, images: { ...assets.images, logo: c.logo || null, sidebar: plain } }, data); // the file's logo, else the name
     return core.renderInvoice(PDFLib, assets, data);
   }
   /** Word file of an invoice in the design named by data.template */
@@ -432,6 +438,7 @@
     if (data.template === "extreme") return fillExtremeDocx(deps.JSZip, assets.extremeDocx, data, core);
     const c = custom(data.template);
     if (c) { if (!c.bytes) throw new Error("template file missing"); return fillTemplateDocx(deps.JSZip, c.bytes, data, core); }
+    if (data.template === "standard") return deps.InvoiceDocx.buildDocx(deps.docx, { ...assets.docx, logo: null, background: assets.docx.backgroundPlain || assets.docx.background }, data, core);
     return deps.InvoiceDocx.buildDocx(deps.docx, assets.docx, data, core);
   }
 

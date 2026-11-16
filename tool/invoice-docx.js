@@ -33,9 +33,17 @@
       children: [new ImageRun({ type, data, transformation: { width: w, height: h }, altText: { title: name, description: name, name } })] });
     const side = (s, o = {}) => p(t(s, { size: o.size ?? 18, color: o.color ?? SOFT, bold: o.bold, italic: o.italic }), { before: o.before ?? 0 });
 
-    const logoH = Math.round(150 * assets.logoH / assets.logoW);
+    const logoH = assets.logo ? Math.round(150 * assets.logoH / assets.logoW) : 0;
+    const TOP_GAP = 7045 + 2680 - 600 - 480 + 252;
+    // a design without a logo: the business name in a box of a fixed height (so the blocks below keep their place), on up to three lines
+    const longest = String(S.name || "").split(/\s+/).reduce((a, w) => Math.max(a, w.length), 0), nameSize = Math.max(16, Math.min(30, Math.floor(2 * 117 / (Math.max(1, longest) * 0.58)))); // half-points: a long word still fits the sidebar
+    // lines of the sidebar that Word will wrap (long name, address, e-mail): the gap above shrinks by about as much, so the blocks stay on the page
+    const wraps = (s, cap) => Math.max(0, Math.ceil(String(s || "").length / cap) - 1);
+    const SIDE_EXTRA = Math.min(2400, 260 * (wraps(S.name, 21) + wraps(S.address[0], 27) + wraps(S.address[1], 27) + wraps(S.address[2], 27) + wraps(S.email, 27) + wraps("t.n.v. " + S.name, 27)));
+    const NAME_H = 1150, nameBox = () => new Table({ width: { size: SIDE_W - SIDE_PAD.left - SIDE_PAD.right, type: WidthType.DXA }, columnWidths: [SIDE_W - SIDE_PAD.left - SIDE_PAD.right], layout: TableLayoutType.FIXED, borders: TNOB,
+      rows: [new TableRow({ height: { value: NAME_H, rule: HeightRule.EXACT }, cantSplit: true, children: [cell([p(t(S.name, { size: nameSize, bold: true, color: WHITE }), { line: 250 })], SIDE_W - SIDE_PAD.left - SIDE_PAD.right)] })] });
     const sidebar = [
-      img(assets.logo, 150, logoH, "Valkyrys logo"), gap(7045 + 2680 - 600 - 480 + 252),
+      ...(assets.logo ? [img(assets.logo, 150, logoH, "Logo"), gap(TOP_GAP - SIDE_EXTRA)] : [nameBox(), gap(TOP_GAP - NAME_H + 525 - SIDE_EXTRA)]),
       label("Van", YELLOW), side(S.name, { size: 20, bold: true, color: WHITE, before: 90 }),
       ...[S.address[0], S.address[1]].map((l, i) => side(l, { before: i === 0 ? 30 : 0 })),
       label("Contact", YELLOW, 300), side(S.address[2], { before: 90 }), ...(S.email ? [side(S.email)] : []),
@@ -99,7 +107,7 @@
         horizontalPosition: { relative: HorizontalPositionRelativeFrom.PAGE, offset: 0 }, verticalPosition: { relative: VerticalPositionRelativeFrom.PAGE, offset: 0 },
         behindDocument: true, allowOverlap: true, wrap: { type: TextWrappingType.NONE } }, altText: { title: "Achtergrond", description: "Zwarte zijbalk", name: "background" } })] })] });
 
-    const doc = new Document({ creator: "Valkyrys", title: `Factuur ${data.factuurnr}`,
+    const doc = new Document({ creator: S.name || "Valkyrys", title: `Factuur ${data.factuurnr}`,
       styles: { default: { document: { run: { font: FONT, size: 20, color: BODY, language: { value: "nl-NL" } }, paragraph: { spacing: { after: 0, line: 276, lineRule: LineRuleType.AUTO } } } } },
       sections: [{ properties: { page: { size: { width: PAGE_W, height: PAGE_H }, margin: { top: 0, right: 0, bottom: 0, left: 0, header: 0, footer: 0 } } }, headers: { default: header }, children: [page, tiny()] }] });
     return typeof Buffer !== "undefined" ? Packer.toBuffer(doc) : Packer.toBlob(doc);
