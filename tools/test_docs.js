@@ -129,7 +129,7 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
   ok(await page.$eval('#docsList li[data-nr="1-2026"]', (l) => l.classList.contains("sent")), "a sent row looks done");
   await page.click('#docsFilter [data-f="sent"]'); await page.waitForTimeout(150); eq(await rows(page), ["4-2026", "1-2026"], "filter: sent");
   await page.click('#docsFilter [data-f="open"]'); await page.waitForTimeout(150); eq(await rows(page), ["5-2026", "3-2026", "2-2026"], "filter: not sent");
-  eq(await page.$$eval("#docsFilter .n", (n) => n.map((x) => x.textContent.trim())), ["7", "3", "2", "2", "0"], "the filter buttons count (sent / not sent: invoices only)");
+  eq(await page.$$eval("#docsFilter .n", (n) => n.map((x) => x.textContent.trim())), ["7", "3", "2", "2", "0", "0"], "the filter buttons count (sent / not sent: invoices only; the last two, incomplete and other files, are hidden at 0)");
   ok(!(await page.isVisible('#docsFilter [data-f="miss"]')), "the Incomplete filter is hidden while nothing is incomplete");
   await page.click('#docsFilter [data-f="noinv"]'); await page.waitForTimeout(150);
   eq([await rows(page), await poRows(page)], [[], ["PO-100006", "PO-100007"]], "filter: without invoice");
@@ -202,6 +202,40 @@ const readyAll = (page) => page.waitForFunction(() => { const l = [...document.q
   await page.evaluate(() => window.ValkTheme.apply({ id: "light" })); await page.waitForTimeout(250); await page.screenshot({ path: "/tmp/docs_light.png", fullPage: true });
   await page.evaluate(() => window.ValkTheme.apply({ id: "dark" })); await page.waitForTimeout(250); await page.screenshot({ path: "/tmp/docs_dark.png", fullPage: true });
   await page.evaluate(() => window.ValkTheme.apply({ id: "light" }));
+  // ---- a file without an invoice number in the invoice folder (a Word design, a letter): it has a row of its own, so it can be seen and opened
+  {
+    await page.setViewportSize({ width: 1280, height: 900 }); await page.fill("#docsSearch", ""); await page.click('#docsFilter [data-f="all"]'); await page.waitForTimeout(150);
+    const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now() - t < ms) { try { if (await fn()) return true; } catch (e) {} await new Promise((r) => setTimeout(r, 150)); } return false; };
+    const before = await page.$$eval("#docsList li.drow:not(.loose)", (l) => l.length), infoBefore = await page.textContent("#docsInfo");
+    ok(await page.isHidden('#docsFilter [data-f="loose"]') && !(await page.$("#docsList li.loose")), "no such file: no row, and the 'Overige bestanden' filter is not shown");
+    fs.copyFileSync(path.join(__dirname, "../tool/templates/extreme.docx"), `${INV}/EXTREME_BUILDING_factuur.docx`);
+    await page.evaluate(() => refreshAll()); await page.waitForSelector("#docsList li.loose", { timeout: 15000 });
+    const L = await page.$eval("#docsList li.loose", (l) => ({ badge: l.querySelector(".c-nr").textContent.trim(), name: l.querySelector(".c-cl").textContent, date: l.querySelector(".c-dt").textContent,
+      on: [...l.querySelectorAll("button.dchip:not(:disabled)")].map((b) => b.dataset.doc), off: [...l.querySelectorAll("button.dchip:disabled")].map((b) => b.textContent), sent: !!l.querySelector("input[data-sent]"), sel: !!l.querySelector("input[data-sel]") }));
+    eq([L.badge, L.name, L.on, L.off, L.sent, L.sel], ["Geen nummer", "EXTREME_BUILDING_factuur.docx", ["word"], ["PDF", "PO"], false, false], "a Word file without an invoice number: its own row with its name, 'Geen nummer', the Word file to open; no sent box");
+    ok(/^\d{2}\/\d{2}\/\d{4}$/.test(L.date), "...dated by the day the file was last changed", L.date);
+    eq(await page.$$eval("#docsList li.drow:not(.loose)", (l) => l.length), before, "...the invoice rows are as before");
+    eq(await page.textContent("#docsInfo"), infoBefore, "...and it is not counted as an invoice (the line about the folder says the same)");
+    await page.screenshot({ path: "/tmp/docs_loose.png" });
+    ok(await page.isVisible('#docsFilter [data-f="loose"]') && /Overige bestanden\s*1/.test(await page.textContent('#docsFilter [data-f="loose"]')), "the filter 'Overige bestanden 1' appears");
+    await page.click('#docsFilter [data-f="loose"]'); await page.waitForTimeout(150);
+    eq(await page.$$eval("#docsList li.drow", (l) => l.map((x) => x.className.includes("loose"))), [true], "that filter shows only the files without a number");
+    await page.click('#docsFilter [data-f="open"]'); await page.waitForTimeout(150); ok(!(await page.$("#docsList li.loose")), "'Niet verzonden' is about invoices: the file is not in it");
+    await page.click('#docsFilter [data-f="all"]'); await page.fill("#docsSearch", "extreme_building"); await page.waitForTimeout(150);
+    eq(await page.$$eval("#docsList li.drow", (l) => l.length), 1, "search by file name finds it"); await page.fill("#docsSearch", ""); await page.waitForTimeout(150);
+    await page.click("#docsList li.loose button[data-doc=word]"); await page.waitForSelector("#poDlg[open]");
+    ok((await page.textContent("#poDlgTitle")) === "EXTREME_BUILDING_factuur.docx" && await until(async () => (await page.$$("#poPages > *")).length > 0 || await page.isVisible("#poDlgErr")), "its Word chip opens the file in the preview");
+    await page.click("#poDlgClose"); await page.waitForTimeout(150);
+    await page.click("#docsList li.loose button[data-reveal]"); await page.waitForTimeout(200);
+    ok((await app.evaluate(() => globalThis.__shown)).some((p) => p.endsWith("EXTREME_BUILDING_factuur.docx")), "the folder button shows it in its folder");
+    // a file whose name gets a number becomes an invoice row; one deleted goes to the Recycle Bin (after asking)
+    await app.evaluate(({ shell }) => { const fs = process.mainModule.require("fs"); globalThis.__trash = []; shell.trashItem = async (p) => { globalThis.__trash.push(p); fs.rmSync(p); }; });
+    let asked = ""; page.once("dialog", (d) => { asked = d.message(); d.accept(); });
+    await page.click("#docsList li.loose button[data-delloose]");
+    ok(await until(async () => !(await page.$("#docsList li.loose"))) && !fs.existsSync(`${INV}/EXTREME_BUILDING_factuur.docx`), "the bin: asks, then the file goes to the Recycle Bin and its row is gone");
+    ok(/EXTREME_BUILDING_factuur\.docx naar de prullenbak verplaatsen\?/.test(asked) && (await app.evaluate(() => globalThis.__trash)).length === 1, "...it asked first, and only that file went", asked);
+    ok(await page.isHidden('#docsFilter [data-f="loose"]'), "...and the filter is hidden again");
+  }
   for (const w of [900, 700, 390]) {
     await page.setViewportSize({ width: w, height: 900 }); await page.waitForTimeout(300);
     ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `fits a ${w}px window`);

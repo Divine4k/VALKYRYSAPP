@@ -21,9 +21,12 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   ok(await page.isVisible("#folderOpen") && await page.isVisible("#folderClear"), "open and disconnect buttons appear");
   await goTab(page, "docs"); await page.waitForTimeout(400);
   ok(!(await page.isVisible("#docsNoFolder")), "Documents tab: the folder card is gone once a folder is set");
-  const items = await page.$$eval("#docsList li", (li) => li.map((l) => ({ nr: l.dataset.nr, on: [...l.querySelectorAll("button[data-doc]")].map((b) => b.dataset.doc) })));
+  await page.waitForFunction(() => state.folderScanned && !state.scan); await page.waitForTimeout(200);
+  const items = await page.$$eval("#docsList li:not(.loose)", (li) => li.map((l) => ({ nr: l.dataset.nr, on: [...l.querySelectorAll("button[data-doc]")].map((b) => b.dataset.doc) })));
   console.log(JSON.stringify(items));
-  ok(items.length === 2, "2 invoice numbers listed (date-named file, lock file and txt ignored): " + items.length);
+  ok(items.length === 2, "2 invoice numbers listed (the date-named file is no invoice; lock file and txt ignored): " + items.length);
+  const looseNames = await page.$$eval("#docsList li.loose .c-cl", (c) => c.map((x) => x.textContent));
+  ok(looseNames.length === 1 && !/^~\$|\.txt$/.test(looseNames[0]), "the date-named file has a row of its own as a file without a number (lock file and txt not): " + JSON.stringify(looseNames));
   ok(items.some((t) => t.nr === "64-2026" && t.on.includes("pdf") && t.on.includes("word")), "64-2026 has its PDF + Word");
   ok(items.some((t) => t.nr === "10-2025" && t.on.includes("pdf")), "the file in a subfolder is listed too");
   console.log("info:", await page.textContent("#docsInfo"));
@@ -57,7 +60,7 @@ const ok = (c, m) => { console.log((c ? "PASS " : "FAIL ") + m); if (!c) process
   const r65 = rec("65-2026");
   ok(JSON.stringify(r65.formats) === '["pdf","docx"]' && JSON.stringify(r65.savedFiles) === '["VALKYRYS 65-2026.pdf","VALKYRYS 65-2026.docx"]', "record keeps both formats and both file names: " + JSON.stringify([r65.formats, r65.savedFiles]));
   ok(JSON.stringify(await hbtns("65-2026")) === '["pdf","word","del"]', "Documents: PDF + Word once both exist");
-  await goTab(page, "docs"); await page.waitForTimeout(300); ok((await page.$$eval("#docsList li", (l) => l.length)) === 3, "Documents now lists 3 invoices"); await goTab(page, "inv");
+  await goTab(page, "docs"); await page.waitForTimeout(300); ok((await page.$$eval("#docsList li:not(.loose)", (l) => l.length)) === 3, "Documents now lists 3 invoices"); await goTab(page, "inv");
   ok((await page.textContent("#nextNr")) === "66-2026", "next number now " + (await page.textContent("#nextNr")));
   // Documents PDF / Word: preview the file in the folder, nothing written
   const mt = (e) => fs.statSync(`${F}/VALKYRYS 65-2026.${e}`).mtimeMs, files0 = fs.readdirSync(F).join("|"), m0 = [mt("pdf"), mt("docx")];

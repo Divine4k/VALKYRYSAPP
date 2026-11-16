@@ -1,15 +1,17 @@
 // Documents tab (docSets, renderDocs), deleting an invoice, refresh buttons, stale records.
 "use strict";
 // ------------------------------------------------------------ documents tab: one row per invoice number, with its PDF and Word file in the invoice folder and its purchase order
-const DOC_SORTS = ["nr", "date", "client", "po", "amount"], DOC_FILTERS = ["all", "open", "sent", "noinv", "miss"];
+const DOC_SORTS = ["nr", "date", "client", "po", "amount"], DOC_FILTERS = ["all", "open", "sent", "noinv", "miss", "loose"];
 state.sent = new Set(); state.docs = { sort: "nr", dir: "desc", filter: "all", q: "", sel: new Set(), selMode: false }; // selMode: choosing invoices to send by email; sel: the numbers ticked
 const saveSent = () => { if (state.db) { try { state.db.doc("settings/sent").set({ list: [...state.sent] }); } catch (e) {} } };
 const saveDocsPrefs = () => { if (state.db) { try { state.db.doc("settings/docsprefs").set({ sort: state.docs.sort, dir: state.docs.dir, filter: state.docs.filter }); } catch (e) {} } };
 const applyDocsPrefs = (v) => { if (!v) return; if (DOC_SORTS.includes(v.sort)) state.docs.sort = v.sort; if (v.dir === "asc" || v.dir === "desc") state.docs.dir = v.dir; if (DOC_FILTERS.includes(v.filter)) state.docs.filter = v.filter; };
 const nlDateKey = (t) => { const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(t || "")); return m ? +m[3] * 10000 + +m[2] * 100 + +m[1] : 0; };
 /** the invoice sets, from what is already read: the folder files (state.files + the parse cache), the folder invoices, the invoices made here, the purchase orders */
-function docSets() {
-  const sets = new Map(), byBase = new Map();
+function docSets() { return docParts().sets; }
+/** the same, plus `loose`: the files of the invoice folder that belong to no invoice (no number in their name or inside) */
+function docParts() {
+  const sets = new Map(), byBase = new Map(), loose = [];
   const get = (nr) => { let s = sets.get(nr); if (!s) { const [n, y] = nr.split("-").map(Number); sets.set(nr, (s = { nr, n, y, pdf: null, docx: null, inv: null, fi: null })); } return s; };
   const better = (a, b) => !a || b.name.length < a.name.length || (b.name.length === a.name.length && b.mtime > a.mtime); // "VALKYRYS 5-2025.pdf" wins over its "(kopie)"
   const files = desk && state.folder && state.folder.exists ? state.files.filter((f) => f.ext === "pdf" || f.ext === "docx" || f.ext === "doc") : [], later = [];
@@ -20,7 +22,7 @@ function docSets() {
     if (!nr) { later.push(f); continue; }
     const s = get(nr), k = slot(f); if (!s[k] || (s[k].ext === "doc" && f.ext === "docx") || (s[k].ext === f.ext && better(s[k], f))) s[k] = f; byBase.set(f.rel.replace(/\.(pdf|docx?)$/i, ""), s);
   }
-  for (const f of later) { const s = byBase.get(f.rel.replace(/\.(pdf|docx?)$/i, "")); if (s && !s[slot(f)]) s[slot(f)] = f; } // a Word file next to its PDF, same name without a number
+  for (const f of later) { const s = byBase.get(f.rel.replace(/\.(pdf|docx?)$/i, "")); if (s && !s[slot(f)]) s[slot(f)] = f; else loose.push(f); } // a Word file next to its PDF, same name without a number
   for (const fi of files.length ? state.folderInvoices : []) get(fi.factuurnr).fi = fi;
   for (const i of state.invoices.values()) if (/^\d+-\d{4}$/.test(i.factuurnr || "")) get(i.factuurnr).inv = i;
   const out = [...sets.values()].map((s) => {
@@ -32,7 +34,25 @@ function docSets() {
     const ment = [i && i.po, fi && fi.po, names].filter(Boolean).join(" "); // everything that can name a purchase order (for two invoices on one PO)
     return { ...s, po: poRec ? poRec.r.po : poText, poRec, total, datum, dkey: nlDateKey(datum), client, sent: state.sent.has(s.nr), gen: !s.pdf && !!(i && i.lines && i.lines.length), ment };
   });
-  return out.concat(poOnlySets(out));
+  return { sets: out.concat(poOnlySets(out)), loose: looseSets(loose) };
+}
+/** Files in the invoice folder without an invoice number (a design, a letter, an invoice the app cannot read): one row per file name (a PDF and
+ *  a Word file of the same name together), so everything in the folder can be seen and opened in Documents. Only files that have been read
+ *  (so one whose number is inside it does not show here first). The file name stands in the client column; date, PO and amount as far as read,
+ *  else the day the file was last changed. */
+function looseSets(files) {
+  const by = new Map();
+  for (const f of files) {
+    const e = state.parseCache.get(f.rel); if (!e || e.mt !== f.mtime || e.sz !== f.size) continue;
+    const key = f.rel.replace(/\.(pdf|docx?)$/i, ""); let s = by.get(key);
+    if (!s) by.set(key, (s = { nr: "", n: 0, y: 0, loose: true, key, name: f.name.replace(/\.[^.]+$/, ""), pdf: null, docx: null, inv: null, fi: null, poRec: null, r: null, mtime: 0, sent: false, gen: false }));
+    const k = f.ext === "pdf" ? "pdf" : "docx"; if (!s[k] || (s[k].ext === "doc" && f.ext === "docx")) s[k] = f;
+    if (e.r && (!s.r || f.ext === "pdf")) s.r = e.r; s.mtime = Math.max(s.mtime, f.mtime);
+  }
+  return [...by.values()].map((s) => {
+    const r = s.r || {}, datum = r.datum || fmtDate(s.mtime);
+    return { ...s, client: s.name, datum, dkey: nlDateKey(datum), po: r.po || "", total: r.total != null && isFinite(r.total) ? r.total : null };
+  });
 }
 /** purchase orders in the PO folder that no invoice names yet (same matching as the new-orders list): one row each, once everything is read, so nothing is guessed */
 function poOnlySets(invSets) {
@@ -151,7 +171,7 @@ async function remakeMissing(nr, btn) {
 function sortDocs(list) {
   const { sort, dir } = state.docs, k = dir === "asc" ? 1 : -1, byNr = (a, b) => a.y - b.y || a.n - b.n || a.dkey - b.dkey;
   if (sort === "nr") { const top = list.filter((s) => s.poOnly).sort((a, b) => (a.skipped - b.skipped) || (b.dkey - a.dkey) || natPo(b.po, a.po)); // orders without an invoice first (newest first, skipped ones after), so they are noticed
-    return top.concat(list.filter((s) => !s.poOnly).sort((a, b) => k * byNr(a, b))); }
+    return top.concat(list.filter((s) => !s.poOnly && !s.loose).sort((a, b) => k * byNr(a, b)), list.filter((s) => s.loose).sort((a, b) => b.dkey - a.dkey || a.name.localeCompare(b.name))); } // files without a number last
   const cmp = { nr: byNr, date: (a, b) => a.dkey - b.dkey, client: (a, b) => a.client.localeCompare(b.client, state.lang, { sensitivity: "base", numeric: true }), po: (a, b) => natPo(a.po, b.po), amount: (a, b) => a.total - b.total }[sort] || byNr;
   const empty = (x) => (sort === "client" ? !x.client : sort === "po" ? !x.po : sort === "date" ? !x.dkey : sort === "amount" ? x.total == null : false);
   return list.sort((a, b) => (empty(a) - empty(b)) || k * cmp(a, b) || byNr(b, a)); // empty values last, then newest number first
@@ -163,15 +183,17 @@ const ICON_DIR = { asc:'<svg width="16" height="16" viewBox="0 0 24 24" fill="no
   desc: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m6 13 6 6 6-6"/></svg>' };
 function renderDocs() {
   if (state.tab !== "docs") return;
-  const D = state.docs, all = docSets(), f = desk ? state.folder : null, W = docWarns(all);
+  const D = state.docs, P = docParts(), all = P.sets, f = desk ? state.folder : null, W = docWarns(all), rows = all.concat(P.loose); // rows: also the files without an invoice number
   if (D.filter === "miss" && W.ready && !W.miss.size) D.filter = "all"; // nothing incomplete (any more)
+  if (D.filter === "loose" && !P.loose.length && state.folderScanned && !state.scan) D.filter = "all";
   const q = D.q.trim().toLowerCase(), match = (s) => !q || [s.nr, s.client, s.po].some((v) => String(v || "").toLowerCase().includes(q));
-  const keepF = (s) => D.filter === "all" || (D.filter === "miss" ? W.miss.has(s.nr) : D.filter === "noinv" ? !!s.poOnly : !s.poOnly && (D.filter === "sent") === s.sent); // sent / not sent: invoices only
-  const found = all.filter(match), shown = sortDocs(found.filter(keepF)), invs = all.filter((s) => !s.poOnly), nSent = invs.filter((s) => s.sent).length;
+  const isInv = (s) => !s.poOnly && !s.loose;
+  const keepF = (s) => D.filter === "all" || (D.filter === "loose" ? !!s.loose : s.loose ? false : D.filter === "miss" ? W.miss.has(s.nr) : D.filter === "noinv" ? !!s.poOnly : !s.poOnly && (D.filter === "sent") === s.sent); // sent / not sent: invoices only
+  const found = rows.filter(match), shown = sortDocs(found.filter(keepF)), invs = all.filter((s) => !s.poOnly), nSent = invs.filter((s) => s.sent).length;
   $("#docsNoFolder").hidden = !(desk && !f);
-  $("#docsBar").hidden = !all.length;
-  const counts = { all: found.length, open: found.filter((s) => !s.poOnly && !s.sent).length, sent: found.filter((s) => !s.poOnly && s.sent).length, noinv: found.filter((s) => s.poOnly).length, miss: found.filter((s) => W.miss.has(s.nr)).length };
-  $("#docsFilter").querySelectorAll("button[data-f]").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.f === D.filter)); b.querySelector(".n").textContent = ` ${counts[b.dataset.f]}`; if (b.dataset.f === "miss") b.hidden = !W.miss.size && D.filter !== "miss"; });
+  $("#docsBar").hidden = !rows.length;
+  const counts = { all: found.length, open: found.filter((s) => isInv(s) && !s.sent).length, sent: found.filter((s) => isInv(s) && s.sent).length, noinv: found.filter((s) => s.poOnly).length, miss: found.filter((s) => isInv(s) && W.miss.has(s.nr)).length, loose: found.filter((s) => s.loose).length };
+  $("#docsFilter").querySelectorAll("button[data-f]").forEach((b) => { b.setAttribute("aria-pressed", String(b.dataset.f === D.filter)); b.querySelector(".n").textContent = ` ${counts[b.dataset.f]}`; if (b.dataset.f === "miss") b.hidden = !W.miss.size && D.filter !== "miss"; if (b.dataset.f === "loose") b.hidden = !P.loose.length && D.filter !== "loose"; });
   $("#docsSort").value = D.sort;
   const dirB = $("#docsDir"), dk = D.dir === "asc" ? "docsAsc" : "docsDesc"; dirB.innerHTML = ICON_DIR[D.dir]; dirB.setAttribute("aria-label", tr(dk)); dirB.title = tr(dk);
   const sIn = $("#docsSearch"); sIn.placeholder = tr("docsSearch"); if (sIn.value !== D.q) sIn.value = D.q;
@@ -183,14 +205,14 @@ function renderDocs() {
   $("#docsInfo").innerHTML = info.map((x) => `<span class="nw">${esc(x)}</span>`).join(" · "); $("#docsInfo").hidden = !info.length;
   // the column heads sort too
   const cols = [["nr", "docsByNr"], ["client", "docsByClient"], ["date", "docsByDate"], ["po", "docsByPo"], ["amount", "docsByAmount", "r"]];
-  const selShown = shown.filter((s) => !s.poOnly), allSel = selShown.length > 0 && selShown.every((s) => D.sel.has(s.nr)), someSel = selShown.some((s) => D.sel.has(s.nr));
+  const selShown = shown.filter(isInv), allSel = selShown.length > 0 && selShown.every((s) => D.sel.has(s.nr)), someSel = selShown.some((s) => D.sel.has(s.nr));
   $("#docsHead").innerHTML = `<span class="c-sel"><input type="checkbox" id="docsSelAll"${allSel ? " checked" : ""} aria-label="${esc(tr("docsSelAll"))}" title="${esc(tr("docsSelAll"))}"></span>` + cols.map(([k, key, cls]) => `<button type="button" data-sort="${k}"${cls ? ` class="${cls}"` : ""}${D.sort === k ? ` aria-sort="${D.dir === "asc" ? "ascending" : "descending"}"` : ""}>${esc(tr(key))}${D.sort === k ? `<i aria-hidden="true">${D.dir === "asc" ? "▲" : "▼"}</i>` : ""}</button>`).join("")
     + `<span>${esc(tr("docsColDocs"))}</span><span>${esc(tr("docsSent"))}</span><span></span>`;
   { const sa = $("#docsSelAll"); if (sa) sa.indeterminate = someSel && !allSel; }
   $("#docsTable").classList.toggle("selmode", !!(D.selMode && desk));
   renderSendBar();
   // keep the focus on the same control when the list is drawn again
-  const a = document.activeElement, keep = a && $("#docsList").contains(a) ? (a.dataset.sent ? `[data-sent="${a.dataset.sent}"]` : a.dataset.mkinv ? `[data-mkinv="${a.dataset.mkinv}"]` : a.dataset.doc && a.dataset.po ? `[data-doc="po"][data-po="${a.dataset.po}"]` : a.dataset.doc ? `[data-doc="${a.dataset.doc}"][data-nr="${a.dataset.nr}"]` : "") : "";
+  const a = document.activeElement, keep = a && $("#docsList").contains(a) ? (a.dataset.sent ? `[data-sent="${a.dataset.sent}"]` : a.dataset.mkinv ? `[data-mkinv="${a.dataset.mkinv}"]` : a.dataset.doc && a.dataset.po ? `[data-doc="po"][data-po="${a.dataset.po}"]` : a.dataset.rel ? `[data-doc="${a.dataset.doc}"][data-rel="${CSS.escape(a.dataset.rel)}"]` : a.dataset.doc ? `[data-doc="${a.dataset.doc}"][data-nr="${a.dataset.nr}"]` : "") : "";
   const showApp = !!(f && f.exists);
   /** a purchase order without an invoice: no number, PDF and Word missing, its PO to look at, and a button that puts it on the Invoices tab */
   const poRow = (s) => {
@@ -207,8 +229,26 @@ function renderDocs() {
         <span class="c-act"></span>
       </li>`;
   };
+  /** a file without an invoice number: its name, what could be read from it, the file itself to look at, show in its folder, to the Recycle Bin */
+  const looseRow = (s) => {
+    const chip = (kind, label, x) => (x ? `<button type="button" class="dchip k-${kind}" data-doc="${kind}" data-rel="${esc(x.rel)}" aria-label="${esc(tr("docsLooseView", x.name))}" title="${esc(x.name)}">${label}</button>`
+      : `<button type="button" class="dchip k-${kind}" disabled title="${esc(tr("docsMissing", label))}">${label}</button>`);
+    const rel = (s.pdf || s.docx).rel, shownName = [s.pdf, s.docx].filter(Boolean).length === 1 ? (s.pdf || s.docx).name : s.name;
+    return `<li class="drow loose" data-nr="" data-loose="${esc(s.key)}" title="${esc(tr("docsLooseTitle"))}">
+        <span class="c-sel"></span>
+        <span class="c-nr"><span class="chip noinv">${esc(tr("docsLooseBadge"))}</span></span>
+        <span class="c-cl" title="${esc(shownName)}">${esc(shownName)}</span>
+        <span class="c-dt">${esc(s.datum || "–")}</span>
+        <span class="c-po${s.po ? "" : " none"}">${esc(s.po || "–")}</span>
+        <span class="c-amt">${s.total == null ? "–" : esc(core.eur(s.total))}</span>
+        <span class="c-docs">${chip("pdf", "PDF", s.pdf)}${chip("word", "Word", s.docx)}${chip("po", "PO", null)}</span>
+        <span class="c-sent"></span>
+        <span class="c-act"><button type="button" data-reveal="${esc(rel)}" aria-label="${esc(tr("dupShow") + ": " + shownName)}" title="${esc(tr("dupShow"))}">${ICON_FOLDER}</button><button type="button" class="del" data-delloose="${esc(s.key)}" aria-label="${esc(tr("docsLooseDelAria", shownName))}" title="${esc(tr("delGo"))}">${ICON_TRASH}</button></span>
+      </li>`;
+  };
   $("#docsList").innerHTML = shown.map((s) => {
     if (s.poOnly) return poRow(s);
+    if (s.loose) return looseRow(s);
     const miss = W.miss.get(s.nr) || [], dup = W.dupOf.get(s.nr) || [];
     const chip = (kind, label, on, extra) => on ? `<button type="button" class="dchip k-${kind}${extra || ""}" data-doc="${kind}" data-nr="${esc(s.nr)}" aria-label="${esc(tr("docsViewAria", label, s.nr))}" title="${esc(on)}">${label}</button>`
       : `<button type="button" class="dchip k-${kind}${extra || ""}" disabled title="${esc(tr(extra ? "docsMissTitle" : "docsMissing", label))}">${label}</button>`;
@@ -236,14 +276,16 @@ function renderDocs() {
   }).join("");
   if (keep) { const el = $("#docsList").querySelector(keep); if (el) el.focus(); }
   $("#docsTable").hidden = !shown.length;
-  const em = $("#docsEmpty"); em.hidden = !!shown.length || (!all.length && desk && !f); // no folder: the folder card says it already
-  $("#docsEmptyT").textContent = tr(all.length ? "docsNoMatch" : "docsEmptyT"); $("#docsEmptyP").textContent = tr(all.length ? "docsNoMatchP" : "docsEmptyP");
+  const em = $("#docsEmpty"); em.hidden = !!shown.length || (!rows.length && desk && !f); // no folder: the folder card says it already
+  $("#docsEmptyT").textContent = tr(rows.length ? "docsNoMatch" : "docsEmptyT"); $("#docsEmptyP").textContent = tr(rows.length ? "docsNoMatchP" : "docsEmptyP");
 }
 const docOf = (nr) => (nr ? docSets().find((s) => s.nr === nr && !s.poOnly) : undefined);
 $("#docsList").addEventListener("click", async (e) => {
   const c = e.target.closest("button[data-doc]"), r = e.target.closest("button[data-reveal]");
   if (r && desk) { try { const x = await desk.revealFile(r.dataset.reveal); if (x && x.error) toast(tr("dupShowFail")); } catch (err) { toast(tr("dupShowFail")); } return; }
   const dd = e.target.closest("button[data-deldoc]"); if (dd) { deleteSet(dd.dataset.deldoc, dd); return; }
+  const dl = e.target.closest("button[data-delloose]"); if (dl) { deleteLoose(dl.dataset.delloose); return; }
+  if (c && c.dataset.rel) { const rel = c.dataset.rel; if (desk) previewDoc({ title: rel.split("/").pop(), load: () => desk.readFile(rel), open: { rel }, word: c.dataset.doc === "word" }); return; } // a file without a number
   const rm = e.target.closest("button[data-remake]"); if (rm) { remakeMissing(rm.dataset.remake, rm); return; }
   const ig = e.target.closest("button[data-missignore]"); if (ig) { state.keptMissing = new Set([...(state.keptMissing || []), ig.dataset.missignore]); saveKept("keptmissing", state.keptMissing); render(); return; }
   const dw = e.target.closest("button[data-draw]"); if (dw) { previewInvoice({ key: dw.dataset.draw, i: {} }); return; }
@@ -303,6 +345,19 @@ $("#delGo").addEventListener("click", () => { const on = (k) => $("#del" + k).ch
 $("#delCancel").addEventListener("click", () => delAnswer(null));
 $("#delDlgClose").addEventListener("click", () => delAnswer(null));
 $("#delDlg").addEventListener("close", () => delAnswer(null));
+/** a file without an invoice number (and the file of the same name beside it): to the Recycle Bin, after asking */
+async function deleteLoose(key) {
+  if (state.delBusy || !desk) return;
+  const s = docParts().loose.find((x) => x.key === key); if (!s) return;
+  const files = [s.pdf, s.docx].filter(Boolean);
+  if (!confirm(tr("docsLooseDelAsk", files.map((x) => x.name).join(", ")))) return;
+  state.delBusy = true; let bad = 0;
+  try {
+    for (const x of files) { try { const r = await desk.trashFile(x.rel, "invoices"); if (!r || !r.ok) bad++; } catch (e) { bad++; } }
+    await refreshAll(); render();
+    toast(bad ? tr("delSomeFail") : tr("docsLooseDeleted", files.map((x) => x.name).join(", ")));
+  } finally { state.delBusy = false; }
+}
 async function deleteSet(nr, btn) {
   if (state.delBusy || !nr) return;
   state.delBusy = true;

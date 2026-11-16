@@ -129,3 +129,7 @@ button.mkinv { min-height: 30px; padding: 4px 12px; font-size: 12.5px; white-spa
 .wpage .wbgs { position: absolute; inset: 0; z-index: 0; pointer-events: none; container-type: size; } /* the whole page box: cqw = 1% of the page width */
 .wpage .wbgs .wbgi { position: absolute; max-width: none; object-fit: fill; }
 .wpage .wfront { position: relative; z-index: 1; }
+
+/* a file in the invoice folder without an invoice number: a quiet grey badge, its name where the client stands */
+.drow.loose .c-nr .chip.noinv { background: var(--sunken); color: var(--muted); border: 1px solid var(--line); }
+.drow.loose .c-cl { color: var(--ink); }
