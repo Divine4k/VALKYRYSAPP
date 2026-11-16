@@ -14,7 +14,7 @@ function poMail({ po, pdf, subject, file, from = '"Secretariaat | Piguillet" <se
 }
 
 /** start the server: users { "user": "pass" }, boxes { INBOX: [{ uid, date, subject, raw }] }, opts.allMail = name of a \All mailbox (Gmail). -> { port, log, boxes, close } */
-function start({ users, boxes, uidValidity = 777, allMail = "", sentBox = "" }) {
+function start({ users, boxes, uidValidity = 777, allMail = "", sentBox = "", rawSubjectSearch = false }) { // rawSubjectSearch: SUBJECT search looks at the raw header (=?utf-8?B?...?= not decoded), like Onet
   const log = [];
   const server = net.createServer((s) => {
     let buf = "", authed = false, box = null, pendingLit = null;
@@ -68,14 +68,14 @@ function start({ users, boxes, uidValidity = 777, allMail = "", sentBox = "" }) 
         let m;
         if ((m = /SINCE (\d+)-(\w{3})-(\d{4})/i.exec(cmdRaw))) { const d = new Date(Number(m[3]), MON.indexOf(m[2]), Number(m[1])); list = list.filter((x) => x.date >= d); }
         if ((m = /UID (\d+):\*/i.exec(cmdRaw))) { const from = Number(m[1]); const max = box.reduce((a, x) => Math.max(a, x.uid), 0); list = list.filter((x) => x.uid >= from || x.uid === max); } // n:* always includes the last one (as real servers do)
-        if ((m = /SUBJECT "([^"]*)"/i.exec(cmdRaw))) list = list.filter((x) => x.subject.toLowerCase().includes(m[1].toLowerCase()));
+        if ((m = /SUBJECT "([^"]*)"/i.exec(cmdRaw))) list = list.filter((x) => (rawSubjectSearch && x.rawSubject ? x.rawSubject : x.subject).toLowerCase().includes(m[1].toLowerCase()));
         reply("* SEARCH" + list.map((x) => " " + x.uid).join("")); reply(tag + " OK search done"); return;
       }
       if (cmd.startsWith("UID FETCH ")) {
         const set = /UID FETCH ([\d,:*]+)/i.exec(cmdRaw)[1].split(",").map(Number), hdr = /HEADER\.FIELDS/i.test(cmdRaw);
         for (const uid of set) {
           const x = box.find((y) => y.uid === uid); if (!x) continue;
-          const body = hdr ? Buffer.from("Subject: " + x.subject + "\r\n\r\n", "latin1") : x.raw;
+          const body = hdr ? Buffer.from("Subject: " + (x.rawSubject || x.subject) + "\r\n\r\n", "latin1") : x.raw;
           s.write(`* ${box.indexOf(x) + 1} FETCH (UID ${uid} BODY[${hdr ? "HEADER.FIELDS (SUBJECT)" : ""}] {${body.length}}\r\n`); s.write(body); s.write(")\r\n");
         }
         reply(tag + " OK fetch done"); return;

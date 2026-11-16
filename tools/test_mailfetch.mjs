@@ -128,6 +128,24 @@ const got = [], st = {};
 const res = await M.checkAccount({ provider: "gmail", user: "x@gmail.com", host: "127.0.0.1", port: g.port }, "app", st, { plain: true, have: () => false, save: async (n) => { got.push(n); return true; } });
 eq(got, ["PO-000200.pdf"], "Gmail: found in All Mail");
 eq(st.box, '"[Gmail]/Alle berichten"', "...and the mailbox is remembered");
+// Onet: the subject comes encoded (=?utf-8?B?...?=) and the server's SUBJECT search does not decode it, so it finds nothing:
+// the app then reads the subjects of the recent mails itself (and keeps doing so for that account)
+{
+  const enc = (t) => "=?utf-8?B?" + Buffer.from(t).toString("base64") + "?=";
+  const box = [{ uid: 20, date: new Date(now - 2 * day), subject: "Inkooporder PO-008335", rawSubject: enc("Inkooporder PO-008335"), raw: F.poMail({ po: "008335", pdf: pdf(8335), subject: enc("Inkooporder PO-008335") }) },
+    { uid: 21, date: new Date(now - day), subject: "Nieuwsbrief", rawSubject: enc("Nieuwsbrief"), raw: F.poMail({ po: "x", pdf: pdf(0), subject: enc("Nieuwsbrief") }) },
+    { uid: 22, date: new Date(now), subject: "Inkooporder PO-008338", rawSubject: enc("Inkooporder PO-008338"), raw: F.poMail({ po: "008338", pdf: pdf(8338), subject: enc("Inkooporder PO-008338") }) },
+    { uid: 4, date: new Date(now - 45 * day), subject: "Inkooporder PO-008001", rawSubject: enc("Inkooporder PO-008001"), raw: F.poMail({ po: "008001", pdf: pdf(8001), subject: enc("Inkooporder PO-008001") }) }];
+  const o = await F.start({ users: { "jan@onet.pl": "pw" }, boxes: { INBOX: box }, rawSubjectSearch: true });
+  const got = [], st = {};
+  const r1 = await M.checkAccount({ provider: "onet", user: "jan@onet.pl", host: "127.0.0.1", port: o.port }, "pw", st, { plain: true, have: (n) => n === "8335", save: async (n) => { got.push(n); return true; } });
+  eq(got, ["PO-008338.pdf"], "Onet (search does not decode the subject): the PO mail is still found; the one already in the folder is not fetched again");
+  eq(r1.inMail, 2, "...2 POs in the mail of the last 30 days (not the 45-day-old one, not the newsletter)");
+  ok(st.scanAll === true, "...and the account remembers to read the subjects itself");
+  const r2 = await M.checkAccount({ provider: "onet", user: "jan@onet.pl", host: "127.0.0.1", port: o.port }, "pw", st, { plain: true, have: () => true, save: async () => true });
+  eq(r2.inMail, 2, "the next check finds them the same way");
+  await o.close();
+}
 eq(M.errCode(Object.assign(new Error("[ALERT] Application-specific password required: https://support.google.com/accounts/answer/185833"), { code: "EAUTH" })), "apppass", "Gmail's 'app password required' is recognised");
 
 // ---- sending invoices (SMTP), with a copy in Sent (IMAP APPEND)

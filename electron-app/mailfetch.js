@@ -10,7 +10,7 @@
 const fs = require("fs"), path = require("path"), net = require("net"), tls = require("tls"), crypto = require("crypto");
 
 const PROVIDERS = { gmail: { host: "imap.gmail.com", port: 993 }, wp: { host: "imap.wp.pl", port: 993 }, onet: { host: "imap.poczta.onet.pl", port: 993 } }; // Onet: also op.pl, vp.pl, onet.eu
-const LOOKBACK_DAYS = 30, EVERY_MS = 5 * 60 * 1000, FIRST_AFTER_MS = 0, MAX_PER_RUN = 300, TIMEOUT_MS = 45000;
+const LOOKBACK_DAYS = 30, EVERY_MS = 5 * 60 * 1000, FIRST_AFTER_MS = 0, MAX_PER_RUN = 300, SCAN_MAX = 1500, TIMEOUT_MS = 45000; // SCAN_MAX: mails whose subject is read when the server cannot search it
 const SUBJECT_RE = /inkooporder\b[^\n]*?\bPO[-\s]?(\d{3,})/i;
 const PO_FILE_RE = /\bPO[-_\s]?(\d{3,})\b/i;
 
@@ -196,20 +196,29 @@ async function checkAccount(acc, pass, st, { have, skip = () => false, save, hol
     const box = st.box || (st.box = await pickBox(c, acc));
     const { uv } = await examine(c, box);
     const since = new Date(now.getTime() - LOOKBACK_DAYS * 86400000);
-    const sr = await c.ok("UID SEARCH SINCE " + imapDate(since) + ' SUBJECT "Inkooporder"');
-    let uids = [];
-    for (const u of sr.untagged) { const m = /^\* SEARCH\b(.*)$/i.exec(u.text); if (m) uids.push(...m[1].trim().split(/\s+/).filter(Boolean).map(Number)); }
-    uids = [...new Set(uids)].filter((u) => u > 0).sort((a, b) => b - a).slice(0, MAX_PER_RUN); // newest first
-    // the subjects, all in one go: which PO number is in which mail
-    const byNum = new Map();
-    if (uids.length) {
-      const hr = await c.ok("UID FETCH " + uids.join(",") + " (UID BODY.PEEK[HEADER.FIELDS (SUBJECT)])");
-      for (const u of hr.untagged) {
-        const um = /\bUID (\d+)/i.exec(u.text); if (!um || !u.lits.length) continue;
-        const n = subjectNum(words(headers(u.lits[0].toString("latin1")).subject || ""));
-        if (n && !byNum.has(n)) byNum.set(n, Number(um[1])); // the newest mail of a PO number
+    const search = async (q) => {
+      const sr = await c.ok("UID SEARCH " + q); let uids = [];
+      for (const u of sr.untagged) { const m = /^\* SEARCH\b(.*)$/i.exec(u.text); if (m) uids.push(...m[1].trim().split(/\s+/).filter(Boolean).map(Number)); }
+      return [...new Set(uids)].filter((u) => u > 0).sort((a, b) => b - a); // newest first
+    };
+    // the subjects (only that header): which PO number is in which mail
+    const subjects = async (uids) => {
+      const byNum = new Map();
+      for (let i = 0; i < uids.length; i += 200) {
+        const hr = await c.ok("UID FETCH " + uids.slice(i, i + 200).join(",") + " (UID BODY.PEEK[HEADER.FIELDS (SUBJECT)])");
+        for (const u of hr.untagged) {
+          const um = /\bUID (\d+)/i.exec(u.text); if (!um || !u.lits.length) continue;
+          const n = subjectNum(words(headers(u.lits[0].toString("latin1")).subject || ""));
+          if (n && (!byNum.has(n) || byNum.get(n) < Number(um[1]))) byNum.set(n, Number(um[1])); // the newest mail of a PO number
+        }
       }
-    }
+      return byNum;
+    };
+    const day = imapDate(since);
+    let byNum = st.scanAll ? new Map() : await subjects((await search("SINCE " + day + ' SUBJECT "Inkooporder"')).slice(0, MAX_PER_RUN));
+    // some servers (Onet) do not decode an encoded subject (=?utf-8?B?...?=) when they search, so their search finds nothing:
+    // then the subjects of all mails of those days are read here and decoded by the app itself (remembered for this account)
+    if (!byNum.size) { byNum = await subjects((await search("SINCE " + day)).slice(0, SCAN_MAX)); if (byNum.size && !st.scanAll) st.scanAll = true; }
     const saved = [], held = [];
     for (const [n, uid] of [...byNum].sort((a, b) => Number(a[0]) - Number(b[0]))) { // oldest PO first
       if (have(n) || skip(n)) continue;
