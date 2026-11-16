@@ -3,14 +3,16 @@
 "use strict";
 const MAIL = window.valkyrysMail || null;
 const mailUi = { st: null, prov: "gmail", sure: "" };
-const MAIL_NAMES = { gmail: "Gmail", wp: "WP Poczta", imap: "IMAP" };
-const MAIL_ICON = { gmail: "G", wp: "WP", imap: "@" };
+const MAIL_NAMES = { gmail: "Gmail", wp: "WP Poczta", onet: "Onet Poczta", imap: "IMAP" };
+const MAIL_ICON = { gmail: "G", wp: "WP", onet: "O", imap: "@" };
+// addresses that live at Onet (they sign in at poczta.onet.pl, never at WP)
+const ONET_DOMAINS = /@(onet\.pl|poczta\.onet\.pl|onet\.eu|op\.pl|vp\.pl|autograf\.pl|spoko\.pl|buziaczek\.pl|amorki\.pl)$/i;
 const mailLocale = () => ({ nl: "nl-NL", en: "en-GB", pl: "pl-PL" })[state.lang] || "nl-NL";
 function mailWhen(ms) {
   const d = new Date(ms), now = new Date(), t = d.toLocaleTimeString(mailLocale(), { hour: "2-digit", minute: "2-digit" });
   return d.toDateString() === now.toDateString() ? t : d.toLocaleDateString(mailLocale(), { day: "numeric", month: "short" }) + " " + t;
 }
-const mailErr = (code, prov) => tr("mailE_" + (["auth", "apppass", "net", "tls", "missing", "host", "dup", "nofolder"].includes(code) ? code : "other")) + (code === "auth" && (prov === "gmail" || prov === "wp") ? " " + tr("mailEauth_" + prov) : "");
+const mailErr = (code, prov) => tr("mailE_" + (["auth", "apppass", "net", "tls", "missing", "host", "dup", "nofolder"].includes(code) ? code : "other")) + (code === "auth" && (prov === "gmail" || prov === "wp" || prov === "onet") ? " " + tr("mailEauth_" + prov) : "");
 
 function mailStatus(a) {
   if (a.busy) return { cls: "", text: tr("mailBusy") };
@@ -94,14 +96,14 @@ async function mailDownload(keys) {
 }
 
 // ---- the add dialog
-const MAIL_GUIDE = { gmail: [["mgG1", "gTwoSv"], ["mgG2", "gAppPw"], ["mgG3"]], wp: [["mgW1", "wpMail"], ["mgW2", "wpKonto"], ["mgW3"]], imap: [["mgI1"], ["mgI2"]] };
+const MAIL_GUIDE = { gmail: [["mgG1", "gTwoSv"], ["mgG2", "gAppPw"], ["mgG3"]], wp: [["mgW1", "wpMail"], ["mgW2", "wpKonto"], ["mgW3"]], onet: [["mgO1", "onetMail"], ["mgO2", "onetAppPw"], ["mgO3"]], imap: [["mgI1"], ["mgI2"]] };
 function mailProvUi() {
   const p = mailUi.prov;
   // the guide: numbered steps for this mail service; a step done on the provider's website gets a button that opens that page
   $("#mailGuide").innerHTML = MAIL_GUIDE[p].map(([k, link]) => `<li><span>${esc(tr(k))}</span>${link && desk && desk.openLink ? ` <button type="button" class="mglink" data-link="${link}">${esc(tr("mgOpen"))}</button>` : ""}</li>`).join("");
   $("#mailPassLbl").textContent = tr(p === "gmail" ? "mailAppPass" : "mailPass");
   $("#mailHostWrap").hidden = p !== "imap";
-  $("#mailUser").placeholder = p === "gmail" ? "naam@gmail.com" : p === "wp" ? "naam@wp.pl" : "";
+  $("#mailUser").placeholder = p === "gmail" ? "naam@gmail.com" : p === "wp" ? "naam@wp.pl" : p === "onet" ? "naam@onet.pl" : "";
 }
 function openMailDlg() {
   mailUi.prov = "gmail";
@@ -125,7 +127,9 @@ if (MAIL && desk) {
   $("#mailForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const btn = $("#mailSave"); if (btn.disabled) return;
-    const p = mailUi.prov, user = $("#mailUser").value.trim();
+    const user = $("#mailUser").value.trim();
+    // an Onet address (onet.pl, op.pl, vp.pl, ...) chosen as WP or as "other" without a server: it can only work with Onet's servers
+    const p = ONET_DOMAINS.test(user) && (mailUi.prov === "wp" || (mailUi.prov === "imap" && !$("#mailHost").value.trim())) ? "onet" : mailUi.prov;
     let pass = $("#mailPass").value; if (p === "gmail") pass = pass.replace(/\s+/g, ""); // Google shows app passwords in groups of four
     const err = (code) => { const el = $("#mailErr"); el.textContent = mailErr(code, p); el.hidden = false; };
     if (!user || !pass) return err("missing");

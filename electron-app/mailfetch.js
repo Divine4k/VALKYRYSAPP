@@ -9,7 +9,7 @@
 "use strict";
 const fs = require("fs"), path = require("path"), net = require("net"), tls = require("tls"), crypto = require("crypto");
 
-const PROVIDERS = { gmail: { host: "imap.gmail.com", port: 993 }, wp: { host: "imap.wp.pl", port: 993 } };
+const PROVIDERS = { gmail: { host: "imap.gmail.com", port: 993 }, wp: { host: "imap.wp.pl", port: 993 }, onet: { host: "imap.poczta.onet.pl", port: 993 } }; // Onet: also op.pl, vp.pl, onet.eu
 const LOOKBACK_DAYS = 30, EVERY_MS = 5 * 60 * 1000, FIRST_AFTER_MS = 0, MAX_PER_RUN = 300, TIMEOUT_MS = 45000;
 const SUBJECT_RE = /inkooporder\b[^\n]*?\bPO[-\s]?(\d{3,})/i;
 const PO_FILE_RE = /\bPO[-_\s]?(\d{3,})\b/i;
@@ -225,7 +225,7 @@ async function checkAccount(acc, pass, st, { have, skip = () => false, save, hol
 }
 
 // ------------------------------------------------------------------ sending: a small SMTP client (implicit TLS, port 465) and the mail itself (MIME)
-const SMTP = { gmail: { host: "smtp.gmail.com", port: 465 }, wp: { host: "smtp.wp.pl", port: 465 } };
+const SMTP = { gmail: { host: "smtp.gmail.com", port: 465 }, wp: { host: "smtp.wp.pl", port: 465 }, onet: { host: "smtp.poczta.onet.pl", port: 465 } };
 const smtpOf = (acc) => acc.smtp || SMTP[acc.provider] || { host: String(acc.host || "").replace(/^imap\./i, "smtp."), port: 465 };
 const MAX_ATTACH = 18 * 1024 * 1024; // what Gmail and most others still take after base64 (25 MB)
 class Smtp {

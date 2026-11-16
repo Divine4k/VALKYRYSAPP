@@ -155,6 +155,7 @@ eq(M.errCode(Object.assign(new Error("[ALERT] Application-specific password requ
   const ms2 = M.create({ dataDir: data, poFolder: () => po, plain: true, encrypt: (x) => x, decrypt: () => "fout" });
   r = await ms2.send({ account: acc, to: ["a@b.nl"], subject: "x", text: "x", attachments: [] }); eq(r.error, "auth", "wrong password: 'auth'");
   eq(M.smtpOf({ provider: "gmail" }), { host: "smtp.gmail.com", port: 465 }, "Gmail SMTP"); eq(M.smtpOf({ provider: "wp" }), { host: "smtp.wp.pl", port: 465 }, "WP SMTP");
+  eq(M.PROVIDERS.onet, { host: "imap.poczta.onet.pl", port: 993 }, "Onet IMAP"); eq(M.smtpOf({ provider: "onet" }), { host: "smtp.poczta.onet.pl", port: 465 }, "Onet SMTP");
   eq(M.smtpOf({ provider: "imap", host: "imap.poczta.onet.pl" }), { host: "smtp.poczta.onet.pl", port: 465 }, "other: imap.* -> smtp.*");
   await smtp.close(); await sentSrv.close();
 }

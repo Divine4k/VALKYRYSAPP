@@ -41,6 +41,11 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   eq(await app.evaluate(() => globalThis.__links || []), ["https://myaccount.google.com/apppasswords"], "the button opens the app-password page in the browser");
   await page.click('.mprov label:has(input[value="wp"])');
   ok(/Opcje › IMAP\/POP/.test(await page.textContent("#mailGuide")) && (await page.$$("#mailGuide [data-link]")).length === 2 && !(await page.isVisible("#mailHostWrap")), "WP: its own guide (IMAP switch, two-step password), no server field");
+  await page.click('.mprov label:has(input[value="onet"])');
+  ok(/Konto Główne/.test(await page.textContent("#mailGuide")) && /hasło do aplikacji/.test(await page.textContent("#mailGuide")) && !(await page.isVisible("#mailHostWrap")) && (await page.getAttribute("#mailUser", "placeholder")) === "naam@onet.pl", "Onet: its own guide (IMAP switch, app password only with two-step), no server field");
+  eq(await page.$$eval("#mailGuide [data-link]", (b) => b.map((x) => x.dataset.link)), ["onetMail", "onetAppPw"], "...with buttons to Onet Poczta and Onet's app-password help");
+  await page.click('#mailGuide [data-link="onetMail"]'); await page.waitForTimeout(300);
+  ok((await app.evaluate(() => globalThis.__links || [])).includes("https://poczta.onet.pl/"), "...the first opens Onet Poczta");
   await page.click('.mprov label:has(input[value="imap"])');
   ok(await page.isVisible("#mailHostWrap"), "Other: a server field");
   await page.click('.mprov label:has(input[value="gmail"])'); await page.screenshot({ path: "/tmp/mail-dialog.png" }); await page.click('.mprov label:has(input[value="imap"])');
