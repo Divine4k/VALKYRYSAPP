@@ -179,7 +179,7 @@
 
 
   // ---------------------------------------------------------------- reading finished invoices (from the invoice folder)
-  const AMT = "(\\d{1,3}(?:[.,]\\d{3})+[.,]\\d{2}|\\d+[.,]\\d{2})";
+  const AMT = "(\\d{1,3}(?:[.,]\\d{3}| \\d{3}(?=[ .,]))+[.,]\\d{2}|\\d+[.,]\\d{2})"; // 1.725,00  1,725.00  1 725,00 (space only between groups of three)
   /** "1.350,00" and "2,250.00" both mean what they look like; the last separator followed by two digits is the decimal one */
   function parseMoney(str) {
     const m = /^(\d{1,3}(?:[.,]\d{3})+|\d+)([.,]\d{2})$/.exec(String(str).replace(/[€\s]/g, ""));
@@ -192,18 +192,23 @@
     const owners = (own && own.length ? own : [SENDER]).filter((o) => o && (o.name || o.kvk));
     const rows = lines.map((l) => String(l).replace(/\s+/g, " ").trim()).filter(Boolean);
     const text = rows.join(" ");
+    // a PDF made by Word can split the digits of a number or date into pieces ("1 - 20 2 6", "21 / 1 /20 2 6"): glued together for those two
+    const glued = text.replace(/(?<=[\d\-\/])\s+(?=[\d\-\/])/g, "");
     const r = { nr: null, datum: null, client: null, kvk: null, po: null, sub: null, vat: null, total: null, btw: null, days: null, hourLines: 0 };
     // invoice number: 62-2026 (not the 11-2026 inside 09-11-2026)
-    const nm = /(?<![\d\-\/.])(\d{1,4})-(20\d{2})(?![\d\-\/])/.exec(text);
+    const NR = /(?<![\d\-\/.])(\d{1,4})-(20\d{2})(?![\d\-\/])/;
+    const nm = NR.exec(text) || (/factuur\s*n(?:r|ummer)\.?\s*:?\s*(\d{1,4})-(20\d{2})(?![\d\-\/])/i.exec(glued)) || NR.exec(glued);
     if (nm) r.nr = `${+nm[1]}-${nm[2]}`;
     // date: the one after the word Datum, else the first date in the document
-    const dates = [...text.matchAll(/(?<![\d])(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})(?!\d)/g)].filter((m) => validDate(+m[1], +m[2], +m[3]));
-    const after = /datum\s*:?\s*(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/i.exec(text.replace(/D\s?A\s?T\s?U\s?M/g, "DATUM"));
+    const findDates = (t) => [...t.matchAll(/(?<![\d])(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})(?!\d)/g)].filter((m) => validDate(+m[1], +m[2], +m[3]));
+    const findAfter = (t) => /datum\s*:?\s*(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/i.exec(t.replace(/D\s?A\s?T\s?U\s?M/g, "DATUM"));
+    let dates = findDates(text), after = findAfter(text);
+    if (!after && !dates.length) { dates = findDates(glued); after = findAfter(glued); }
     const dm = after && validDate(+after[1], +after[2], +after[3]) ? after : dates[0];
     if (dm) r.datum = `${String(+dm[1]).padStart(2, "0")}/${String(+dm[2]).padStart(2, "0")}/${dm[3]}`;
     // amounts
     const money = (re) => { const m = re.exec(text); return m ? parseMoney(m[1]) : NaN; };
-    const totals = [...text.matchAll(new RegExp("\\bTOTAAL(\\s+TE\\s+BETALEN|\\s+INCL\\.?\\s*BTW)?\\s*€?\\s*" + AMT, "gi"))];
+    const totals = [...text.matchAll(new RegExp("\\bTOTAA?L(\\s+TE\\s+BETALEN|\\s+INCL?\\.?,?\\s*BTW)?\\s*€?\\s*" + AMT, "gi"))];
     const best = totals.filter((m) => m[1]).pop() || totals.pop();
     if (best) r.total = parseMoney(best[2]);
     let sub = money(new RegExp("sub\\s*totaal\\s*€?\\s*" + AMT, "i")); if (isNaN(sub)) sub = money(new RegExp("totaal\\s+excl\\.?\\s*btw\\s*€?\\s*" + AMT, "i"));
@@ -224,7 +229,7 @@
         if (!m) continue;
         const rate = parseMoney(m[2]), q = parseFloat(m[3].replace(",", ".")), amt = parseMoney(m[4]);
         if (Math.abs(rate * q - amt) > 0.02) continue;
-        days += lineDays(rate, q, m[1]); if (isHourLine(rate, m[1])) hourLines++; found = true; if (!r.po && m[1]) r.po = m[1].trim();
+        days += lineDays(rate, q, m[1]); if (isHourLine(rate, m[1])) hourLines++; found = true; if (!r.po && m[1] && /\bPO\b|\d{4,}/i.test(m[1])) r.po = m[1].trim();
         i += w - 1; break;
       }
     }

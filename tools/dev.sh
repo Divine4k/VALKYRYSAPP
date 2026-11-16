@@ -93,7 +93,7 @@ show_res() { local r="$RUN/res/$1"; [ -f "$r" ] || { echo "FAIL ${names[$1]}  (n
 
 units() {
   local f out rc; new_run
-  for f in test_workdates.mjs test_parse_generated.mjs test_mailfetch.mjs test_drives.mjs; do
+  for f in test_workdates.mjs test_parse_generated.mjs test_handmade.mjs test_mailfetch.mjs test_drives.mjs; do
     out=$(node "tools/$f" "$SP/tool" 2>&1); rc=$?; if [ $rc -ne 0 ] || echo "$out" | grep -q '^FAIL'; then echo "FAIL $f"; echo "$out" | grep -m5 '^FAIL' | cut -c1-200; FAILED="$FAILED $f"; else echo "ok   $f"; fi
   done
   node tools/test_core.mjs "$SP/po/PO-008148.pdf" "$SP/tool" "$RUN/core-out.pdf" >/dev/null 2>&1 && echo "ok   test_core.mjs" || { echo "FAIL test_core.mjs"; FAILED="$FAILED test_core.mjs"; }

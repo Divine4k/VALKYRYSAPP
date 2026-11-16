@@ -28,7 +28,7 @@ function rebuildFileNums() {
 }
 
 // ---- reading the finished invoices in the folder (for the statistics)
-const PARSER_VERSION = 3; // 2: PO lines keep their work dates and unit; 3: invoice days count hours as 1/8 day
+const PARSER_VERSION = 4; // 2: PO lines keep their work dates and unit; 3: invoice days count hours as 1/8 day; 4: hand-made Word invoices (.doc, "Total", "1 725,00")
 const isInvoiceRec = (r) => !!(r && r.total != null && !isNaN(r.total));
 const unxml = (t) => t.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
 const docxLines = (xml) => xml.split(/<\/w:p>/).map((p) => [...p.matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g)].map((m) => unxml(m[1])).join("")).filter(Boolean);
@@ -42,6 +42,7 @@ async function readInvoiceFile(f) {
   const bytes = new Uint8Array(raw);
   let lines = [];
   if (f.ext === "pdf") lines = await pdfLines(bytes, 3);
+  else if (f.ext === "doc") { lines = WordDoc.docLines(bytes); if (!lines) return null; } // old Word file (js/docread.js)
   else {
     const zip = await JSZip.loadAsync(bytes); const entry = zip.file("word/document.xml");
     if (!entry) return null;
@@ -56,14 +57,13 @@ async function scanFolder() {
   if (!desk || !state.folder || !state.folder.exists) { state.folderInvoices = []; state.unread = []; state.scan = null; state.folderScanned = true; if (state.tab === "stats") renderStats(); renderNewPos(); return; }
   await state.dbReady;
   if (id !== scanSeq) return;
-  const files = state.files.filter((f) => f.ext === "pdf" || f.ext === "docx");
-  const order = [...files.filter((f) => f.ext === "pdf"), ...files.filter((f) => f.ext === "docx")];
+  const order = ["pdf", "docx", "doc"].flatMap((x) => state.files.filter((f) => f.ext === x)); // PDFs first: a Word file next to a PDF that was read is skipped
   const okBase = new Set(), recs = [], unread = []; let changed = false, done = 0;
   state.scan = { done: 0, total: order.length };
   for (const f of order) {
     if (id !== scanSeq) return;
-    const base = f.rel.replace(/\.(pdf|docx)$/i, "");
-    if (f.ext === "docx" && okBase.has(base)) { done++; continue; } // the PDF next to it already told us everything
+    const base = f.rel.replace(/\.(pdf|docx?)$/i, "");
+    if (f.ext !== "pdf" && okBase.has(base)) { done++; continue; } // the PDF next to it already told us everything
     let e = state.parseCache.get(f.rel);
     if (!e || e.mt !== f.mtime || e.sz !== f.size) {
       let r = null; try { r = await readInvoiceFile(f); } catch (err) { r = null; }

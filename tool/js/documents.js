@@ -12,14 +12,15 @@ function docSets() {
   const sets = new Map(), byBase = new Map();
   const get = (nr) => { let s = sets.get(nr); if (!s) { const [n, y] = nr.split("-").map(Number); sets.set(nr, (s = { nr, n, y, pdf: null, docx: null, inv: null, fi: null })); } return s; };
   const better = (a, b) => !a || b.name.length < a.name.length || (b.name.length === a.name.length && b.mtime > a.mtime); // "VALKYRYS 5-2025.pdf" wins over its "(kopie)"
-  const files = desk && state.folder && state.folder.exists ? state.files.filter((f) => f.ext === "pdf" || f.ext === "docx") : [], later = [];
+  const files = desk && state.folder && state.folder.exists ? state.files.filter((f) => f.ext === "pdf" || f.ext === "docx" || f.ext === "doc") : [], later = [];
+  const slot = (f) => (f.ext === "pdf" ? "pdf" : "docx"); // .docx or an old .doc: the Word file of the invoice
   for (const f of files) {
     const e = state.parseCache.get(f.rel), cached = e && e.mt === f.mtime && e.sz === f.size && isInvoiceRec(e.r) && /^\d+-\d{4}$/.test(e.r.nr || "") ? e.r.nr : "";
     const m = NUM_IN_NAME.exec(f.name.replace(/\.[^.]+$/, "")), nr = cached || (m ? `${+m[1]}-${m[2]}` : "");
     if (!nr) { later.push(f); continue; }
-    const s = get(nr); if (better(s[f.ext], f)) s[f.ext] = f; byBase.set(f.rel.replace(/\.(pdf|docx)$/i, ""), s);
+    const s = get(nr), k = slot(f); if (!s[k] || (s[k].ext === "doc" && f.ext === "docx") || (s[k].ext === f.ext && better(s[k], f))) s[k] = f; byBase.set(f.rel.replace(/\.(pdf|docx?)$/i, ""), s);
   }
-  for (const f of later) { const s = byBase.get(f.rel.replace(/\.(pdf|docx)$/i, "")); if (s && !s[f.ext]) s[f.ext] = f; } // a Word file next to its PDF, same name without a number
+  for (const f of later) { const s = byBase.get(f.rel.replace(/\.(pdf|docx?)$/i, "")); if (s && !s[slot(f)]) s[slot(f)] = f; } // a Word file next to its PDF, same name without a number
   for (const fi of files.length ? state.folderInvoices : []) get(fi.factuurnr).fi = fi;
   for (const i of state.invoices.values()) if (/^\d+-\d{4}$/.test(i.factuurnr || "")) get(i.factuurnr).inv = i;
   const out = [...sets.values()].map((s) => {

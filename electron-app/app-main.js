@@ -49,7 +49,8 @@ const liveFolder = (kind) => {
 };
 const folderInfo = (kind) => { const p = liveFolder(kind); return p ? { path: p, exists: isDir(p) } : null; };
 const inside = (root, rel) => { const full = path.resolve(root, rel); const r = path.relative(root, full); return r && !r.startsWith("..") && !path.isAbsolute(r) ? full : ""; };
-const SAVE_EXT = /\.(pdf|docx)$/i;
+const SAVE_EXT = /\.(pdf|docx)$/i; // what the app writes
+const FOLDER_EXT = /\.(pdf|docx|doc)$/i; // what it lists and reads: also invoices made by hand in old Word (.doc)
 
 // null when the listing may be incomplete (the drive was pulled out while reading): the page then treats the folder as not there,
 // so nothing is taken for deleted. A subfolder that may not be read (permissions) is only skipped.
@@ -63,7 +64,7 @@ function listInvoiceFiles(root) {
       if (e.name.startsWith(".") || e.name.startsWith("~$")) continue; // hidden files and Word's temporary lock files
       const full = path.join(dir, e.name);
       if (e.isDirectory()) { if (depth < 2) walk(full, depth + 1); continue; }
-      if (!e.isFile() || !SAVE_EXT.test(e.name)) continue;
+      if (!e.isFile() || !FOLDER_EXT.test(e.name)) continue;
       try { const st = fs.statSync(full); out.push({ rel: path.relative(root, full).split(path.sep).join("/"), name: e.name, ext: path.extname(e.name).slice(1).toLowerCase(), mtime: st.mtimeMs, size: st.size }); } catch (err) { bad(err); }
     }
   };
@@ -143,17 +144,17 @@ function registerFolderIpc(getWin) {
   ipcMain.handle("folder:list", guard((e, kind) => { const p = liveFolder(kind); return p && isDir(p) ? listInvoiceFiles(p) : []; }));
   ipcMain.handle("folder:read", guard(async (e, rel, kind) => { // file contents, so the page can read invoices and purchase orders
     const p = folderPath(kind); const full = p && inside(p, rel);
-    if (!full || !SAVE_EXT.test(full)) return null;
+    if (!full || !FOLDER_EXT.test(full)) return null;
     try { const st = fs.statSync(full); return st.isFile() && st.size <= 40 * 1024 * 1024 ? fs.readFileSync(full) : null; } catch (err) { return null; }
   }));
   ipcMain.handle("folder:reveal", guard(async (e, rel, kind) => { // shows the file in its folder (selected), so a wrong one can be deleted there
     const p = folderPath(kind); const full = p && inside(p, rel);
-    if (!full || !SAVE_EXT.test(full) || !fs.existsSync(full)) return { error: "missing" };
+    if (!full || !FOLDER_EXT.test(full) || !fs.existsSync(full)) return { error: "missing" };
     shell.showItemInFolder(full); return { ok: true };
   }));
   ipcMain.handle("folder:trash", guard(async (e, rel, kind) => { // moves one invoice/PO file to the Recycle Bin (never deleted for good)
     const p = folderPath(kind); const full = p && isDir(p) && typeof rel === "string" && inside(p, rel);
-    if (!full || !SAVE_EXT.test(full)) return { error: "path" };
+    if (!full || !FOLDER_EXT.test(full)) return { error: "path" };
     try { if (!fs.lstatSync(full).isFile()) return { error: "missing" }; } catch (err) { return { error: "missing" }; }
     // a PO deleted here on purpose is not fetched from e-mail again (mailfetch.js forget)
     try { await shell.trashItem(full); if (kind === "pos" && mail) try { mail.forget(full); } catch (err) {} return { ok: true }; } catch (err) { return { error: String((err && err.message) || "trash") }; }
@@ -165,7 +166,7 @@ function registerFolderIpc(getWin) {
   ipcMain.handle("app:welcomed-set", guard(() => { writeConfig(Object.assign(readConfig(), { welcomed: true })); return true; }));
   ipcMain.handle("folder:openfile", guard(async (e, rel, kind) => {
     const p = folderPath(kind); const full = p && inside(p, rel);
-    if (!full || !SAVE_EXT.test(full) || !fs.existsSync(full)) return { error: "missing" };
+    if (!full || !FOLDER_EXT.test(full) || !fs.existsSync(full)) return { error: "missing" };
     const err = await shell.openPath(full); return err ? { error: err } : { ok: true };
   }));
   ipcMain.handle("folder:save", guard(async (e, name, bytes, overwrite) => {
