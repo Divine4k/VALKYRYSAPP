@@ -70,3 +70,10 @@ button.tog { min-height: 26px; width: 26px; padding: 0; border-color: transparen
 .autosteps li::before { content: "•"; width: 16px; flex: 0 0 16px; text-align: center; color: var(--muted); font-weight: 900; }
 .autosteps li.run::before { content: "…"; color: var(--ink); } .autosteps li.ok::before { content: "\2713"; color: var(--ok); } .autosteps li.bad::before { content: "\00D7"; color: var(--err); } .autosteps li.skip::before { content: "–"; }
 .autosteps li.bad { color: var(--err); }
+
+/* the POs that wait in the mail, one per line under the notice: look at it first, download or skip just this one */
+.mailnote .mnlist { flex: 1 1 100%; list-style: none; margin: 0; padding: 10px 0 0 58px; border-top: 1px solid var(--line); display: grid; gap: 6px; max-height: 200px; overflow-y: auto; }
+.mailnote .mnlist li { display: flex; align-items: center; gap: 6px; }
+.mailnote .mnlist .num { min-width: 104px; font-weight: 700; color: var(--ink); font-size: 13.5px; }
+.mailnote .mnlist button { min-height: 28px; padding: 3px 12px; font-size: 12.5px; white-space: nowrap; }
+@media (max-width: 560px) { .mailnote .mnlist { padding-left: 0; } .mailnote .mnlist li { flex-wrap: wrap; } }

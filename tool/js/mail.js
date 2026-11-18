@@ -60,15 +60,18 @@ function renderMailNotes() {
   if (MAIL && desk && st) {
     const pend = st.pending || [], unseen = st.unseen || [], psig = pend.map((p) => p.key).join();
     if (pend.length && mailUi.hideFound !== psig) notes.push({ k: "found", title: tr(pend.length === 1 ? "mailNoteTitle1" : "mailNoteTitleN"), sub: tr(pend.length === 1 ? "mailNoteAsk1" : "mailNoteAskN", mailNames(pend.map((p) => p.name))),
-      btns: [["dl", "primary", pend.length > 1 ? "mailDlAll" : "mailDownload"], ["ign", "ghost", pend.length > 1 ? "mailIgnAll" : "mailIgnore"], ["x"]] });
+      btns: [["dl", "primary", pend.length > 1 ? "mailDlAll" : "mailDownload"], ["ign", "ghost", pend.length > 1 ? "mailIgnAll" : "mailIgnore"], ["x"]], items: pend.map((p) => ({ key: p.key, po: mailPo(p.name) })) });
     if (unseen.length) notes.push({ k: "got", title: tr(unseen.length === 1 ? "mailNoteTitle1" : "mailNoteTitleN"), sub: tr(unseen.length === 1 ? "mailNoteGot1" : "mailNoteGotN", mailNames(unseen)), btns: [["ok", "primary", "mailNoteOk"]] });
   }
   box.hidden = !notes.length;
   const dot = $("#invDot"); if (dot) dot.hidden = !notes.length;
-  const sig = JSON.stringify(notes.map((b) => [b.k, b.title, b.sub]));
+  const sig = JSON.stringify(notes.map((b) => [b.k, b.title, b.sub, (b.items || []).map((i) => i.key)]));
+  // each PO that waits: "Voorbeeld" shows its PDF straight from the mail, before anything is downloaded; with several, also download or skip just that one
+  const items = (b) => (b.items && b.items.length ? `<ul class="mnlist">${b.items.map((it) => `<li><span class="num">${esc(it.po)}</span><button type="button" data-mnote-po="view" data-key="${esc(it.key)}" title="${esc(tr("mailPrevHint"))}">${esc(tr("npPreview"))}</button>`
+    + (b.items.length > 1 ? `<button type="button" class="ghost" data-mnote-po="dl" data-key="${esc(it.key)}">${esc(tr("mailDownload"))}</button><button type="button" class="ghost" data-mnote-po="ign" data-key="${esc(it.key)}">${esc(tr("mailIgnore"))}</button>` : "") + `</li>`).join("")}</ul>` : "");
   if (sig === mailUi.noteSig) return; mailUi.noteSig = sig; // unchanged: keep focus
   box.innerHTML = notes.map((b) => `<div class="panel mailnote" role="status" data-mnote="${b.k}"><span class="mnico">${MAIL_SVG}</span><div class="mntext"><p class="mntitle">${esc(b.title)}</p><p class="mnsub">${esc(b.sub)}</p></div><div class="mnact">` +
-    b.btns.map(([a, cls, key]) => a === "x" ? `<button type="button" class="ghost xbtn" data-mnote-act="x" aria-label="${esc(tr("close"))}" title="${esc(tr("close"))}">${X_SVG}</button>` : `<button type="button"${cls ? ` class="${cls}"` : ""} data-mnote-act="${a}">${esc(tr(key))}</button>`).join("") + `</div></div>`).join("");
+    b.btns.map(([a, cls, key]) => a === "x" ? `<button type="button" class="ghost xbtn" data-mnote-act="x" aria-label="${esc(tr("close"))}" title="${esc(tr("close"))}">${X_SVG}</button>` : `<button type="button"${cls ? ` class="${cls}"` : ""} data-mnote-act="${a}">${esc(tr(key))}</button>`).join("") + `</div>${items(b)}</div>`).join("");
 }
 function mailSet(st) {
   if (!st || !Array.isArray(st.accounts)) return;
@@ -89,6 +92,11 @@ async function mailCheckAll() {
   let st = null; try { st = await MAIL.state(); } catch (e) {}
   const bad = st && st.accounts.find((a) => a.enabled && a.error);
   return { saved: (r && r.saved) || [], found: (r && r.found) || [], error: (r && r.error) || (bad ? bad.error : "") };
+}
+/** a PO that waits in the mail, shown before it is downloaded (its PDF comes straight from the mail, nothing is saved) */
+function mailPreview(key) {
+  const p = ((mailUi.st || {}).pending || []).find((x) => x.key === key); if (!p || !MAIL) return;
+  previewDoc({ title: tr("mailPrevTitle", mailPo(p.name)), getKey: key, load: async () => { const r = await MAIL.peek(key); if (!r || r.error || !r.data) throw new Error((r && r.error) || "missing"); return r.data; } });
 }
 async function mailDownload(keys) {
   let r; try { r = await MAIL.download(keys || null); } catch (e) { r = { error: "other" }; }
@@ -179,7 +187,14 @@ if (MAIL && desk) {
   });
   $("#mailPendAll").addEventListener("click", () => mailDownload());
   $("#mailPendIgn").addEventListener("click", () => MAIL.ignore(null).catch(() => {}));
+  $("#poDlgGet").addEventListener("click", () => { const key = $("#poDlgGet").dataset.key; $("#poDlg").close(); if (key) mailDownload([key]); });
   $("#mailNotes").addEventListener("click", (e) => {
+    const pb = e.target.closest("[data-mnote-po]");
+    if (pb) { // one of the POs that wait
+      const key = pb.dataset.key, what = pb.dataset.mnotePo;
+      if (what === "view") mailPreview(key); else if (what === "dl") { pb.disabled = true; mailDownload([key]); } else if (what === "ign") MAIL.ignore([key]).catch(() => {});
+      return;
+    }
     const b = e.target.closest("[data-mnote-act]"), note = b && b.closest("[data-mnote]"); if (!b) return;
     const act = b.dataset.mnoteAct, st = mailUi.st || {};
     if (note.dataset.mnote === "got") { MAIL.seen().catch(() => {}); mailSet(Object.assign({}, st, { unseen: [], saved: null, found: null })); return; }

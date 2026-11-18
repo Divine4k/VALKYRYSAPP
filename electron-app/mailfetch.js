@@ -444,6 +444,22 @@ function create({ dataDir, poFolder, encrypt, decrypt, canRun = () => true, send
     emit(saved.length ? { saved, downloaded: true } : null);
     return { saved, error };
   });
+  /** the PDF of a PO that waits in the mail ("ask first"), to look at before it is downloaded: { name, data } or { error }.
+   *  Nothing is saved, nothing changes in the mailbox or in what waits. */
+  const peek = (key) => serial(async () => {
+    const data = read(), p = data.pending.find((x) => x.key === String(key)), acc = p && data.accounts.find((a) => a.id === p.acc);
+    if (!acc) return { error: "missing" };
+    let c = null;
+    try {
+      c = await login(acc, decrypt(acc.pass), plain);
+      const { uv } = await examine(c, (acc.state && acc.state.box) || "INBOX");
+      if (p.uv !== uv) return { error: "missing" }; // the mailbox was renumbered
+      const mail = await fetchMail(c, p.uid), files = mail ? poFiles(mail) : [];
+      const f = files.find((x) => x.name.toLowerCase() === p.name.toLowerCase()) || files[0];
+      return f ? { name: p.name, data: f.data } : { error: "missing" };
+    } catch (e) { return { error: e.kind || errCode(e) }; }
+    finally { if (c) c.close(); }
+  });
   /** fetch these POs (numbers or names like "PO-008245") from the mail now: an invoice names them and their file is not in the PO folder.
    *  Also ones skipped before (deleted through the app or ignored): asking for them by name undoes that. Looks back FETCH_BACK_DAYS.
    *  -> { saved: [names], missing: [numbers not found in any mailbox], error } */
@@ -521,7 +537,7 @@ function create({ dataDir, poFolder, encrypt, decrypt, canRun = () => true, send
     return new Promise((res) => { setTimeout(() => { check().catch(() => {}).then(res, res); }, firstMs).unref?.(); });
   }
   function stop() { if (timer) clearInterval(timer); timer = null; }
-  return { state, add, remove, setEnabled, setMode, check, download, fetchPos, ignore, forget, seen, auto, stop, send: sendMail };
+  return { state, add, remove, setEnabled, setMode, check, download, peek, fetchPos, ignore, forget, seen, auto, stop, send: sendMail };
 }
 
 module.exports = { create, poNum, buildMail, smtpOf, Smtp, parseMail, poFiles, checkAccount, PROVIDERS, Imap, imapDate, errCode, params, words };

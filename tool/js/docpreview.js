@@ -2,11 +2,12 @@
 "use strict";
 // ---- looking at the original PDF of a purchase order or an invoice (from the new-orders list and from the list behind a period of the statistics)
 let poPrevSeq = 0;
-async function previewDoc({ title, load, open, addPo, nopreview, word }) {
+async function previewDoc({ title, load, open, addPo, nopreview, word, getKey }) {
   const dlg = $("#poDlg"), pages = $("#poPages"), err = $("#poDlgErr"), id = ++poPrevSeq;
   $("#poDlgTitle").textContent = title; dlg.dataset.rel = open ? open.rel : ""; dlg.dataset.kind = open && open.kind ? open.kind : "";
   pages.innerHTML = ""; err.hidden = true; err.className = "chip error";
   const add = $("#poDlgAdd"); add.hidden = !addPo; add.textContent = tr("npAdd"); add.dataset.po = addPo || ""; // only a PO that still has to be added
+  const get = $("#poDlgGet"); get.hidden = !getKey; get.textContent = tr("mailDownload"); get.dataset.key = getKey || ""; // a PO shown from the mail: download this one
   const ob = $("#poDlgOpen"), ok = word ? "wordOpen" : "poOpenExt"; ob.dataset.i18n = ok; ob.textContent = tr(ok); ob.hidden = !(desk && open);
   if (!dlg.open) dlg.showModal();
   if (nopreview) { err.className = "chip warn"; err.textContent = tr(nopreview); err.hidden = false; return; }

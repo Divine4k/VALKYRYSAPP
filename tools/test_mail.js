@@ -125,17 +125,43 @@ const until = async (fn, ms = 10000) => { const t = Date.now(); while (Date.now(
   await page.click("#mailList [data-mcheck]");
   ok(await until(async () => /PO-008150, PO-008151\. Wil je ze downloaden\?/.test(await page.textContent("#mailNotes"))), "found: the notice asks", await page.textContent("#mailNotes"));
   ok(!fs.existsSync(path.join(POF, "PO-008150.pdf")), "...nothing downloaded yet");
+  // the notice on the Invoices tab: every waiting PO on its own line, to look at before it is downloaded
+  await goTab(page, "inv"); await page.waitForTimeout(200);
+  eq(await page.$$eval("#mailNotes .mnlist li", (l) => l.map((x) => [x.querySelector(".num").textContent, [...x.querySelectorAll("button")].map((b) => b.dataset.mnotePo).join()])),
+    [["PO-008150", "view,dl,ign"], ["PO-008151", "view,dl,ign"]], "the notice lists each waiting PO with Voorbeeld / Downloaden / Negeren");
+  srv.log.length = 0;
+  await page.click('#mailNotes .mnlist li:has-text("PO-008150") [data-mnote-po=view]'); await page.waitForSelector("#poDlg[open]");
+  ok(await until(async () => (await page.$$("#poPages canvas")).length >= 1) && !(await page.isVisible("#poDlgErr")), "Voorbeeld: the PO's PDF is shown, straight from the mail");
+  ok(/PO-008150 \(in je e-mail, nog niet gedownload\)/.test(await page.textContent("#poDlgTitle")) && await page.isVisible("#poDlgGet") && await page.isHidden("#poDlgOpen") && await page.isHidden("#poDlgAdd"), "...the title says it is not downloaded yet; a Downloaden button, nothing to open or add", await page.textContent("#poDlgTitle"));
+  await page.screenshot({ path: "/tmp/mail-preview.png" });
+  ok(!fs.existsSync(path.join(POF, "PO-008150.pdf")) && !srv.log.some((l) => /\b(STORE|SELECT|EXPUNGE|COPY|MOVE)\b/i.test(l)) && srv.log.some((l) => / EXAMINE /.test(l)), "...nothing is saved and nothing changes in the mailbox");
+  await page.click("#poDlgClose"); await page.waitForTimeout(150);
+  ok((await page.$$("#mailNotes .mnlist li")).length === 2, "...both still wait");
+  await page.screenshot({ path: "/tmp/mail-note-list.png", clip: { x: 180, y: 0, width: 1100, height: 330 } });
+  await goSet(page, "mail"); await page.waitForTimeout(200);
   ok(await page.isVisible("#mailPend") && (await page.$$("#mailPendList li")).length === 2, "...listed in Connections with Downloaden / Negeren");
   await page.$eval("#mailPend", (el) => el.scrollIntoView({ block: "center" })); await page.waitForTimeout(200);
   await page.screenshot({ path: "/tmp/mail-ask.png" });
   await page.click('#mailPendList li:has-text("PO-008151") [data-pign]');
   ok(await until(async () => (await page.$$("#mailPendList li")).length === 1), "Negeren: one left");
-  await goTab(page, "inv"); await page.click("#mailNotes [data-mnote-act=dl]");
+  await goTab(page, "inv");
+  eq(await page.$$eval("#mailNotes .mnlist li button", (b) => b.map((x) => x.dataset.mnotePo)), ["view"], "one PO waits: its line only has Voorbeeld (Downloaden / Negeren are the notice's own buttons)");
+  await page.click("#mailNotes [data-mnote-act=dl]");
   ok(await saved(path.join(POF, "PO-008150.pdf"), 10000), "Downloaden from the notice: saved");
   ok(!fs.existsSync(path.join(POF, "PO-008151.pdf")), "the ignored one not");
   ok(await until(async () => !(await page.isVisible("#mailNotes [data-mnote]")) && (await page.isHidden("#mailPend"))), "notice and list gone");
-  await goSet(page, "mail"); await page.waitForTimeout(200);
   ok(await until(async () => /Gedownload: PO-008150/.test(await page.textContent("#toast"))), "toast: downloaded");
+  // looked at first, then downloaded from the preview window; and one of two skipped on its own line
+  inbox.push({ uid: 9, date: new Date(), subject: "Inkooporder PO-008152", raw: F.poMail({ po: "008152", pdf }) });
+  inbox.push({ uid: 10, date: new Date(), subject: "Inkooporder PO-008153", raw: F.poMail({ po: "008153", pdf }) });
+  await page.evaluate(() => mailCheckAll()); ok(await until(async () => (await page.$$("#mailNotes .mnlist li")).length === 2), "two more arrive");
+  await page.click('#mailNotes .mnlist li:has-text("PO-008153") [data-mnote-po=ign]');
+  ok(await until(async () => (await page.$$("#mailNotes .mnlist li")).length === 1) && /PO-008152/.test(await page.textContent("#mailNotes .mnlist")), "Negeren on a line: only that PO is skipped");
+  await page.click("#mailNotes .mnlist [data-mnote-po=view]"); await page.waitForSelector("#poDlg[open]"); await until(async () => (await page.$$("#poPages canvas")).length >= 1);
+  await page.click("#poDlgGet");
+  ok(await saved(path.join(POF, "PO-008152.pdf"), 10000) && !(await page.evaluate(() => document.querySelector("#poDlg").open)), "Downloaden in the preview window: saved, the window closes");
+  ok(!fs.existsSync(path.join(POF, "PO-008153.pdf")) && await until(async () => !(await page.isVisible("#mailNotes [data-mnote]"))), "...the skipped one is not, and the notice is gone");
+  await goSet(page, "mail"); await page.waitForTimeout(200);
 
   // a PO deleted from the folder outside the app comes back at the next check
   await page.click('#mailMode label:has(input[value="auto"])'); await page.waitForTimeout(300);

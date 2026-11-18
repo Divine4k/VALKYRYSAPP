@@ -63,6 +63,7 @@ contextBridge.exposeInMainWorld("valkyrysMail", {
   check: (id) => call("mail:check", id ? String(id) : ""),
   setMode: (m) => call("mail:mode", m === "ask" ? "ask" : "auto"),          // "auto": download right away, "ask": list them first
   download: (keys) => call("mail:download", Array.isArray(keys) ? keys.map(String) : null),
+  peek: (key) => call("mail:peek", String(key)),
   fetchPos: (list) => call("mail:fetchpos", Array.isArray(list) ? list.map(String) : []),
   ignore: (keys) => call("mail:ignore", Array.isArray(keys) ? keys.map(String) : null),
   seen: () => call("mail:seen"),                                             // the notice about fetched POs has been read

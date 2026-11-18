@@ -280,6 +280,7 @@ function registerMailIpc() {
   const keys = (k) => (Array.isArray(k) ? k.map(String).slice(0, 500) : undefined);
   ipcMain.handle("mail:mode", guard((e, m) => mail.setMode(m === "ask" ? "ask" : "auto")));
   ipcMain.handle("mail:download", guard((e, k) => mail.download(keys(k))));
+  ipcMain.handle("mail:peek", guard((e, k) => mail.peek(String(k || "").slice(0, 200))));
   ipcMain.handle("mail:fetchpos", guard((e, l) => mail.fetchPos(Array.isArray(l) ? l.map(String).slice(0, 200) : [])));
   ipcMain.handle("mail:ignore", guard((e, k) => mail.ignore(keys(k))));
   ipcMain.handle("mail:seen", guard(() => mail.seen()));
