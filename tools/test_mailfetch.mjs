@@ -146,6 +146,34 @@ eq(st.box, '"[Gmail]/Alle berichten"', "...and the mailbox is remembered");
   eq(r2.inMail, 2, "the next check finds them the same way");
   await o.close();
 }
+// a PO asked for by name ("Pobierz z poczty" for an invoice whose PO is missing) whose mail the person filed in another folder of the
+// mailbox: every folder is looked through until it is found; the ordinary check keeps to the inbox
+{
+  const enc = (t) => "=?utf-8?B?" + Buffer.from(t).toString("base64") + "?=";
+  const m = (uid, po, ago) => ({ uid, date: new Date(now - ago * day), subject: "Inkooporder PO-00" + po, rawSubject: enc("Inkooporder PO-00" + po), raw: F.poMail({ po: "00" + po, pdf: pdf(po), subject: enc("Inkooporder PO-00" + po) }) });
+  const other = { uid: 3, date: new Date(now - 3 * day), subject: "Nieuwsbrief", rawSubject: enc("Nieuwsbrief"), raw: F.poMail({ po: "x", pdf: pdf(0), subject: enc("Nieuwsbrief") }) };
+  const o = await F.start({ users: { "jan@onet.pl": "pw" }, rawSubjectSearch: true, sentBox: "Wys&AUI-ane",
+    boxes: { INBOX: [m(30, 8335, 2), m(31, 8338, 2)], "Wys&AUI-ane": [other], "Lukasz Firma": [other, m(7, 8244, 9), m(8, 8245, 9)], Holandia: [m(4, 8242, 9)], Kosz: [] } });
+  const acc = { provider: "onet", user: "jan@onet.pl", host: "127.0.0.1", port: o.port }, st = {}, got = new Set(), files = [];
+  const opts = (only) => ({ plain: true, only: new Set(only), days: 365, have: (n) => got.has(n), save: async (name) => { files.push(name); got.add(String(Number(/\d+/.exec(name)[0]))); return true; } });
+  const boxesSeen = () => o.log.filter((l) => / EXAMINE /.test(l)).map((l) => l.replace(/^.* EXAMINE /, "").replace(/"/g, ""));
+  let r = await M.checkAccount(acc, "pw", st, opts(["8245"]));
+  eq([r.saved, files], [["PO-008245.pdf"], ["PO-008245.pdf"]], "a PO asked for by name is found in another folder of the mailbox ('Lukasz Firma'), only that one is fetched");
+  ok(boxesSeen()[0] === "INBOX" && boxesSeen().includes("Lukasz Firma") && !boxesSeen().includes("Holandia"), "...the inbox first, then the other folders, stopping once it is found", boxesSeen());
+  ok(!o.log.some((l) => /\b(STORE|SELECT|EXPUNGE|COPY|MOVE|DELETE)\b/i.test(l)), "...read-only in every folder");
+  o.log.length = 0; files.length = 0;
+  r = await M.checkAccount(acc, "pw", st, opts(["8242", "9999"]));
+  eq(r.saved, ["PO-008242.pdf"], "two asked for: the one that exists is found ('Holandia'), the other is in no folder");
+  ok(["INBOX", "Wys&AUI-ane", "Lukasz Firma", "Holandia", "Kosz"].every((b) => boxesSeen().includes(b)), "...every folder was looked through for the missing one", boxesSeen());
+  o.log.length = 0; files.length = 0;
+  r = await M.checkAccount(acc, "pw", st, { plain: true, have: (n) => got.has(n), save: async (name) => { files.push(name); return true; } });
+  eq([boxesSeen(), files.sort(), r.inMail], [["INBOX"], ["PO-008335.pdf", "PO-008338.pdf"], 2], "the ordinary check keeps to the inbox (mails filed away are done with)");
+  o.log.length = 0; files.length = 0;
+  r = await M.checkAccount(acc, "pw", st, opts(["8335"]));
+  eq([boxesSeen(), r.saved], [["INBOX"], ["PO-008335.pdf"]], "asked for by name and in the inbox: no other folder is opened");
+  await o.close();
+}
+
 eq(M.errCode(Object.assign(new Error("[ALERT] Application-specific password required: https://support.google.com/accounts/answer/185833"), { code: "EAUTH" })), "apppass", "Gmail's 'app password required' is recognised");
 
 // ---- sending invoices (SMTP), with a copy in Sent (IMAP APPEND)

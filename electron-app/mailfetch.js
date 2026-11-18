@@ -191,12 +191,21 @@ const subjectNum = (s) => poNum(s, SUBJECT_RE);
 /** log in and compare the PO mails of the last LOOKBACK_DAYS days with the folder. PDFs of POs that are not there (have(number) false) and not
  *  skipped are saved (save), or with `hold` only noted (asked first: hold(name, uid, uidValidity)). Only their headers are read first; whole mails
  *  only for the missing ones. st = { box } of this account (kept). Returns { saved: [names], held: [names], inMail: number of POs in the mail } */
+/** every mailbox (folder) of the account that can be opened: [{ name (as the server gave it, ready for EXAMINE), flags }] */
+async function listBoxes(c) {
+  const out = [];
+  const r = await c.cmd('LIST "" "*"');
+  for (const u of r.untagged) {
+    const m = /^\* LIST \(([^)]*)\) (?:"[^"]*"|NIL) (.*)$/i.exec(u.text); if (!m || /\\Noselect\b/i.test(m[1])) continue;
+    const name = u.lits.length ? u.lits[0].toString("utf8") : m[2].trim(); if (name) out.push({ name, flags: m[1] });
+  }
+  return out;
+}
 async function checkAccount(acc, pass, st, { have, skip = () => false, save, hold, plain, now = new Date(), only = null, days = LOOKBACK_DAYS }) { // only: just these PO numbers (Set)
   const c = await login(acc, pass, plain);
   try {
     const box = st.box || (st.box = await pickBox(c, acc));
-    const { uv } = await examine(c, box);
-    const since = new Date(now.getTime() - days * 86400000);
+    const since = new Date(now.getTime() - days * 86400000), day = imapDate(since);
     const search = async (q) => {
       const sr = await c.ok("UID SEARCH " + q); let uids = [];
       for (const u of sr.untagged) { const m = /^\* SEARCH\b(.*)$/i.exec(u.text); if (m) uids.push(...m[1].trim().split(/\s+/).filter(Boolean).map(Number)); }
@@ -215,23 +224,40 @@ async function checkAccount(acc, pass, st, { have, skip = () => false, save, hol
       }
       return byNum;
     };
-    const day = imapDate(since);
-    let byNum = st.scanAll ? new Map() : await subjects((await search("SINCE " + day + ' SUBJECT "Inkooporder"')).slice(0, MAX_PER_RUN));
-    // some servers (Onet) do not decode an encoded subject (=?utf-8?B?...?=) when they search, so their search finds nothing:
-    // then the subjects of all mails of those days are read here and decoded by the app itself (remembered for this account)
-    if (!byNum.size) { byNum = await subjects((await search("SINCE " + day)).slice(0, SCAN_MAX)); if (byNum.size && !st.scanAll) st.scanAll = true; }
-    if (only) byNum = new Map([...byNum].filter(([n]) => only.has(n)));
-    const saved = [], held = [];
-    for (const [n, uid] of [...byNum].sort((a, b) => Number(a[0]) - Number(b[0]))) { // oldest PO first
-      if (have(n) || skip(n)) continue;
-      const mail = await fetchMail(c, uid);
-      for (const f of mail ? poFiles(mail) : []) {
-        if (have(poNum(f.name) || n)) continue;
-        if (hold) { await hold(f.name, uid, uv); held.push(f.name); } else if (await save(f.name, f.data)) saved.push(f.name);
+    const saved = [], held = []; let searchWorks = false;
+    /** one mailbox: which PO number is in which of its mails, then the PDFs of the ones still wanted */
+    const scan = async (b) => {
+      const { uv } = await examine(c, b);
+      let byNum = st.scanAll ? new Map() : await subjects((await search("SINCE " + day + ' SUBJECT "Inkooporder"')).slice(0, MAX_PER_RUN));
+      // some servers (Onet) do not decode an encoded subject (=?utf-8?B?...?=) when they search, so their search finds nothing:
+      // then the subjects of all mails of those days are read here and decoded by the app itself (remembered for this account)
+      if (byNum.size) searchWorks = true;
+      else if (!searchWorks) { byNum = await subjects((await search("SINCE " + day)).slice(0, SCAN_MAX)); if (byNum.size && !st.scanAll) st.scanAll = true; }
+      if (only) byNum = new Map([...byNum].filter(([n]) => only.has(n)));
+      for (const [n, uid] of [...byNum].sort((x, y) => Number(x[0]) - Number(y[0]))) { // oldest PO first
+        if (have(n) || skip(n)) continue;
+        const mail = await fetchMail(c, uid);
+        for (const f of mail ? poFiles(mail) : []) {
+          if (have(poNum(f.name) || n)) continue;
+          if (hold) { await hold(f.name, uid, uv); held.push(f.name); } else if (await save(f.name, f.data)) saved.push(f.name);
+        }
+      }
+      return { uv, inMail: byNum.size };
+    };
+    const first = await scan(box);
+    st.uidValidity = first.uv; delete st.lastUid;
+    // POs asked for by name (an invoice needs them) that are not in that mailbox: the person may have filed the mails in other folders
+    // ("Firma", "Holandia"), so those are looked through too, until all are found. (Gmail's "All Mail" already holds every folder.)
+    const missing = () => !!only && [...only].some((n) => !have(n));
+    if (missing() && !c.closed) {
+      const norm = (x) => String(x).replace(/^"|"$/g, "").toUpperCase(), boxes = await listBoxes(c).catch(() => []);
+      const last = (b) => (/\\(?:Trash|Junk)\b/i.test(b.flags) ? 1 : 0); // the bin and spam last
+      for (const b of boxes.filter((x) => norm(x.name) !== norm(box) && !/\\(?:All|Drafts)\b/i.test(x.flags)).sort((x, y) => last(x) - last(y))) {
+        if (!missing()) break;
+        try { await scan(b.name); } catch (e) { if (c.closed) throw e; } // a folder that cannot be opened is passed over
       }
     }
-    st.uidValidity = uv; delete st.lastUid;
-    return { saved, held, inMail: byNum.size };
+    return { saved, held, inMail: first.inMail };
   } finally { c.close(); }
 }
 
